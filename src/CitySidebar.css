@@ -1,6 +1,6 @@
 .city-sidebar {
   position: absolute;
-  top: 16px;
+  top: calc(16px + var(--google-banner-offset, 0px));
   left: 16px;
   z-index: 20;
   width: 200px;

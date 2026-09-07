@@ -23,7 +23,10 @@ export type SyntheticScreen = {
 };
 
 const VISUAL_SCREEN_CAP = 24;
-const RING_RADIUS_METERS = 16;
+// Kept close to the project building's own footprint (see
+// PROJECT_FOOTPRINT_HALF_SIDE_METERS in InventoryMap.tsx, ~9m half-side) so
+// screens read as "on/around this building", not floating nearby.
+const RING_RADIUS_METERS = 12;
 const METERS_PER_DEGREE_LAT = 110_540;
 
 function metersPerDegreeLng(latitude: number): number {

@@ -1,10 +1,10 @@
 .inspector-panel {
   position: absolute;
-  top: 16px;
+  top: calc(16px + var(--google-banner-offset, 0px));
   right: 16px;
   z-index: 20;
   width: 280px;
-  max-height: calc(100% - 32px);
+  max-height: calc(100% - 32px - var(--google-banner-offset, 0px));
   overflow-y: auto;
   background: #ffffff;
   border: 1px solid #e5e7eb;
