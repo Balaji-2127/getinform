@@ -10,7 +10,10 @@ export default function CitySidebar({
 }) {
   return (
     <div className="city-sidebar">
-      <h1>getinform</h1>
+      <div className="city-sidebar-brand">
+        <img src="/adonmo-logo.jpeg" alt="" className="city-sidebar-logo" />
+        <h1>ADONMO</h1>
+      </div>
       <p className="city-sidebar-sub">Residential screen inventory</p>
       <nav>
         {CITIES.map((c) => (

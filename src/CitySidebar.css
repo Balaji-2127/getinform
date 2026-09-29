@@ -12,12 +12,30 @@
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+.city-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.city-sidebar-logo {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  /* A real logo photo, not a transparent mark — a rounded corner + thin
+     border reads as a clean badge instead of a glow around a rectangle
+     (which is what the old drop-shadow treatment was tuned for). */
+  border: 1px solid #e5e7eb;
+  object-fit: cover;
+}
+
 .city-sidebar h1 {
   margin: 0;
   font-size: 16px;
   font-weight: 800;
   color: #111827;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.02em;
 }
 
 .city-sidebar-sub {

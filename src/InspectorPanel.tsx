@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import "./InspectorPanel.css";
 import type { SyntheticScreen } from "./syntheticScreens";
 
@@ -26,6 +26,7 @@ export type ProjectPanelInfo = {
   screenSizes: string[];
   screenList: SyntheticScreen[];
   hiddenScreenCount: number;
+  visualLink: string | null;
 };
 
 export type ViewLevel = "city" | "cluster" | "project" | "screen";
@@ -40,17 +41,13 @@ type Crumb = { label: string; level: ViewLevel };
 export default function InspectorPanel({
   content,
   crumbs,
-  selectedScreenId,
   onNavigate,
   onClose,
-  onSelectScreen,
 }: {
   content: Content | null;
   crumbs: Crumb[];
-  selectedScreenId: string | null;
   onNavigate: (level: ViewLevel) => void;
   onClose: () => void;
-  onSelectScreen: (screenId: string) => void;
 }) {
   if (!content) return null;
 
@@ -77,9 +74,7 @@ export default function InspectorPanel({
       )}
 
       {content.kind === "cluster" && <ClusterView cluster={content.cluster} />}
-      {content.kind === "project" && (
-        <ProjectView project={content.project} selectedScreenId={selectedScreenId} onSelectScreen={onSelectScreen} />
-      )}
+      {content.kind === "project" && <ProjectView project={content.project} />}
       {content.kind === "screen" && (
         <ScreenView screen={content.screen} project={content.project} onNavigate={onNavigate} />
       )}
@@ -143,15 +138,18 @@ function ClusterView({ cluster }: { cluster: ClusterInfo }) {
   );
 }
 
-function ProjectView({
-  project,
-  selectedScreenId,
-  onSelectScreen,
-}: {
-  project: ProjectPanelInfo;
-  selectedScreenId: string | null;
-  onSelectScreen: (screenId: string) => void;
-}) {
+// Splits a project's true total screen count evenly across its distinct
+// screen sizes (e.g. 11 screens across two sizes -> 6 + 5) — the closest
+// honest breakdown available, since the source data only tracks a total
+// count and a list of size types per project, never a real per-size count.
+function screenSizeCounts(total: number, sizes: string[]): { size: string; count: number }[] {
+  if (sizes.length === 0 || total === 0) return [];
+  const base = Math.floor(total / sizes.length);
+  const remainder = total % sizes.length;
+  return sizes.map((size, i) => ({ size, count: base + (i < remainder ? 1 : 0) }));
+}
+
+function ProjectView({ project }: { project: ProjectPanelInfo }) {
   return (
     <>
       <header className="inspector-header">
@@ -161,6 +159,14 @@ function ProjectView({
           {project.zone ? ` · ${project.zone}` : ""}
         </p>
       </header>
+
+      <PropertyImages project={project} />
+
+      {project.visualLink && (
+        <a className="inspector-photos-link" href={project.visualLink} target="_blank" rel="noreferrer">
+          View property photos →
+        </a>
+      )}
 
       <div className="inspector-stats">
         <Stat label="Screens" value={project.totalScreens.toLocaleString()} />
@@ -174,26 +180,17 @@ function ProjectView({
         />
       </div>
 
-      <Section title={`Screens (${project.screenList.length}${project.hiddenScreenCount > 0 ? ` of ${project.totalScreens}` : ""})`}>
-        {project.screenList.length === 0 ? (
+      <Section title={`Screens (${project.totalScreens})`}>
+        {project.totalScreens === 0 ? (
           <Empty text="No screens recorded for this project" />
         ) : (
-          <ul className="inspector-list inspector-screen-list">
-            {project.screenList.map((s) => (
-              <li key={s.id}>
-                <button
-                  type="button"
-                  className={"inspector-screen-button" + (s.id === selectedScreenId ? " is-active" : "")}
-                  onClick={() => onSelectScreen(s.id)}
-                >
-                  <span>{s.id}</span>
-                  <span className="inspector-count">{s.screenSize ?? "—"}</span>
-                </button>
+          <ul className="inspector-list">
+            {screenSizeCounts(project.totalScreens, project.screenSizes).map((row) => (
+              <li key={row.size}>
+                <span>{row.size}</span>
+                <span className="inspector-count">{row.count}</span>
               </li>
             ))}
-            {project.hiddenScreenCount > 0 && (
-              <li className="inspector-more">+{project.hiddenScreenCount} more not shown (aggregated in totals above)</li>
-            )}
           </ul>
         )}
       </Section>
@@ -203,6 +200,50 @@ function ProjectView({
         in-building placement.
       </p>
     </>
+  );
+}
+
+type PropertyImage = { url: string; thumbnailUrl: string; sourcePage: string };
+
+// A plain Google Images search on "<property name>, <locality>" — the same
+// results a rep would get typing that into Google by hand — used because
+// the source sheet's own Drive photo links require sign-in and the Drive
+// API is blocked on this Cloud project. Silently renders nothing while
+// loading or if the search API isn't configured/returns no hits, same
+// fail-quiet pattern as ClientLogo, rather than showing an error for what
+// is a "nice to have" gallery.
+function PropertyImages({ project }: { project: ProjectPanelInfo }) {
+  const [images, setImages] = useState<PropertyImage[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setImages([]);
+    const location = [project.locality, project.zone].filter(Boolean).join(" ");
+    const params = new URLSearchParams({ name: project.name });
+    if (location) params.set("location", location);
+    fetch(`/api/property-images?${params.toString()}`)
+      .then((res) => (res.ok ? (res.json() as Promise<{ images?: PropertyImage[] }>) : { images: [] }))
+      .then((data) => {
+        if (!cancelled) setImages(data.images ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setImages([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [project.name, project.locality, project.zone]);
+
+  if (images.length === 0) return null;
+
+  return (
+    <div className="inspector-photo-strip">
+      {images.map((img) => (
+        <a key={img.url} className="inspector-photo-thumb" href={img.sourcePage} target="_blank" rel="noreferrer">
+          <img src={img.thumbnailUrl} alt="" loading="lazy" />
+        </a>
+      ))}
+    </div>
   );
 }
 

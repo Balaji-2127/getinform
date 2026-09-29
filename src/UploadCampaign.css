@@ -1,0 +1,246 @@
+/* Matches the rest of the dashboard's content pages (CampaignsPage.css's
+   .cpg-page/.cpg-header conventions) — this used to be a standalone
+   full-screen black page (its own route, before the dashboard shell
+   existed) but is now always embedded inside .dash-content, so it needs
+   to sit in that same light theme instead of punching a black rectangle
+   into it. */
+.upload-page {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.upload-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6366f1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.upload-header h1 {
+  margin: 4px 0 4px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.01em;
+}
+
+.upload-sub {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  max-width: 560px;
+}
+
+.upload-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.upload-card {
+  flex: 1 1 380px;
+  max-width: 460px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.upload-history {
+  flex: 1 1 320px;
+  max-width: none;
+}
+
+.upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.upload-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.upload-form input[type="text"],
+.upload-form input:not([type]),
+.upload-form input[type="file"] {
+  padding: 9px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: none;
+  color: #111827;
+  letter-spacing: normal;
+}
+
+.upload-form input:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.upload-error {
+  font-size: 12px;
+  color: #991b1b;
+}
+
+.upload-error p {
+  margin: 0;
+}
+
+.upload-error ul {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11.5px;
+  color: #b91c1c;
+}
+
+.upload-form button,
+.upload-share-row button {
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #4338ca;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.upload-form button:hover:not(:disabled),
+.upload-share-row button:hover {
+  background: #3730a3;
+}
+
+.upload-form button:disabled {
+  background: #c7d2fe;
+  cursor: default;
+}
+
+.upload-result {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #eef2ff;
+}
+
+.upload-result-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #166534;
+}
+
+.upload-share-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.upload-share-row input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.upload-matched {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12.5px;
+  color: #111827;
+}
+
+.upload-skipped {
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+.upload-warnings {
+  margin: 0 0 10px;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11.5px;
+  color: #b45309;
+  line-height: 1.4;
+}
+
+.upload-preview-link {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #4338ca;
+}
+
+.upload-history h2 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.upload-history ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upload-history li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.upload-history li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.upload-history-client {
+  font-weight: 700;
+  color: #111827;
+}
+
+.upload-history-name {
+  color: #9ca3af;
+}
+
+.upload-history a {
+  color: #4338ca;
+  font-weight: 600;
+  white-space: nowrap;
+}

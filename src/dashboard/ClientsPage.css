@@ -1,0 +1,124 @@
+.clients-search {
+  width: 100%;
+  max-width: 320px;
+  padding: 9px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #111827;
+  font-family: inherit;
+}
+
+.clients-search:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.clients-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  padding-bottom: 8px;
+}
+
+.clients-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.clients-sub {
+  margin: 0;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.clients-stat-row {
+  display: flex;
+  gap: 10px;
+}
+
+.clients-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: #f9fafb;
+  border: 1px solid #eef2ff;
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.clients-stat-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: #3730a3;
+  font-variant-numeric: tabular-nums;
+}
+
+.clients-stat-label {
+  font-size: 10.5px;
+  color: #9ca3af;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.clients-campaign-list {
+  list-style: none;
+  margin: 0;
+  padding: 10px 0 0;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.clients-campaign-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.clients-campaign-list li > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.clients-campaign-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clients-campaign-date {
+  font-size: 10.5px;
+  color: #9ca3af;
+}
+
+.clients-campaign-list button {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: #4338ca;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.clients-campaign-list button:hover {
+  text-decoration: underline;
+}

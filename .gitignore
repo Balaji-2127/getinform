@@ -10,7 +10,11 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dist-server
 *.local
+
+# SQLite database for campaign uploads (server/db.ts)
+server/data/
 
 # Editor directories and files
 .vscode/*

@@ -1,66 +1,77 @@
-import { useEffect, useState } from "react";
-import GoogleInventoryMap from "./GoogleInventoryMap";
-import CitySidebar from "./CitySidebar";
-import GlobeIntro from "./GlobeIntro";
-import { CITIES, type CityId } from "./data/cities";
+import { lazy, Suspense, useEffect, useState } from "react";
+import LoginGate from "./LoginGate";
+import Dashboard from "./dashboard/Dashboard";
+import ClientCampaignView from "./ClientCampaignView";
 
-// Google's own "alpha channel — for development purposes only" banner (its
-// class name is unstable/internal, hence the aria-label match instead)
-// injects itself at the very top of the page and overlaps our own
-// top-anchored panels — a real layout bug, not cosmetic, since it eats
-// pointer events too. It's asynchronous (added after the Maps script
-// loads) and user-dismissible, so a MutationObserver tracks its actual
-// presence/height rather than a fixed guess, and everything reclaims that
-// space the moment the banner is gone (dismissed, or this API leaving
-// alpha someday).
-function useGoogleBannerOffset() {
+// Lazy: mapbox-gl is a large library that only the /campaign-mb route
+// needs. Importing it statically here would pull its full weight into the
+// main bundle every other route pays for too (sales login/upload, the
+// Google campaign view) — this keeps it out of their way entirely.
+const MapboxCampaignView = lazy(() => import("./MapboxCampaignView"));
+
+// No router library — the app only ever has three shapes of URL: a shared
+// campaign link on the Google 3D map (client-facing, no login), the same
+// campaign on the parallel Mapbox map (a separate engine kept alongside the
+// Google one, not a replacement — see MapboxInventoryMap.tsx), or everything
+// else (the sales login/upload tool). Read once on mount; the app never
+// navigates between these client-side, so nothing needs to watch for path
+// changes.
+function useRoute() {
+  const [route] = useState(() => {
+    const mapboxMatch = window.location.pathname.match(/^\/campaign-mb\/([^/]+)/);
+    if (mapboxMatch) return { kind: "campaign-mapbox" as const, campaignId: mapboxMatch[1] };
+    const match = window.location.pathname.match(/^\/campaign\/([^/]+)/);
+    return match ? { kind: "campaign" as const, campaignId: match[1] } : { kind: "sales" as const };
+  });
+  return route;
+}
+
+function SalesTool() {
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+
   useEffect(() => {
-    const root = document.documentElement;
-    const update = () => {
-      const banner = document.querySelector<HTMLElement>('[aria-label*="alpha channel"]');
-      root.style.setProperty("--google-banner-offset", banner ? `${banner.getBoundingClientRect().height}px` : "0px");
-    };
-    update();
-    const observer = new MutationObserver(update);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    fetch("/api/session")
+      .then((r) => r.json())
+      .then((data: { loggedIn: boolean }) => setLoggedIn(data.loggedIn))
+      .catch(() => setLoggedIn(false));
   }, []);
+
+  if (loggedIn === null) return null;
+  if (!loggedIn) return <LoginGate onSuccess={() => setLoggedIn(true)} />;
+  return <Dashboard onLoggedOut={() => setLoggedIn(false)} />;
 }
 
 function App() {
-  useGoogleBannerOffset();
-  const [activeCity, setActiveCity] = useState<CityId>("hyderabad");
-  // "intro": globe visible, waiting for a city pick. "zooming": globe is
-  // flying in toward the picked city (still mounted, InventoryMap mounts
-  // underneath it too so it's ready and loaded by the time the globe fades
-  // out). "map": globe unmounted, normal app.
-  const [phase, setPhase] = useState<"intro" | "zooming" | "map">("intro");
-  const [zoomTarget, setZoomTarget] = useState<[number, number] | null>(null);
-  const [fading, setFading] = useState(false);
-
-  const handleSelectCity = (id: CityId) => {
-    setActiveCity(id);
-    if (phase === "map") return;
-    const city = CITIES.find((c) => c.id === id);
-    if (!city) return;
-    setZoomTarget(city.center);
-    setPhase("zooming");
-  };
+  const route = useRoute();
 
   return (
     <div style={{ position: "absolute", inset: 0, background: "#000000" }}>
-      {phase !== "intro" && <GoogleInventoryMap cityId={activeCity} />}
-
-      {phase !== "map" && (
-        <GlobeIntro
-          zoomTarget={zoomTarget}
-          fading={fading}
-          onFadeStart={() => setFading(true)}
-          onComplete={() => setPhase("map")}
-        />
+      {route.kind === "campaign" ? (
+        <ClientCampaignView campaignId={route.campaignId} />
+      ) : route.kind === "campaign-mapbox" ? (
+        <Suspense
+          fallback={
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#f3f4f6",
+                fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+                fontSize: 14,
+              }}
+            >
+              Loading map…
+            </div>
+          }
+        >
+          <MapboxCampaignView campaignId={route.campaignId} />
+        </Suspense>
+      ) : (
+        <SalesTool />
       )}
-
-      <CitySidebar activeCity={activeCity} onSelect={handleSelectCity} />
     </div>
   );
 }

@@ -1,0 +1,136 @@
+.dm-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.dm-panel-expanded {
+  position: fixed;
+  inset: 16px;
+  z-index: 100;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.dm-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  flex-wrap: wrap;
+}
+
+.dm-mode-toggle {
+  display: flex;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.dm-mode-toggle button {
+  border: none;
+  background: #ffffff;
+  color: #6b7280;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dm-mode-toggle button:disabled {
+  cursor: default;
+}
+
+.dm-mode-toggle button.is-active {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.dm-city-select {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  background: #ffffff;
+}
+
+.dm-search {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: #9ca3af;
+  font-size: 12.5px;
+}
+
+.dm-icon-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #6b7280;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dm-icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.dm-expand-btn {
+  padding: 6px 8px;
+}
+
+.dm-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: #f3f4f6;
+}
+
+.dm-loading,
+.dm-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.dm-error {
+  color: #b91c1c;
+}
+
+.dm-caption {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #374151;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}

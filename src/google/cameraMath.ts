@@ -56,6 +56,33 @@ export function expandBbox(bbox: Bbox, marginMeters: number): Bbox {
   ];
 }
 
+/**
+ * A regular polygon of `segments` points approximating a circle of
+ * `radiusMeters` around `center`, each carrying the same `altitude` — used
+ * to draw a Polygon3DElement around a point location (we only ever have a
+ * project's lat/lng, never its real building footprint, so this is a
+ * deliberately generic stand-in shape rather than a traced outline).
+ */
+export function circlePathAround(
+  center: { lat: number; lng: number },
+  radiusMeters: number,
+  altitude: number,
+  segments = 24,
+): { lat: number; lng: number; altitude: number }[] {
+  const latMetersPerDegree = 110_540;
+  const lngMetersPerDegree = 111_320 * Math.cos(toRad(center.lat));
+  const path: { lat: number; lng: number; altitude: number }[] = [];
+  for (let i = 0; i < segments; i++) {
+    const angle = (i / segments) * Math.PI * 2;
+    path.push({
+      lat: center.lat + (Math.cos(angle) * radiusMeters) / latMetersPerDegree,
+      lng: center.lng + (Math.sin(angle) * radiusMeters) / lngMetersPerDegree,
+      altitude,
+    });
+  }
+  return path;
+}
+
 export function bboxOfPoints(points: { lng: number; lat: number }[]): Bbox | null {
   if (points.length === 0) return null;
   let minLng = Infinity;

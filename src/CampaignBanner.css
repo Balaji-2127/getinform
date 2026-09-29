@@ -1,0 +1,145 @@
+.campaign-banner {
+  position: absolute;
+  top: calc(16px + var(--google-banner-offset, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  width: min(560px, calc(100% - 460px));
+  min-width: 280px;
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  border-top: 3px solid #2563eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  padding: 14px 18px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.campaign-banner-inline {
+  position: static;
+  top: auto;
+  left: auto;
+  transform: none;
+  z-index: auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  border: none;
+  border-top: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+}
+
+.campaign-banner-inline .campaign-banner-stats {
+  flex: 0 1 auto;
+}
+
+.campaign-banner-inline .campaign-banner-stat {
+  flex: initial;
+  min-width: 96px;
+}
+
+.campaign-banner-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.campaign-banner-badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  background: #eff6ff;
+  color: #1e40af;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.campaign-banner-heading h1 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campaign-banner-tour-group {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+}
+
+.campaign-banner-tour {
+  flex-shrink: 0;
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.campaign-banner-tour:hover {
+  background: #1d4ed8;
+}
+
+.campaign-banner-tour-ghost {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.campaign-banner-tour-ghost:hover {
+  background: #dbeafe;
+}
+
+.campaign-banner-stats {
+  display: flex;
+  gap: 8px;
+}
+
+.campaign-banner-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.campaign-banner-stat-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1d4ed8;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campaign-banner-stat-label {
+  font-size: 10px;
+  color: #2563eb;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}

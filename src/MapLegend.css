@@ -1,0 +1,86 @@
+.map-legend {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 5;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  padding: 10px 12px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  max-width: 240px;
+}
+
+.map-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #374151;
+  padding: 3px 0;
+}
+
+.map-legend-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.map-legend-dot-default {
+  background: #9ca3af;
+}
+
+.map-legend-dot-highlight {
+  background: #2563eb;
+}
+
+.map-legend-dot-selected {
+  background: #0ea5e9;
+}
+
+.map-legend-row-toggle {
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  margin: 0 -4px;
+  padding: 3px 4px;
+}
+
+.map-legend-row-toggle:hover {
+  background: #f9fafb;
+}
+
+.map-legend-row-toggle.is-off {
+  opacity: 0.55;
+}
+
+.map-legend-row-toggle.is-off .map-legend-dot {
+  background: #e5e7eb;
+}
+
+.map-legend-toggle-state {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.map-legend-note {
+  margin: 6px 0 0;
+  padding-top: 6px;
+  border-top: 1px solid #f3f4f6;
+  font-size: 9.5px;
+  color: #9ca3af;
+  line-height: 1.4;
+}
