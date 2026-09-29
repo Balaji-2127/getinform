@@ -207,8 +207,12 @@
 
 .cpg-fullscreen-btn {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  /* Bottom-right: top-left is the (conditional, multi-city-campaign-only)
+     city picker, top-right is the property inspector panel, bottom-left
+     is the inventory-toggle legend — this is the one corner nothing else
+     in the map ever uses. */
+  bottom: 16px;
+  right: 16px;
   z-index: 30;
   display: flex;
   align-items: center;

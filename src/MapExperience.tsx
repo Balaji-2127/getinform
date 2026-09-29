@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import GoogleInventoryMap from "./GoogleInventoryMap";
 import CitySidebar from "./CitySidebar";
-import type { CityId } from "./data/cities";
+import { CITIES, type CityId } from "./data/cities";
 
 // Google's own "alpha channel — for development purposes only" banner (its
 // class name is unstable/internal, hence the aria-label match instead)
@@ -39,7 +39,7 @@ export type CampaignContext = {
 export default function MapExperience({
   initialCity,
   campaign,
-  hideCitySidebar,
+  hideBrand,
   bannerPortalTarget,
 }: {
   initialCity: CityId;
@@ -47,10 +47,12 @@ export default function MapExperience({
   // The dashboard embeds this component inside its own bounded panel,
   // which already has its own branding/navigation in the surrounding
   // shell (including the client's own logo, top-right) — the floating
-  // "ADONMO + city picker" box is redundant there. Only applies in that
+  // "ADONMO" logo/name block is redundant there. Only applies in that
   // embedded context; defaults to the full-screen client-facing link's
-  // existing city-picker-shown behavior, untouched.
-  hideCitySidebar?: boolean;
+  // existing behavior, untouched. The city-switch buttons themselves stay
+  // — for a multi-city campaign they're not decoration, they're how you
+  // get from one city's highlighted properties to another's.
+  hideBrand?: boolean;
   // See GoogleInventoryMap's own bannerPortalTarget — passed straight
   // through so the dashboard can pull the campaign banner out of the map
   // entirely and into its own page header. Undefined on the full-screen
@@ -62,6 +64,14 @@ export default function MapExperience({
 
   const highlightedMediaSiteIds = campaign ? new Set(campaign.selections[activeCity] ?? []) : undefined;
 
+  // A campaign's own cities only — picking a city with nothing shortlisted
+  // in it would just show an empty, unhighlighted map, so the picker only
+  // offers what's actually relevant to this campaign. Falls back to every
+  // city when there's no campaign at all (shouldn't happen in practice —
+  // MapExperience is only ever used for campaign views today — but keeps
+  // this correct if that changes).
+  const campaignCities = campaign ? CITIES.filter((c) => (campaign.selections[c.id]?.length ?? 0) > 0) : CITIES;
+
   return (
     <div style={{ position: "absolute", inset: 0, background: "#000000" }}>
       <GoogleInventoryMap
@@ -72,7 +82,9 @@ export default function MapExperience({
         bannerPortalTarget={bannerPortalTarget}
       />
 
-      {!hideCitySidebar && <CitySidebar activeCity={activeCity} onSelect={setActiveCity} />}
+      {(!hideBrand || campaignCities.length > 1) && (
+        <CitySidebar activeCity={activeCity} onSelect={setActiveCity} cities={campaignCities} hideBrand={hideBrand} />
+      )}
     </div>
   );
 }

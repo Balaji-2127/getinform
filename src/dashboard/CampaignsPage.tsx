@@ -19,10 +19,11 @@ function firstCityWithSelection(selections: Record<string, string[]>): CityId {
 // highlighting, same "shortlisted properties always shown individually"
 // rule, same guided tour — just inside this dashboard's own bounded panel
 // instead of full-screen (position:absolute + inset:0 fills whichever
-// positioned ancestor it's given). hideCitySidebar suppresses its
-// floating "ADONMO + city picker" box, which is redundant next to the
-// dashboard shell's own branding/nav — the one deliberate, additive prop
-// MapExperience gained for this, everything else about it is untouched.
+// positioned ancestor it's given). hideBrand suppresses its floating
+// "ADONMO" logo block, which is redundant next to the dashboard shell's
+// own branding/nav — the city-switch buttons themselves still show
+// whenever a campaign spans more than one city, since that's the only way
+// to see each city's highlighted properties in this embedded view.
 export default function CampaignsPage({
   activeCampaignId,
   onGoUpload,
@@ -143,7 +144,7 @@ export default function CampaignsPage({
               brand: state.data.clientName.toUpperCase(),
               selections: state.data.selections,
             }}
-            hideCitySidebar
+            hideBrand
             bannerPortalTarget={bannerSlot}
           />
         </div>

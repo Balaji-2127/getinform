@@ -5,7 +5,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = path.join(__dirname, "data");
+// Defaults to a folder next to the compiled server (fine for local dev,
+// where the whole checkout is already persistent) — but a real deploy on
+// a host with a persistent disk (Render/Railway/etc.) should point
+// DATA_DIR at that disk's mount path instead. Left as a path under the
+// build output directory, campaign data would vanish on every redeploy,
+// since dist-server itself isn't guaranteed to survive one.
+const dataDir = process.env.DATA_DIR ?? path.join(__dirname, "data");
 fs.mkdirSync(dataDir, { recursive: true });
 
 const db = new Database(path.join(dataDir, "app.db"));

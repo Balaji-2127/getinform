@@ -13,17 +13,50 @@ with this file.
 | Variable | Service | Required to run? | What breaks without it |
 |---|---|---|---|
 | `VITE_GOOGLE_MAPS_API_KEY` | Google Maps Platform | **Yes** | The map doesn't load at all — this is the core product. |
-| `VITE_MAPBOX_ACCESS_TOKEN` | Mapbox | Only for the `/mapbox` map | The parallel Mapbox-based map screen doesn't load. Main Google map is unaffected. |
 | `SALES_LOGIN_PASSWORD` | — (app's own login gate) | **Yes** | No one can log in. |
 | `SESSION_SECRET` | — (app's own session signing) | **Yes in production** (server refuses to start without it) | Dev falls back to an insecure default; production hard-fails on purpose. |
 | `PORT` | — (app's own config) | No (defaults to 4000) | N/A |
 | `GEMINI_API_KEY` + `GEMINI_FLASH_MODEL` | Google AI Studio (Gemini) | No | Client logos next to a campaign fall back to an initials badge instead of the real logo. |
 | `SERPER_API_KEY` | Serper.dev | No | The property-photo thumbnail strip in the right-side panel just doesn't render. |
 | `VITE_GOOGLE_MAPS_MAP_ID` | Google Maps Platform (Map styling) | No — **currently unused** | Nothing; see note below. |
+| `DATA_DIR` | — (app's own config) | **Yes on a real deploy** (see Hosting below) | Campaign uploads vanish on every redeploy if left unset on a host without a persistent local disk. |
 
 "Required to run" means the feature is core, not optional — not that the
 whole app crashes; most of these degrade gracefully to "that one feature
 is off" rather than a hard failure (each one below says which).
+
+---
+
+## Hosting — this needs a real Node server, not Vercel
+
+`server/index.ts` is a long-running Express server (`app.listen`) using a
+local SQLite file (`better-sqlite3`, via `server/db.ts`) for campaign
+storage. That combination doesn't run on Vercel as-is: Vercel's default
+Vite preset only builds and serves the static frontend (`vite build` →
+`dist/`) — it does not run `npm start`, so nothing ever answers `/api/*`
+requests, which is why login fails after a plain Vercel deploy. Even a
+serverless-functions rewrite wouldn't fully fix it, since Vercel's
+filesystem is ephemeral and a SQLite file wouldn't survive between
+invocations.
+
+**Use a host that runs a persistent Node process instead** — Render,
+Railway, Fly.io, or similar. The existing scripts already match that model
+directly, no code changes needed for the server itself:
+
+- Build command: `npm run build`
+- Start command: `npm run start`
+
+**Set every env var from the table above** (as plain environment
+variables in that host's dashboard, not committed anywhere) plus
+`NODE_ENV=production`.
+
+**Attach a persistent disk/volume and point `DATA_DIR` at its mount
+path** (e.g. Render's "Disks" or Railway's "Volumes" feature) — without
+this, every redeploy wipes the campaign database, since the default
+`DATA_DIR` falls back to a path inside the build output folder
+(`dist-server/data`), which isn't guaranteed to survive a redeploy.
+Whatever mount path you choose (e.g. `/var/data`), set `DATA_DIR` to
+exactly that path.
 
 ---
 
@@ -46,21 +79,6 @@ Styling. That attempt was abandoned (kept breaking 3D building rendering)
 and the code was reverted to not use a Map ID at all. The variable is
 still in `.env.example`/`.env.local` but nothing in `src/` reads it
 anymore — safe to leave blank or remove.
-
----
-
-## Mapbox — `VITE_MAPBOX_ACCESS_TOKEN`
-
-**What it's for:** a second, parallel map implementation
-(`src/MapboxInventoryMap.tsx` and friends, lazy-loaded) built alongside
-the Google map as an alternative/experiment — same underlying data, same
-campaign-highlighting logic, different map engine. Not the primary map
-route.
-
-**Get one:** https://account.mapbox.com/access-tokens/ — has a generous
-free tier.
-
-**Status:** confirmed working, in active use on that route only.
 
 ---
 
