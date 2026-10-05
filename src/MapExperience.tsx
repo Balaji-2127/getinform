@@ -31,6 +31,11 @@ export type CampaignContext = {
   // Short brand tag drawn on the campaign's own markers/clusters (e.g.
   // "LICIOUS") in place of the default "ADONMO" tag.
   brand: string;
+  // The client's real, properly-cased name (e.g. "Licious") — used to look
+  // up their own logo (see ClientLogo) for the floating campaign banner on
+  // the client-facing link. Distinct from `brand` above, which is
+  // uppercased for the on-map marker tag, not display-quality text.
+  clientName: string;
   // Per-city shortlisted mediaSiteIds — only cities the campaign actually
   // covers are present. Absent entirely for the plain (non-campaign) map.
   selections: Record<string, string[]>;
@@ -79,6 +84,7 @@ export default function MapExperience({
         highlightedMediaSiteIds={highlightedMediaSiteIds}
         campaignLabel={campaign?.label}
         highlightLabel={campaign?.brand}
+        clientName={campaign?.clientName}
         bannerPortalTarget={bannerPortalTarget}
       />
 

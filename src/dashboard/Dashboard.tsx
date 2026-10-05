@@ -5,6 +5,7 @@ import CampaignsPage from "./CampaignsPage";
 import InventoryPage from "./InventoryPage";
 import ClientsPage from "./ClientsPage";
 import InsightsPage from "./InsightsPage";
+import ReportsPage from "./ReportsPage";
 import ComingSoon from "./ComingSoon";
 import {
   AiIcon,
@@ -66,10 +67,11 @@ const SECTION_TITLES: Record<Section, string> = {
 // real campaign history (GET /api/campaigns) by client name; Market
 // Insights is real aggregate stats computed from the same per-city
 // inventory files Inventory uses; Dashboard (the landing page) is a
-// summary built from that same campaign + inventory data — no fabricated
-// CRM, analytics, or industry data anywhere in the four of them.
-// Everything else in the reference layout with no real data or backend
-// behind it yet (AI Assistant, Reports, Saved section) renders as an
+// summary built from that same campaign + inventory data; Reports is a
+// full sortable/exportable table of that same campaign history — no
+// fabricated CRM, analytics, or industry data anywhere in the five of
+// them. Everything else in the reference layout with no real data or
+// backend behind it yet (AI Assistant, Saved section) renders as an
 // explicit "coming soon" placeholder instead of pretending to work.
 export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
   const [section, setSection] = useState<Section>("dashboard");
@@ -197,12 +199,14 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
           {section === "inventory" && <InventoryPage />}
           {section === "clients" && <ClientsPage onOpenCampaign={handleCampaignCreated} />}
           {section === "insights" && <InsightsPage />}
+          {section === "reports" && <ReportsPage onOpenCampaign={handleCampaignCreated} />}
           {section === "upload" && <UploadCampaign onCampaignCreated={handleCampaignCreated} />}
           {section !== "dashboard" &&
             section !== "campaigns" &&
             section !== "inventory" &&
             section !== "clients" &&
             section !== "insights" &&
+            section !== "reports" &&
             section !== "upload" && <ComingSoon title={SECTION_TITLES[section]} />}
         </div>
       </div>

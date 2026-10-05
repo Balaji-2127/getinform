@@ -35,6 +35,19 @@ export default function CampaignsPage({
     { status: "idle" } | { status: "loading" } | { status: "error"; message: string } | { status: "ready"; data: CampaignResponse }
   >({ status: "idle" });
 
+  // The no-login, full-screen link a client opens to see just their own
+  // shortlisted properties (ClientCampaignView, via App.tsx's /campaign/:id
+  // route) — UploadCampaign already surfaces this once, right after a
+  // fresh upload, but there was no way to get back to it for a campaign
+  // reopened later from Dashboard/Clients/Reports history. Deterministic
+  // from the campaign id alone, so it's available the moment one's loaded.
+  const [copied, setCopied] = useState(false);
+  const shareLink = activeCampaignId ? `${window.location.origin}/campaign/${activeCampaignId}` : null;
+
+  useEffect(() => {
+    setCopied(false);
+  }, [activeCampaignId]);
+
   // Portal target for GoogleInventoryMap's CampaignBanner (tour control +
   // stats) — a plain state setter used as the ref callback so the portal
   // has something to render into as soon as this div mounts, instead of
@@ -94,7 +107,21 @@ export default function CampaignsPage({
               : "Upload a shortlist to see the highlighted results here."}
           </p>
         </div>
-        {state.status === "ready" && <ClientLogo clientName={state.data.clientName} />}
+        {state.status === "ready" && (
+          <div className="cpg-header-actions-group">
+            <button
+              type="button"
+              className="cpg-copy-link-btn"
+              onClick={() => {
+                if (shareLink) navigator.clipboard.writeText(shareLink).then(() => setCopied(true));
+              }}
+              title={shareLink ?? undefined}
+            >
+              {copied ? "✓ Copied" : "🔗 Copy client link"}
+            </button>
+            <ClientLogo clientName={state.data.clientName} />
+          </div>
+        )}
       </div>
 
       {state.status === "ready" && <div ref={setBannerSlot} className="cpg-banner-row" />}
@@ -142,6 +169,7 @@ export default function CampaignsPage({
             campaign={{
               label: `${state.data.clientName} — ${state.data.campaignName}`,
               brand: state.data.clientName.toUpperCase(),
+              clientName: state.data.clientName,
               selections: state.data.selections,
             }}
             hideBrand

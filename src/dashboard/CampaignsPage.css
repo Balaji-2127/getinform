@@ -17,6 +17,32 @@
   flex-wrap: wrap;
 }
 
+.cpg-header-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.cpg-copy-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #374151;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cpg-copy-link-btn:hover {
+  background: #f3f4f6;
+}
+
 .cpg-eyebrow {
   font-size: 11px;
   font-weight: 700;

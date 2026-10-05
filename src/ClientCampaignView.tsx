@@ -67,6 +67,7 @@ export default function ClientCampaignView({ campaignId }: { campaignId: string 
       campaign={{
         label: `${state.data.clientName} — ${state.data.campaignName}`,
         brand: state.data.clientName.toUpperCase(),
+        clientName: state.data.clientName,
         selections: state.data.selections,
       }}
     />

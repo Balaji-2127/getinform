@@ -1,3 +1,4 @@
+import ClientLogo from "./dashboard/ClientLogo";
 import "./CampaignBanner.css";
 
 export type CampaignSummary = {
@@ -31,6 +32,7 @@ export default function CampaignBanner({
   onResumeTour,
   onStopTour,
   inline,
+  clientName,
 }: {
   summary: CampaignSummary | null;
   touring: boolean;
@@ -43,6 +45,14 @@ export default function CampaignBanner({
   onResumeTour: () => void;
   onStopTour: () => void;
   inline?: boolean;
+  // The client's own brand logo (resolved the same way the dashboard's
+  // Campaigns page already shows it — by name, via Gemini + a favicon
+  // lookup) — only used in the floating/overlay variant, in place of the
+  // generic "Campaign" badge, so a client opening their link sees their
+  // own brand immediately. Dropped in `inline` mode since the dashboard
+  // already shows it separately in its own page header; passing it there
+  // is harmless either way.
+  clientName?: string;
 }) {
   if (!summary) return null;
 
@@ -86,7 +96,7 @@ export default function CampaignBanner({
   return (
     <div className="campaign-banner">
       <div className="campaign-banner-heading">
-        <span className="campaign-banner-badge">Campaign</span>
+        {clientName ? <ClientLogo clientName={clientName} /> : <span className="campaign-banner-badge">Campaign</span>}
         <h1>{summary.label}</h1>
         {tourControl}
       </div>

@@ -6,13 +6,7 @@ import CampaignBanner, { type CampaignSummary } from "./CampaignBanner";
 import MapLegend from "./MapLegend";
 import { generateSyntheticScreens, type SyntheticScreen } from "./syntheticScreens";
 import { loadMaps3d } from "./google/loadGoogleMaps";
-import {
-  buildClusterIndex,
-  getLeavesAsFeatures,
-  toClusterOrPoint,
-  WORLD_BBOX,
-  type ProjectFeature,
-} from "./google/clustering";
+import { type ProjectFeature } from "./google/clustering";
 import { bboxCenter, bboxOfPoints, circlePathAround, rangeForBbox, type Bbox } from "./google/cameraMath";
 import "./GoogleInventoryMap.css";
 
@@ -28,23 +22,24 @@ const CITY_RANGE_FACTOR = 0.85;
 const CITY_MIN_RANGE = 8000;
 const CITY_MAX_RANGE = 70000;
 
-const CLUSTER_TILT = 55;
-const CLUSTER_HEADING = -25;
-const CLUSTER_RANGE_FACTOR = 1.0;
-const CLUSTER_MIN_RANGE = 350;
-// A top-level cluster can be a handful of nearby buildings OR (as with a
-// city-wide campaign) hundreds of sites spread across several localities
-// many km apart. 3000 used to hard-cap the camera range regardless, which
-// for a wide cluster meant the true required range (rangeForBbox's own
-// diagonal*factor math) got clamped down far below what the bbox actually
-// needed — the camera then centered on the bbox's geometric midpoint at
-// way too close a range to show it, frequently landing on empty ground
-// between the real clusters/properties instead of pulling back far enough
-// to actually frame them. Raised so genuinely spread-out clusters get the
-// range their own bbox math asks for; tight local clusters are unaffected
-// since rangeForBbox only ever grows toward this ceiling, never away from
-// CLUSTER_MIN_RANGE for a small bbox.
-const CLUSTER_MAX_RANGE = 20000;
+// flyToCity's tighter framing for when a campaign's shortlisted properties
+// are what's actually being opened on, not the whole city — those tend to
+// be a handful of sites rather than spread across it.
+const SHORTLIST_FRAME_TILT = 55;
+const SHORTLIST_FRAME_HEADING = -25;
+const SHORTLIST_FRAME_RANGE_FACTOR = 1.0;
+const SHORTLIST_FRAME_MIN_RANGE = 350;
+// A shortlist can be a handful of nearby buildings OR (a city-wide
+// campaign) hundreds of sites spread across several localities many km
+// apart. A low cap here would clamp the camera down far below what the
+// bbox actually needs, centering on its geometric midpoint at too close a
+// range to show it — frequently landing on empty ground between the real
+// properties instead of pulling back far enough to frame them. Raised so
+// genuinely spread-out shortlists get the range their own bbox math asks
+// for; tight local ones are unaffected, since rangeForBbox only ever grows
+// toward this ceiling, never away from SHORTLIST_FRAME_MIN_RANGE for a
+// small bbox.
+const SHORTLIST_FRAME_MAX_RANGE = 20000;
 
 const PROJECT_TILT = 62;
 const PROJECT_HEADING = 30;
@@ -55,7 +50,6 @@ const PROJECT_RANGE = 380; // pulled back from 220 — that was close enough to 
 // short enough that a full 10-property shortlist doesn't feel like a wait.
 const TOUR_DWELL_MS = 4800;
 
-const CITY_BIN_ZOOM = 10; // supercluster's abstract binning zoom for the initial city-level query.
 const MAX_LOCALITIES_SHOWN = 6;
 
 // ---------------------------------------------------------------------------
@@ -79,19 +73,7 @@ const MAX_LOCALITIES_SHOWN = 6;
 // should ever need this diagnosed again.
 // ---------------------------------------------------------------------------
 const MARKER_ALTITUDE_MODE = "RELATIVE_TO_GROUND" as google.maps.maps3d.AltitudeModeString;
-const CLUSTER_MARKER_ALTITUDE = 90; // city/cluster views are seen from far away — clear any skyline.
 const PROJECT_MARKER_ALTITUDE = 45; // above typical Hyderabad low/mid-rise residential buildings.
-const SCREEN_MARKER_ALTITUDE = 14; // low enough to still read as "on the building", clear of its own roofline.
-
-// A cluster this small or smaller skips supercluster's one-level-at-a-time
-// sub-cluster breakdown entirely: it expands straight to every individual
-// project *and* draws each project's screens immediately, so the user sees
-// real inventory detail on the first click instead of having to keep
-// clicking through nested sub-clusters. Bigger clusters still drill one
-// level at a time — rendering, say, a 400-site cluster's ~1,500+ screens
-// all at once wouldn't be readable or fast, and a couple more clicks
-// naturally lands on a small-enough group anyway.
-const EXPAND_LEAVES_THRESHOLD = 40;
 
 function summarizeClusterLeaves(leaves: ProjectFeature[]): ClusterInfo {
   let totalScreens = 0;
@@ -154,23 +136,10 @@ function projectKey(feature: ProjectFeature): string {
   return feature.properties.mediaSiteId ?? `${feature.geometry.coordinates[0]},${feature.geometry.coordinates[1]}`;
 }
 
-// Cluster marker color/size steps — light gray throughout (deliberately
-// muted, see CAMPAIGN_DIM_COLOR below), graduated only so a glance still
-// tells a 126-site cluster from a 5-site one before reading the number.
-function clusterPinStyle(pointCount: number): { background: string; scale: number } {
-  if (pointCount >= 100) return { background: "#6b7280", scale: 1.5 };
-  if (pointCount >= 25) return { background: "#9ca3af", scale: 1.3 };
-  return { background: "#d1d5db", scale: 1.1 };
-}
-
 const PROJECT_COLOR = "#111827";
 const PROJECT_SELECTED_COLOR = "#0ea5e9";
 const PROJECT_BASE_SCALE = 1;
 const PROJECT_SELECTED_BASE_SCALE = 1.3;
-const SCREEN_COLOR = "#22d3ee";
-const SCREEN_SELECTED_COLOR = "#0891b2";
-const SCREEN_SCALE = 0.55;
-const SCREEN_SELECTED_SCALE = 0.85;
 
 // Campaign-highlight styling: once a campaign context is active (a sales
 // upload's shortlist is loaded), every project pin either belongs to the
@@ -234,7 +203,9 @@ const PULSE_DIM_AMPLITUDE = 0; // non-campaign pins hold still so the highlighte
 // every single frame on a 90/120/144Hz display.
 const PULSE_MIN_FRAME_MS = 33;
 
-type SelectedCluster = { info: ClusterInfo; leaves: ProjectFeature[] };
+// One property to draw a pin for. Only the property itself is drawn on the
+// map — its screens are listed in the side panel, not as map markers.
+type RenderItem = { longitude: number; latitude: number; feature: ProjectFeature };
 type SelectedProject = { feature: ProjectFeature; screens: SyntheticScreen[]; hiddenScreenCount: number };
 type MarkerPin = { marker: google.maps.maps3d.Marker3DInteractiveElement; pin: google.maps.marker.PinElement };
 // `baseScale`/`restColor`/`pulseAmplitude` are the pin's resting state when
@@ -256,6 +227,7 @@ export default function GoogleInventoryMap({
   highlightedMediaSiteIds,
   campaignLabel,
   highlightLabel,
+  clientName,
   bannerPortalTarget,
 }: {
   cityId: CityId;
@@ -264,6 +236,10 @@ export default function GoogleInventoryMap({
   // Short brand tag (e.g. "LICIOUS") drawn on properties/clusters that
   // belong to the active campaign — every other marker stays unlabeled.
   highlightLabel?: string;
+  // The client's real (properly-cased) name — passed straight through to
+  // CampaignBanner, which only actually shows it in the floating variant.
+  // See CampaignBanner's own clientName for why.
+  clientName?: string;
   // The dashboard's embedded view provides a DOM node (a slot in its own
   // header, above this map's container) to portal the CampaignBanner into
   // instead of floating it over the map — see CampaignBanner's own
@@ -276,18 +252,14 @@ export default function GoogleInventoryMap({
   const pinLibRef = useRef<google.maps.MarkerLibrary | null>(null);
   const maps3dLibRef = useRef<google.maps.Maps3DLibrary | null>(null);
 
-  // Every marker currently on the map — clusters, projects, and screens
-  // alike — so a fresh renderLevel() call can tear the whole set down
+  // Every marker currently on the map — projects and screens alike — so a
+  // fresh renderLevel() call can tear the whole set down
   // before drawing the next one.
   const levelMarkersRef = useRef<google.maps.maps3d.Marker3DInteractiveElement[]>([]);
-  // Projects currently rendered, keyed by projectKey() — lets a screen
-  // click find and highlight its owning project's own marker even if that
-  // project wasn't individually clicked first.
+  // Projects currently rendered, keyed by projectKey() — lets the tour find
+  // each shortlisted property's own marker.
   const projectMarkersRef = useRef<globalThis.Map<string, ProjectMarkerEntry>>(new globalThis.Map());
-  // Screens currently rendered, keyed by screen id.
-  const screenMarkersRef = useRef<globalThis.Map<string, MarkerPin & { projectFeature: ProjectFeature; screen: SyntheticScreen }>>(new globalThis.Map());
   const selectedProjectMarkerRef = useRef<ProjectMarkerEntry | null>(null);
-  const selectedScreenMarkerRef = useRef<MarkerPin | null>(null);
   const pulseRafRef = useRef<number | null>(null);
   // Highlight-overlay shapes (see HIGHLIGHT_OVERLAY_STYLE) for every
   // currently-rendered campaign-shortlisted property — separate from
@@ -295,18 +267,15 @@ export default function GoogleInventoryMap({
   // the same lifecycle, and pulsed by the same rAF loop as the pins.
   const highlightOverlaysRef = useRef<google.maps.maps3d.Polygon3DElement[]>([]);
 
-  const clusterIndexRef = useRef<ReturnType<typeof buildClusterIndex> | null>(null);
-
   const [mapReady, setMapReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ScreenFeatureCollection | null>(null);
 
   const [viewLevel, setViewLevel] = useState<ViewLevel>("city");
-  const [selectedCluster, setSelectedCluster] = useState<SelectedCluster | null>(null);
   const [selectedProject, setSelectedProject] = useState<SelectedProject | null>(null);
   const [selectedScreen, setSelectedScreen] = useState<SyntheticScreen | null>(null);
-  // Whether Adonmo's own (non-shortlisted) inventory clusters are shown at
+  // Whether Adonmo's own (non-shortlisted) inventory pins are shown at
   // all — a client toggle via the legend, so they can go look at what
   // else is available beyond what was shortlisted for them, or hide it
   // again to focus on just their own properties. Defaults on (today's
@@ -398,8 +367,8 @@ export default function GoogleInventoryMap({
   // ---- project pin pulse animation -------------------------------------------
   // One persistent loop for the component's lifetime — it just reads
   // whatever's currently in projectMarkersRef each tick, so it naturally
-  // keeps animating whichever project pins exist as clusters expand/collapse
-  // and cities switch, with nothing to restart.
+  // keeps animating whichever project pins exist as selections change and
+  // cities switch, with nothing to restart.
   useEffect(() => {
     let lastFrameTime = 0;
     const tick = (timestamp: number) => {
@@ -410,7 +379,12 @@ export default function GoogleInventoryMap({
         const selected = selectedProjectMarkerRef.current;
         for (const entry of projectMarkersRef.current.values()) {
           const amplitude = entry === selected ? PULSE_SELECTED_AMPLITUDE : entry.pulseAmplitude;
-          entry.pin.scale = entry.baseScale * (1 + amplitude * wave);
+          // Dim (non-highlighted) pins hold still — amplitude 0 — and with
+          // every property on the map now its own pin rather than a
+          // handful of cluster bubbles, that's the overwhelming majority
+          // of entries here; skipping the no-op write keeps this loop
+          // cheap regardless of how many thousand are on screen.
+          if (amplitude !== 0) entry.pin.scale = entry.baseScale * (1 + amplitude * wave);
         }
         if (HIGHLIGHT_OVERLAY_STYLE === "ring") {
           // "Radar ping" breathing — stroke width oscillates in sync with
@@ -434,36 +408,16 @@ export default function GoogleInventoryMap({
     let cancelled = false;
     setLoading(true);
     setViewLevel("city");
-    setSelectedCluster(null);
     setSelectedProject(null);
     setSelectedScreen(null);
     loadCityScreens(cityId).then((fc) => {
       if (cancelled) return;
       setData(fc);
-      // A campaign's own shortlisted properties are always drawn as
-      // individual pins (see highlightedProjectItems below) — excluding
-      // them from the cluster index itself, not just special-casing them
-      // after the fact, is what guarantees a shortlisted property can
-      // never end up bundled inside a cluster pin the client has to click
-      // through several levels of unrelated inventory to find. The rest
-      // of the city's ordinary inventory still clusters normally — there
-      // are 1,000+ of those per city, and showing all of them unclustered
-      // would be its own kind of unreadable.
-      const clusterable =
-        highlightedMediaSiteIds && highlightedMediaSiteIds.size > 0
-          ? { ...fc, features: fc.features.filter((f) => !(f.properties.mediaSiteId != null && highlightedMediaSiteIds.has(f.properties.mediaSiteId))) }
-          : fc;
-      clusterIndexRef.current = buildClusterIndex(clusterable);
       setLoading(false);
     });
     return () => {
       cancelled = true;
     };
-    // highlightedMediaSiteIds is derived from campaign selections that
-    // don't change while this component stays mounted — reading it via
-    // closure here is safe without retriggering this effect on every
-    // render (it's a fresh Set instance each render).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cityId]);
 
   const clearLevelMarkers = () => {
@@ -472,16 +426,7 @@ export default function GoogleInventoryMap({
     for (const o of highlightOverlaysRef.current) o.remove();
     highlightOverlaysRef.current = [];
     projectMarkersRef.current.clear();
-    screenMarkersRef.current.clear();
     selectedProjectMarkerRef.current = null;
-    selectedScreenMarkerRef.current = null;
-  };
-  const clearScreenSelection = () => {
-    if (selectedScreenMarkerRef.current) {
-      selectedScreenMarkerRef.current.pin.background = SCREEN_COLOR;
-      selectedScreenMarkerRef.current.pin.scale = SCREEN_SCALE;
-      selectedScreenMarkerRef.current = null;
-    }
   };
   const clearProjectHighlight = () => {
     const sel = selectedProjectMarkerRef.current;
@@ -538,7 +483,7 @@ export default function GoogleInventoryMap({
     const bbox = bboxOfPoints(points);
     if (bbox) {
       const framing = highlighted.length > 0
-        ? { tilt: CLUSTER_TILT, heading: CLUSTER_HEADING, rangeFactor: CLUSTER_RANGE_FACTOR, minRange: CLUSTER_MIN_RANGE, maxRange: CLUSTER_MAX_RANGE }
+        ? { tilt: SHORTLIST_FRAME_TILT, heading: SHORTLIST_FRAME_HEADING, rangeFactor: SHORTLIST_FRAME_RANGE_FACTOR, minRange: SHORTLIST_FRAME_MIN_RANGE, maxRange: SHORTLIST_FRAME_MAX_RANGE }
         : { tilt: CITY_TILT, heading: CITY_HEADING, rangeFactor: CITY_RANGE_FACTOR, minRange: CITY_MIN_RANGE, maxRange: CITY_MAX_RANGE };
       flyToBbox(bbox, { ...framing, durationMillis: 1600 });
     } else {
@@ -611,9 +556,8 @@ export default function GoogleInventoryMap({
   };
 
   // Selects a project that's already rendered on the map: highlights its
-  // marker, updates the panel, flies the camera in. Does NOT create any
-  // markers — by the time a project is clickable, its screens already
-  // exist (renderProjectWithScreens creates both together).
+  // marker, updates the panel, flies the camera in. Only the building is
+  // shown on the map — its screens are listed in the panel instead.
   const selectProject = (entry: ProjectMarkerEntry) => {
     // A manual selection (this is also the click handler's own call path)
     // cancels a running tour — the tour's own step sets tourAdvancingRef
@@ -629,42 +573,17 @@ export default function GoogleInventoryMap({
     setSelectedProject({ feature, screens, hiddenScreenCount: hiddenCount });
     setSelectedScreen(null);
     setViewLevel("project");
-    clearScreenSelection();
 
     const [lng, lat] = feature.geometry.coordinates;
     flyTo({ lat, lng, range: PROJECT_RANGE, tilt: PROJECT_TILT, heading: PROJECT_HEADING, durationMillis: 1300 });
   };
 
-  const selectScreenById = (screenId: string) => {
-    const entry = screenMarkersRef.current.get(screenId);
-    if (!entry) return;
-    stopTour();
-
-    // Clicking a screen belonging to a project other than the one currently
-    // focused switches project context first, so the panel/highlight stay
-    // consistent with whichever screen is actually selected.
-    const wantedKey = projectKey(entry.projectFeature);
-    const currentKey = selectedProject ? projectKey(selectedProject.feature) : null;
-    if (wantedKey !== currentKey) {
-      const projEntry = projectMarkersRef.current.get(wantedKey);
-      if (projEntry) selectProject(projEntry);
-    }
-
-    clearScreenSelection();
-    entry.pin.background = SCREEN_SELECTED_COLOR;
-    entry.pin.scale = SCREEN_SELECTED_SCALE;
-    selectedScreenMarkerRef.current = entry;
-    setSelectedScreen(entry.screen);
-    setViewLevel("screen");
-  };
-
-  // Draws one project marker plus every one of its screens, all at once —
-  // this is what makes clicking into a small-enough cluster immediately
-  // show real screen-level detail instead of just another marker to click.
-  const renderProjectWithScreens = (feature: ProjectFeature) => {
+  // Draws one project's own pin (plus its campaign-highlight overlay, if
+  // any) — never its screens, which the side panel lists instead.
+  const renderProjectPin = (feature: ProjectFeature): ProjectMarkerEntry | undefined => {
     const map = mapElRef.current;
     const maps3d = maps3dLibRef.current;
-    if (!map || !maps3d) return;
+    if (!map || !maps3d) return undefined;
 
     const [lng, lat] = feature.geometry.coordinates;
     const marker = new maps3d.Marker3DInteractiveElement({
@@ -731,140 +650,67 @@ export default function GoogleInventoryMap({
       highlightOverlaysRef.current.push(overlay);
     }
 
-    const { screens } = generateSyntheticScreens(feature);
-    for (const s of screens) {
-      const sMarker = new maps3d.Marker3DInteractiveElement({
-        position: { lat: s.latitude, lng: s.longitude, altitude: SCREEN_MARKER_ALTITUDE },
-        altitudeMode: MARKER_ALTITUDE_MODE,
-        extruded: true,
-        drawsWhenOccluded: true,
-      });
-      const sPin = makePin({ background: SCREEN_COLOR, scale: SCREEN_SCALE });
-      sMarker.appendChild(sPin);
-      sMarker.addEventListener("gmp-click", (e: Event) => {
-        e.stopPropagation();
-        selectScreenById(s.id);
-      });
-      map.appendChild(sMarker);
-      levelMarkersRef.current.push(sMarker);
-      screenMarkersRef.current.set(s.id, { marker: sMarker, pin: sPin, projectFeature: feature, screen: s });
-    }
+    return entry;
   };
 
-  // Clusters can never contain a campaign-highlighted property — the
-  // cluster index itself is built excluding them (see the city-data
-  // effect) — so cluster pins always use their plain style now; no
-  // per-cluster highlight check needed.
-  const renderLevel = (items: ReturnType<typeof toClusterOrPoint>[]) => {
+  // Every property is drawn as an individual pin, highlighted or not —
+  // nothing on this map ever bundles multiple properties behind a single
+  // cluster bubble a client would have to click through.
+  const renderLevel = (items: RenderItem[]) => {
     const map = mapElRef.current;
     const maps3d = maps3dLibRef.current;
     if (!map || !maps3d) return;
     clearLevelMarkers();
 
-    for (const item of items) {
-      if (item.kind === "cluster") {
-        const marker = new maps3d.Marker3DInteractiveElement({
-          position: { lat: item.latitude, lng: item.longitude, altitude: CLUSTER_MARKER_ALTITUDE },
-          altitudeMode: MARKER_ALTITUDE_MODE,
-          extruded: true,
-          drawsWhenOccluded: true,
-        });
-        const style = clusterPinStyle(item.pointCount);
-        const pin = makePin({ background: style.background, glyphText: String(item.pointCount), scale: style.scale });
-        marker.appendChild(pin);
-        marker.addEventListener("gmp-click", (e: Event) => {
-          e.stopPropagation();
-          handleClusterClick(item.id);
-        });
-        map.appendChild(marker);
-        levelMarkersRef.current.push(marker);
-      } else {
-        renderProjectWithScreens(item.feature);
-      }
-    }
+    for (const item of items) renderProjectPin(item.feature);
   };
 
-  const toPointItem = (f: ProjectFeature) => ({
-    kind: "point" as const,
+  const toPointItem = (f: ProjectFeature): RenderItem => ({
     longitude: f.geometry.coordinates[0],
     latitude: f.geometry.coordinates[1],
     feature: f,
   });
 
-  // A campaign's own shortlisted properties, as individual point items —
-  // drawn on top of whatever the (campaign-free) cluster index produces at
-  // every level, city view through cluster drill-down, so they're always
-  // visible and directly clickable, never one click away inside a cluster.
-  const highlightedProjectItems = () => {
+  // A campaign's own shortlisted properties, as individual point items.
+  const highlightedProjectItems = (): RenderItem[] => {
     if (!highlightedMediaSiteIds || highlightedMediaSiteIds.size === 0 || !data) return [];
     return data.features
       .filter((f) => f.properties.mediaSiteId != null && highlightedMediaSiteIds.has(f.properties.mediaSiteId))
-      .map(toPointItem);
+      .map((f) => toPointItem(f));
   };
 
-  // The city-level "rest of inventory" clusters — empty while the client
-  // has toggled Adonmo's own inventory off (see toggleInventory), leaving
-  // only their own shortlist on the map. `show` defaults to the current
-  // showInventory state, but toggleInventory needs to render against the
-  // *new* value before that state update has actually landed, hence the
-  // override param rather than always reading showInventory directly.
-  const cityLevelItems = (show: boolean = showInventory) => {
-    if (!show || !clusterIndexRef.current) return [];
-    return clusterIndexRef.current.getClusters(WORLD_BBOX, CITY_BIN_ZOOM).map(toClusterOrPoint);
+  // The rest of Adonmo's inventory — every other property in the city,
+  // each its own pin. Empty while the
+  // client has toggled it off via the legend, leaving only their own
+  // shortlist on the map. `show` defaults to the current showInventory
+  // state, but toggleInventory needs to render against the *new* value
+  // before that state update has actually landed, hence the override
+  // param rather than always reading showInventory directly.
+  const cityLevelItems = (show: boolean = showInventory): RenderItem[] => {
+    if (!show || !data) return [];
+    return data.features
+      .filter((f) => !(highlightedMediaSiteIds && f.properties.mediaSiteId != null && highlightedMediaSiteIds.has(f.properties.mediaSiteId)))
+      .map((f) => toPointItem(f));
   };
 
   // Client-facing legend toggle: show/hide the rest of Adonmo's inventory
   // without touching their own shortlisted properties, which stay visible
-  // either way. Resets to city level rather than preserving whatever
-  // drill-down state existed — a mid-cluster view stops making sense the
-  // moment the clusters it was drilled into disappear.
+  // either way.
   const toggleInventory = () => {
     const next = !showInventory;
     setShowInventory(next);
     stopTour();
     clearProjectHighlight();
-    clearScreenSelection();
     setSelectedProject(null);
     setSelectedScreen(null);
-    setSelectedCluster(null);
     setViewLevel("city");
     renderLevel([...highlightedProjectItems(), ...cityLevelItems(next)]);
   };
 
-  const handleClusterClick = (clusterId: number) => {
-    const index = clusterIndexRef.current;
-    if (!index) return;
-    stopTour();
-    // A campaign's properties were already excluded when this index was
-    // built, so leaves here are always ordinary (non-highlighted)
-    // inventory — no per-click filtering needed to keep them apart.
-    const leaves = getLeavesAsFeatures(index, clusterId);
-    const info = summarizeClusterLeaves(leaves);
-    setSelectedCluster({ info, leaves });
-    setSelectedProject(null);
-    setSelectedScreen(null);
-    setViewLevel("cluster");
-
-    const bbox = bboxOfPoints(leaves.map((f) => ({ lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] })));
-    if (bbox) {
-      flyToBbox(bbox, { tilt: CLUSTER_TILT, heading: CLUSTER_HEADING, rangeFactor: CLUSTER_RANGE_FACTOR, minRange: CLUSTER_MIN_RANGE, maxRange: CLUSTER_MAX_RANGE });
-    }
-
-    // Small enough — skip supercluster's nested sub-clusters entirely and
-    // go straight to every individual project + its screens. Otherwise
-    // drill one level at a time via supercluster's own children. Either
-    // way, the campaign's own properties are re-added on top — renderLevel
-    // clears everything first, and they need to stay visible/clickable
-    // regardless of which part of the rest of the inventory is on screen.
-    const rest = leaves.length <= EXPAND_LEAVES_THRESHOLD ? leaves.map(toPointItem) : index.getChildren(clusterId).map(toClusterOrPoint);
-    renderLevel([...highlightedProjectItems(), ...rest]);
-  };
-
-  // Once both the map and the city's cluster index are ready, draw the
-  // top-level clusters/projects (plus the campaign's own properties, always
-  // individually) and frame the view.
+  // Once both the map and the city's data are ready, draw every property
+  // (plus the campaign's own properties) and frame the view.
   useEffect(() => {
-    if (!mapReady || !data || !clusterIndexRef.current) return;
+    if (!mapReady || !data) return;
     renderLevel([...highlightedProjectItems(), ...cityLevelItems()]);
     flyToCity(data);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -874,16 +720,14 @@ export default function GoogleInventoryMap({
 
   const crumbs = useMemo(() => {
     const list: { label: string; level: ViewLevel }[] = [{ label: cityLabel, level: "city" }];
-    if (selectedCluster) list.push({ label: `${selectedCluster.info.pointCount} sites`, level: "cluster" });
     if (projectPanelInfo) list.push({ label: projectPanelInfo.name, level: "project" });
     if (selectedScreen) list.push({ label: selectedScreen.id, level: "screen" });
     return list;
-  }, [cityLabel, selectedCluster, projectPanelInfo, selectedScreen]);
+  }, [cityLabel, projectPanelInfo, selectedScreen]);
 
-  // Citywide campaign totals — stays constant across drill-down navigation
-  // (unlike the breadcrumb-scoped cluster/project stats below) so the
-  // headline "what does this campaign cover" number never disappears while
-  // exploring.
+  // Citywide campaign totals — stays constant across navigation (unlike
+  // the breadcrumb-scoped project stats below) so the headline "what does
+  // this campaign cover" number never disappears while exploring.
   const campaignSummary: CampaignSummary | null = useMemo(() => {
     if (!highlightedMediaSiteIds || highlightedMediaSiteIds.size === 0 || !data) return null;
     const matched = data.features.filter((f) => f.properties.mediaSiteId != null && highlightedMediaSiteIds.has(f.properties.mediaSiteId));
@@ -896,44 +740,21 @@ export default function GoogleInventoryMap({
       ? ({ kind: "screen", screen: selectedScreen, project: projectPanelInfo } as const)
       : viewLevel === "project" && projectPanelInfo
         ? ({ kind: "project", project: projectPanelInfo } as const)
-        : viewLevel === "cluster" && selectedCluster
-          ? ({ kind: "cluster", cluster: selectedCluster.info } as const)
-          : null;
+        : null;
 
   const goTo = (level: ViewLevel) => {
     stopTour();
     if (level === "city") {
       setSelectedProject(null);
       setSelectedScreen(null);
-      setSelectedCluster(null);
       setViewLevel("city");
       renderLevel([...highlightedProjectItems(), ...cityLevelItems()]);
       flyToCity(data);
       return;
     }
-    if (level === "cluster") {
-      // The cluster's own projects/screens are already on the map (they
-      // were drawn when the cluster was entered, and selecting a project
-      // never removes them) — this just clears the project/screen focus
-      // and flies back out, no need to redraw anything. selectedCluster's
-      // leaves are always ordinary inventory (campaign properties are
-      // excluded from the cluster index itself), so no highlight filtering
-      // is needed to frame them.
-      clearProjectHighlight();
-      clearScreenSelection();
-      setSelectedProject(null);
-      setSelectedScreen(null);
-      setViewLevel("cluster");
-      if (selectedCluster) {
-        const bbox = bboxOfPoints(selectedCluster.leaves.map((f) => ({ lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] })));
-        if (bbox) flyToBbox(bbox, { tilt: CLUSTER_TILT, heading: CLUSTER_HEADING, rangeFactor: CLUSTER_RANGE_FACTOR, minRange: CLUSTER_MIN_RANGE, maxRange: CLUSTER_MAX_RANGE, durationMillis: 1300 });
-      }
-      return;
-    }
     // "project"
     setSelectedScreen(null);
     setViewLevel("project");
-    clearScreenSelection();
   };
 
   return (
@@ -971,6 +792,7 @@ export default function GoogleInventoryMap({
           onStartTour={() => startTour(0)}
           onResumeTour={() => tourPause && startTour(tourPause.index)}
           onStopTour={stopTour}
+          clientName={clientName}
         />
       )}
       <MapLegend highlightLabel={highlightLabel} showInventory={showInventory} onToggleInventory={toggleInventory} />

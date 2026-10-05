@@ -5,7 +5,7 @@ import "./PropertyDetailPanel.css";
 
 type Tab = "screens" | "details" | "nearby";
 
-export default function PropertyDetailPanel({ feature }: { feature: ProjectFeature | null }) {
+export default function PropertyDetailPanel({ feature, onBack }: { feature: ProjectFeature | null; onBack: () => void }) {
   const [tab, setTab] = useState<Tab>("screens");
 
   const screens = useMemo(() => (feature ? generateSyntheticScreens(feature).screens : []), [feature]);
@@ -23,6 +23,10 @@ export default function PropertyDetailPanel({ feature }: { feature: ProjectFeatu
 
   return (
     <div className="pdp-panel">
+      <button type="button" className="pdp-back-all" onClick={onBack}>
+        ← Back to all properties
+      </button>
+
       <div className="pdp-photo">
         {p.visualLink ? (
           <a href={p.visualLink} target="_blank" rel="noreferrer" className="pdp-photo-link">

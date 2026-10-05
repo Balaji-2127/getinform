@@ -2,6 +2,11 @@ import { useEffect, useState, type ReactNode } from "react";
 import "./InspectorPanel.css";
 import type { SyntheticScreen } from "./syntheticScreens";
 
+// Despite the name, this isn't rendered as a UI "cluster" view anymore —
+// the map draws every property as its own pin now, never grouped behind a
+// cluster bubble. Kept only because GoogleInventoryMap's
+// summarizeClusterLeaves still uses this shape to aggregate a campaign's
+// shortlisted properties into one summary (CampaignBanner's stat row).
 export type ClusterInfo = {
   pointCount: number;
   totalScreens: number;
@@ -29,10 +34,9 @@ export type ProjectPanelInfo = {
   visualLink: string | null;
 };
 
-export type ViewLevel = "city" | "cluster" | "project" | "screen";
+export type ViewLevel = "city" | "project" | "screen";
 
 type Content =
-  | { kind: "cluster"; cluster: ClusterInfo }
   | { kind: "project"; project: ProjectPanelInfo }
   | { kind: "screen"; screen: SyntheticScreen; project: ProjectPanelInfo };
 
@@ -53,6 +57,10 @@ export default function InspectorPanel({
 
   return (
     <div className="inspector-panel">
+      <button type="button" className="inspector-back-all" onClick={onClose}>
+        ← Back to all properties
+      </button>
+
       {crumbs.length > 1 && (
         <nav className="inspector-breadcrumb" aria-label="Inventory drill-down path">
           {crumbs.map((c, i) => {
@@ -73,68 +81,11 @@ export default function InspectorPanel({
         </nav>
       )}
 
-      {content.kind === "cluster" && <ClusterView cluster={content.cluster} />}
       {content.kind === "project" && <ProjectView project={content.project} />}
       {content.kind === "screen" && (
         <ScreenView screen={content.screen} project={content.project} onNavigate={onNavigate} />
       )}
-
-      <button type="button" className="inspector-close" onClick={onClose} aria-label="Close inspector">
-        ×
-      </button>
     </div>
-  );
-}
-
-function ClusterView({ cluster }: { cluster: ClusterInfo }) {
-  return (
-    <>
-      <header className="inspector-header">
-        <h2>Cluster overview</h2>
-        <p className="inspector-sub">{cluster.pointCount} sites covered</p>
-      </header>
-
-      <div className="inspector-stats">
-        <Stat label="Total screens" value={cluster.totalScreens.toLocaleString()} />
-        <Stat label="Households" value={cluster.totalHouseholds.toLocaleString()} />
-        <Stat label="Impressions/mo" value={cluster.totalImpressions.toLocaleString()} />
-        <Stat label="Est. daily footfall" value={cluster.dailyFootfall.toLocaleString()} />
-        <Stat label="Ad budget/mo" value={`₹${cluster.totalAdBudget.toLocaleString()}`} wide />
-      </div>
-
-      <Section title="Localities covered">
-        {cluster.localities.length === 0 ? (
-          <Empty text="No locality data" />
-        ) : (
-          <ul className="inspector-list">
-            {cluster.localities.map((l) => (
-              <li key={l.name}>
-                <span>{l.name}</span>
-                <span className="inspector-count">{l.count}</span>
-              </li>
-            ))}
-            {cluster.moreLocalities > 0 && <li className="inspector-more">+{cluster.moreLocalities} more</li>}
-          </ul>
-        )}
-      </Section>
-
-      <Section title="Zones covered">
-        {cluster.zones.length === 0 ? (
-          <Empty text="No zone data" />
-        ) : (
-          <ul className="inspector-list">
-            {cluster.zones.map((z) => (
-              <li key={z.name}>
-                <span>{z.name}</span>
-                <span className="inspector-count">{z.count}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-
-      <p className="inspector-hint">Click an orange project marker to drill in.</p>
-    </>
   );
 }
 
@@ -194,11 +145,6 @@ function ProjectView({ project }: { project: ProjectPanelInfo }) {
           </ul>
         )}
       </Section>
-
-      <p className="inspector-hint">
-        Screen positions are illustrative — this dataset tracks a screen count per project, not individual
-        in-building placement.
-      </p>
     </>
   );
 }

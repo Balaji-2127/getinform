@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CITIES, loadCityScreens, type CityId, type ScreenFeatureCollection } from "../data/cities";
 import { loadMaps3d } from "../google/loadGoogleMaps";
-import { buildClusterIndex, getLeavesAsFeatures, toClusterOrPoint, WORLD_BBOX, type ProjectFeature } from "../google/clustering";
+import { type ProjectFeature } from "../google/clustering";
 import { bboxOfPoints, rangeForBbox, type Bbox } from "../google/cameraMath";
 import { ExpandIcon, FilterIcon, SearchIcon } from "./icons";
 import "./DashboardMap.css";
@@ -14,34 +14,26 @@ import "./DashboardMap.css";
 // bounded panel: no campaign context, no tour, selection is lifted to the
 // parent (CampaignsPage) instead of showing its own detail panel, since
 // the dashboard has its own purpose-built one matching the reference layout.
-const CITY_BIN_ZOOM = 10;
+//
+// Every property draws as its own individual pin — nothing here ever
+// bundles multiple properties behind a cluster bubble a rep would have to
+// click through (matches the same change made to GoogleInventoryMap).
+// There's no per-property screens tier in this map at all (unlike the
+// campaign map), so there's no lazy-loading concern: a city's full
+// inventory is just that many simple pins, which is cheap enough to draw
+// up front.
 const CITY_TILT = 45;
 const CITY_HEADING = 0;
 const CITY_RANGE_FACTOR = 0.85;
 const CITY_MIN_RANGE = 8000;
 const CITY_MAX_RANGE = 70000;
 
-const CLUSTER_TILT = 55;
-const CLUSTER_HEADING = -20;
-const CLUSTER_RANGE_FACTOR = 1.0;
-const CLUSTER_MIN_RANGE = 350;
-const CLUSTER_MAX_RANGE = 20000;
-
 const PROJECT_TILT = 58;
 const PROJECT_HEADING = 25;
 const PROJECT_RANGE = 420;
 
-const EXPAND_LEAVES_THRESHOLD = 60;
-
 const PROJECT_COLOR = "#f97316"; // Adonmo's own inventory, browsed generically — orange, matching the reference mockup's pin color, distinct from the client-facing map's blue/gray scheme (different context, different meaning).
 const PROJECT_SELECTED_COLOR = "#2563eb";
-const CLUSTER_COLOR = "#4338ca";
-
-function clusterStyle(pointCount: number): { background: string; scale: number } {
-  if (pointCount >= 100) return { background: "#312e81", scale: 1.4 };
-  if (pointCount >= 25) return { background: CLUSTER_COLOR, scale: 1.2 };
-  return { background: "#6366f1", scale: 1.05 };
-}
 
 type MarkerEntry = { marker: google.maps.maps3d.Marker3DInteractiveElement; pin: google.maps.marker.PinElement; feature: ProjectFeature };
 
@@ -67,7 +59,10 @@ export default function DashboardMap({
   const levelMarkersRef = useRef<google.maps.maps3d.Marker3DInteractiveElement[]>([]);
   const projectMarkersRef = useRef<globalThis.Map<string, MarkerEntry>>(new globalThis.Map());
   const selectedRef = useRef<MarkerEntry | null>(null);
-  const clusterIndexRef = useRef<ReturnType<typeof buildClusterIndex> | null>(null);
+  // The loaded city's own data, kept around so "back to all properties"
+  // (selectedMediaSiteId going back to null) can re-frame the camera on
+  // the whole city without having to reload it.
+  const cityDataRef = useRef<ScreenFeatureCollection | null>(null);
 
   const [mapReady, setMapReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -169,48 +164,18 @@ export default function DashboardMap({
     if (isSelected) selectedRef.current = entry;
   };
 
-  const renderLevel = (items: ReturnType<typeof toClusterOrPoint>[]) => {
+  const renderAllProjects = (features: ProjectFeature[]) => {
     const map = mapElRef.current;
     const maps3d = maps3dLibRef.current;
     if (!map || !maps3d) return;
     clearMarkers();
-    for (const item of items) {
-      if (item.kind === "cluster") {
-        const style = clusterStyle(item.pointCount);
-        const marker = new maps3d.Marker3DInteractiveElement({
-          position: { lat: item.latitude, lng: item.longitude, altitude: 90 },
-          altitudeMode: "RELATIVE_TO_GROUND" as google.maps.maps3d.AltitudeModeString,
-          extruded: true,
-          drawsWhenOccluded: true,
-        });
-        const pin = makePin(style.background, String(item.pointCount));
-        pin.scale = style.scale;
-        marker.appendChild(pin);
-        marker.addEventListener("gmp-click", (e: Event) => {
-          e.stopPropagation();
-          handleClusterClick(item.id);
-        });
-        map.appendChild(marker);
-        levelMarkersRef.current.push(marker);
-      } else {
-        renderProject(item.feature);
-      }
-    }
+    for (const feature of features) renderProject(feature);
   };
 
-  const handleClusterClick = (clusterId: number) => {
-    const index = clusterIndexRef.current;
-    if (!index) return;
-    const leaves = getLeavesAsFeatures(index, clusterId);
-    const bbox = bboxOfPoints(leaves.map((f) => ({ lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] })));
-    if (bbox) flyToBbox(bbox, { tilt: CLUSTER_TILT, heading: CLUSTER_HEADING, rangeFactor: CLUSTER_RANGE_FACTOR, minRange: CLUSTER_MIN_RANGE, maxRange: CLUSTER_MAX_RANGE });
-    const items = leaves.length <= EXPAND_LEAVES_THRESHOLD ? leaves.map((f) => toClusterOrPointFromFeature(f)) : index.getChildren(clusterId).map(toClusterOrPoint);
-    renderLevel(items);
+  const flyToCityBbox = (fc: ScreenFeatureCollection, durationMillis?: number) => {
+    const bbox = bboxOfPoints(fc.features.map((f) => ({ lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] })));
+    if (bbox) flyToBbox(bbox, { tilt: CITY_TILT, heading: CITY_HEADING, rangeFactor: CITY_RANGE_FACTOR, minRange: CITY_MIN_RANGE, maxRange: CITY_MAX_RANGE, durationMillis });
   };
-
-  function toClusterOrPointFromFeature(f: ProjectFeature): ReturnType<typeof toClusterOrPoint> {
-    return { kind: "point", longitude: f.geometry.coordinates[0], latitude: f.geometry.coordinates[1], feature: f };
-  }
 
   // ---- load city data ----------------------------------------------------
   useEffect(() => {
@@ -218,17 +183,31 @@ export default function DashboardMap({
     let cancelled = false;
     loadCityScreens(cityId).then((fc: ScreenFeatureCollection) => {
       if (cancelled || !mapElRef.current) return;
-      clusterIndexRef.current = buildClusterIndex(fc);
-      const items = clusterIndexRef.current.getClusters(WORLD_BBOX, CITY_BIN_ZOOM).map(toClusterOrPoint);
-      renderLevel(items);
-      const bbox = bboxOfPoints(fc.features.map((f) => ({ lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] })));
-      if (bbox) flyToBbox(bbox, { tilt: CITY_TILT, heading: CITY_HEADING, rangeFactor: CITY_RANGE_FACTOR, minRange: CITY_MIN_RANGE, maxRange: CITY_MAX_RANGE, durationMillis: 1500 });
+      cityDataRef.current = fc;
+      renderAllProjects(fc.features);
+      flyToCityBbox(fc, 1500);
     });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cityId, mapReady]);
+
+  // "Back to all properties" (PropertyDetailPanel's own button, lifted
+  // through InventoryPage's onBack) clears the parent's selection, which
+  // comes back down here as selectedMediaSiteId going to null — pick that
+  // up and fly the camera back out, same as the campaign map's equivalent.
+  // Guards itself: selectedRef.current is only set once something was
+  // actually selected, so this is a no-op on mount and on a direct
+  // property-to-property click (handled by selectFeature's own flyTo).
+  useEffect(() => {
+    if (selectedMediaSiteId !== null) return;
+    if (!selectedRef.current) return;
+    selectedRef.current.pin.background = PROJECT_COLOR;
+    selectedRef.current = null;
+    if (cityDataRef.current) flyToCityBbox(cityDataRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMediaSiteId]);
 
   return (
     <div className={"dm-panel" + (expanded ? " dm-panel-expanded" : "")}>

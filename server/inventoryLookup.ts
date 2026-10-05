@@ -9,7 +9,29 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCREENS_DIR = path.join(__dirname, "..", "src", "data", "screens");
 
-export const SUPPORTED_CITIES = ["bengaluru", "hyderabad", "mumbai", "ncr"] as const;
+export const SUPPORTED_CITIES = [
+  "bengaluru",
+  "hyderabad",
+  "mumbai",
+  "ncr",
+  "ahmedabad",
+  "bhuvaneshwar",
+  "chennai",
+  "coimbatore",
+  "indore",
+  "jaipur",
+  "kochi",
+  "kolkata",
+  "lucknow",
+  "pune",
+  "tirupati",
+  "chandigarh",
+  "kanpur",
+  "nellore",
+  "surat",
+  "vijaywada",
+  "vishakapatnam",
+] as const;
 export type CityId = (typeof SUPPORTED_CITIES)[number];
 
 type ScreenFeature = { properties: { mediaSiteId: string | null } };

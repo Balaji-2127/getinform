@@ -64,7 +64,7 @@ export default function InventoryPage() {
           expanded={expanded}
           onToggleExpanded={() => setExpanded((v) => !v)}
         />
-        <PropertyDetailPanel feature={selected} />
+        <PropertyDetailPanel feature={selected} onBack={() => setSelected(null)} />
       </div>
     </div>
   );
