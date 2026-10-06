@@ -79,6 +79,15 @@ export function getCampaign(id: string): CampaignRecord | null {
   return row ? rowToRecord(row) : null;
 }
 
+// Used by the "edit shortlist" flow (add/remove properties on an existing
+// campaign) — replaces the whole selections map rather than patching one
+// city at a time, since the caller already has the full updated shape.
+export function updateCampaignSelections(id: string, selections: CampaignSelections): CampaignRecord | null {
+  const result = db.prepare("UPDATE campaigns SET selections = ? WHERE id = ?").run(JSON.stringify(selections), id);
+  if (result.changes === 0) return null;
+  return getCampaign(id);
+}
+
 export function listCampaigns(): (Omit<CampaignRecord, "selections"> & { counts: Record<string, number> })[] {
   const rows = db.prepare("SELECT * FROM campaigns ORDER BY created_at DESC").all() as CampaignRow[];
   return rows.map((row) => {

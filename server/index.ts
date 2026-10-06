@@ -7,6 +7,7 @@ import authRouter from "./routes/auth.js";
 import campaignsRouter from "./routes/campaigns.js";
 import brandingRouter from "./routes/branding.js";
 import propertyImagesRouter from "./routes/propertyImages.js";
+import searchRouter from "./routes/search.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -39,6 +40,7 @@ app.use("/api", authRouter);
 app.use("/api/campaigns", campaignsRouter);
 app.use("/api", brandingRouter);
 app.use("/api", propertyImagesRouter);
+app.use("/api", searchRouter);
 
 if (isProduction) {
   // Single-process deploy: this same server also serves the built SPA, and

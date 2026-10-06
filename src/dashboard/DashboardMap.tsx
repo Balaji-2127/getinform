@@ -44,6 +44,7 @@ export default function DashboardMap({
   onSelectProject,
   expanded,
   onToggleExpanded,
+  focusMediaSiteId,
 }: {
   cityId: CityId;
   onCityChange: (id: CityId) => void;
@@ -51,6 +52,13 @@ export default function DashboardMap({
   onSelectProject: (feature: ProjectFeature) => void;
   expanded: boolean;
   onToggleExpanded: () => void;
+  // Set by the dashboard's global search when a rep picks a property
+  // result — selects and flies to it, same as clicking its pin directly.
+  // Works whether that property's city is already loaded (looked up in
+  // the already-rendered markers) or needs a city switch first (the
+  // lookup inside the city-data effect below catches that case once the
+  // new city's markers exist).
+  focusMediaSiteId?: string | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapElRef = useRef<google.maps.maps3d.Map3DElement | null>(null);
@@ -185,6 +193,13 @@ export default function DashboardMap({
       if (cancelled || !mapElRef.current) return;
       cityDataRef.current = fc;
       renderAllProjects(fc.features);
+      if (focusMediaSiteId) {
+        const entry = projectMarkersRef.current.get(focusMediaSiteId);
+        if (entry) {
+          selectFeature(entry);
+          return;
+        }
+      }
       flyToCityBbox(fc, 1500);
     });
     return () => {
@@ -192,6 +207,16 @@ export default function DashboardMap({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cityId, mapReady]);
+
+  // Same-city jump: the search result's city matches what's already
+  // loaded, so its marker already exists — just select it directly
+  // without waiting on (or forcing) a reload.
+  useEffect(() => {
+    if (!focusMediaSiteId) return;
+    const entry = projectMarkersRef.current.get(focusMediaSiteId);
+    if (entry) selectFeature(entry);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusMediaSiteId]);
 
   // "Back to all properties" (PropertyDetailPanel's own button, lifted
   // through InventoryPage's onBack) clears the parent's selection, which

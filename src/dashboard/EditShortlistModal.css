@@ -1,0 +1,255 @@
+.esm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(17, 24, 39, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.esm-card {
+  width: min(560px, 100%);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+  padding: 20px;
+}
+
+.esm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.esm-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.esm-close {
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.esm-close:hover {
+  background: #e5e7eb;
+}
+
+.esm-sub {
+  margin: 4px 0 14px;
+  font-size: 12.5px;
+  color: #6b7280;
+}
+
+.esm-add {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.esm-add input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.esm-add input:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.esm-add-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  padding: 6px;
+}
+
+.esm-add-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 6px;
+}
+
+.esm-add-row:hover {
+  background: #f9fafb;
+}
+
+.esm-add-row > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.esm-add-btn {
+  flex-shrink: 0;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.esm-add-btn:hover:not(:disabled) {
+  background: #e0e7ff;
+}
+
+.esm-add-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.esm-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 10px;
+}
+
+.esm-city-group {
+  margin-bottom: 12px;
+}
+
+.esm-city-title {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.esm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 4px;
+}
+
+.esm-row > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.esm-row-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.esm-row-sub {
+  font-size: 11px;
+  color: #9ca3af;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.esm-remove-btn {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.esm-remove-btn:hover {
+  text-decoration: underline;
+}
+
+.esm-empty {
+  margin: 0;
+  padding: 10px 4px;
+  font-size: 12.5px;
+  color: #9ca3af;
+}
+
+.esm-error {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: #b91c1c;
+}
+
+.esm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.esm-cancel-btn {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #374151;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.esm-cancel-btn:hover {
+  background: #f9fafb;
+}
+
+.esm-save-btn {
+  border: none;
+  background: #4338ca;
+  color: #ffffff;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.esm-save-btn:hover:not(:disabled) {
+  background: #3730a3;
+}
+
+.esm-save-btn:disabled {
+  background: #c7d2fe;
+  cursor: default;
+}

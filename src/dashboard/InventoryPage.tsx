@@ -9,13 +9,40 @@ import "./CampaignsPage.css";
 // be what the Campaigns page showed by default, but Campaigns is meant to
 // show a specific uploaded campaign's results, not the whole inventory. It
 // lives here instead, where "just exploring what we have" actually belongs.
-export default function InventoryPage() {
-  const [cityId, setCityId] = useState<CityId>("hyderabad");
+export default function InventoryPage({
+  focusProperty,
+  onFocusHandled,
+}: {
+  // Set by the dashboard's global search when a rep picks a property
+  // result from a city other than whatever's currently showing — switches
+  // to it here, then DashboardMap itself picks up the same id to select
+  // and fly to it once that city's loaded.
+  focusProperty?: { cityId: CityId; mediaSiteId: string } | null;
+  onFocusHandled?: () => void;
+}) {
+  const [cityId, setCityId] = useState<CityId>(focusProperty?.cityId ?? "hyderabad");
   const [selected, setSelected] = useState<ProjectFeature | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [totals, setTotals] = useState<{ properties: number; screens: number; households: number; budget: number } | null>(null);
+  // A local copy of what to focus, independent of the parent's own
+  // focusProperty lifecycle (which gets cleared via onFocusHandled right
+  // after this fires) — DashboardMap reads this one, so it isn't affected
+  // by exactly when the parent's clear-after-use update lands.
+  const [pendingFocusId, setPendingFocusId] = useState<string | null>(focusProperty?.mediaSiteId ?? null);
 
   const cityLabel = CITIES.find((c) => c.id === cityId)?.label ?? cityId;
+
+  // A new focus target switches to its city — harmless no-op re-set if
+  // already there — and hands off to DashboardMap's own focusMediaSiteId
+  // prop below to actually select it. onFocusHandled clears the parent's
+  // state so revisiting this tab later doesn't re-trigger the same jump.
+  useEffect(() => {
+    if (!focusProperty) return;
+    setCityId(focusProperty.cityId);
+    setPendingFocusId(focusProperty.mediaSiteId);
+    onFocusHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusProperty]);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +90,7 @@ export default function InventoryPage() {
           onSelectProject={setSelected}
           expanded={expanded}
           onToggleExpanded={() => setExpanded((v) => !v)}
+          focusMediaSiteId={pendingFocusId}
         />
         <PropertyDetailPanel feature={selected} onBack={() => setSelected(null)} />
       </div>

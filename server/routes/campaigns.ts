@@ -4,7 +4,8 @@ import ExcelJS from "exceljs";
 import { requireAuth } from "./auth.js";
 import { getKnownMediaSiteIds, type CityId } from "../inventoryLookup.js";
 import { SHEET_NAME_TO_CITY } from "../sheetMapping.js";
-import { insertCampaign, getCampaign, listCampaigns, type CampaignSelections } from "../db.js";
+import { insertCampaign, getCampaign, listCampaigns, updateCampaignSelections, type CampaignSelections } from "../db.js";
+import { SUPPORTED_CITIES } from "../inventoryLookup.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -136,6 +137,58 @@ router.get<{ id: string }>("/:id", (req, res) => {
     return;
   }
   res.json({ clientName: record.clientName, campaignName: record.campaignName, selections: record.selections });
+});
+
+// Reuses an existing campaign's shortlist as the starting point for a new
+// one — same selections, new client/campaign name. A rep running a
+// similar campaign for a new client (or a repeat for the same one)
+// doesn't have to re-upload or re-pick a sheet from scratch.
+router.post<{ id: string }>("/:id/duplicate", requireAuth, (req, res) => {
+  const source = getCampaign(req.params.id);
+  if (!source) {
+    res.status(404).json({ error: "Campaign not found" });
+    return;
+  }
+  const clientName = typeof req.body?.clientName === "string" ? req.body.clientName.trim() : "";
+  const campaignName = typeof req.body?.campaignName === "string" ? req.body.campaignName.trim() : "";
+  if (!clientName || !campaignName) {
+    res.status(400).json({ error: "Client name and campaign name are required" });
+    return;
+  }
+  const record = insertCampaign({ clientName, campaignName, selections: source.selections });
+  res.json({ campaignId: record.id, shareUrl: `/campaign/${record.id}` });
+});
+
+// Replaces a campaign's shortlist wholesale (the "edit shortlist" flow —
+// add/remove properties without re-uploading a sheet). Each city's id
+// list is filtered down to that city's own known inventory, and unknown
+// city keys are dropped outright — defensive since this is a client-
+// supplied body, not something the server generated itself.
+router.put<{ id: string }>("/:id/selections", requireAuth, (req, res) => {
+  const existing = getCampaign(req.params.id);
+  if (!existing) {
+    res.status(404).json({ error: "Campaign not found" });
+    return;
+  }
+  const body = req.body?.selections;
+  if (!body || typeof body !== "object") {
+    res.status(400).json({ error: "Missing selections" });
+    return;
+  }
+  const cleaned: CampaignSelections = {};
+  for (const cityId of SUPPORTED_CITIES) {
+    const ids = body[cityId];
+    if (!Array.isArray(ids)) continue;
+    const known = getKnownMediaSiteIds(cityId);
+    const kept = ids.filter((id): id is string => typeof id === "string" && known.has(id));
+    if (kept.length > 0) cleaned[cityId] = kept;
+  }
+  const record = updateCampaignSelections(req.params.id, cleaned);
+  if (!record) {
+    res.status(404).json({ error: "Campaign not found" });
+    return;
+  }
+  res.json({ selections: record.selections });
 });
 
 export default router;

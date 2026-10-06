@@ -7,6 +7,8 @@ import ClientsPage from "./ClientsPage";
 import InsightsPage from "./InsightsPage";
 import ReportsPage from "./ReportsPage";
 import ComingSoon from "./ComingSoon";
+import GlobalSearch from "./GlobalSearch";
+import type { CityId } from "../data/cities";
 import {
   AiIcon,
   AreasIcon,
@@ -19,7 +21,6 @@ import {
   PlusIcon,
   RecentIcon,
   ReportsIcon,
-  SearchIcon,
   ShortlistIcon,
   SidebarCollapseIcon,
 } from "./icons";
@@ -113,6 +114,15 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
     setSection("campaigns");
   };
 
+  // Global search's property results jump here — switches to Inventory
+  // and hands the target off to InventoryPage, which switches city (if
+  // needed) and selects it on the map.
+  const [focusProperty, setFocusProperty] = useState<{ cityId: CityId; mediaSiteId: string } | null>(null);
+  const handleOpenProperty = (cityId: CityId, mediaSiteId: string) => {
+    setFocusProperty({ cityId, mediaSiteId });
+    setSection("inventory");
+  };
+
   return (
     <div className="dash-shell">
       <aside className={"dash-sidebar" + (collapsed ? " is-collapsed" : "")}>
@@ -173,11 +183,7 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
 
       <div className="dash-main">
         <header className="dash-topbar">
-          <div className="dash-search-bar">
-            <SearchIcon size={15} />
-            <span>Search properties, localities, clients, or keywords…</span>
-            <span className="dash-kbd">Ctrl K</span>
-          </div>
+          <GlobalSearch onOpenCampaign={handleCampaignCreated} onOpenProperty={handleOpenProperty} />
           <nav className="dash-toptabs">
             {NAV_ITEMS.slice(0, 5).map((item) => (
               <button key={item.id} type="button" className={"dash-toptab" + (section === item.id ? " is-active" : "")} onClick={() => setSection(item.id)}>
@@ -195,8 +201,10 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
 
         <div className="dash-content">
           {section === "dashboard" && <DashboardHome onNavigate={setSection} onOpenCampaign={handleCampaignCreated} />}
-          {section === "campaigns" && <CampaignsPage activeCampaignId={activeCampaignId} onGoUpload={() => setSection("upload")} />}
-          {section === "inventory" && <InventoryPage />}
+          {section === "campaigns" && (
+            <CampaignsPage activeCampaignId={activeCampaignId} onGoUpload={() => setSection("upload")} onCampaignCreated={handleCampaignCreated} />
+          )}
+          {section === "inventory" && <InventoryPage focusProperty={focusProperty} onFocusHandled={() => setFocusProperty(null)} />}
           {section === "clients" && <ClientsPage onOpenCampaign={handleCampaignCreated} />}
           {section === "insights" && <InsightsPage />}
           {section === "reports" && <ReportsPage onOpenCampaign={handleCampaignCreated} />}

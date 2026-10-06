@@ -1,0 +1,120 @@
+.gs-root {
+  position: relative;
+  flex: 1;
+  max-width: 360px;
+}
+
+.gs-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #9ca3af;
+  font-size: 12.5px;
+  background: #ffffff;
+}
+
+.gs-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 12.5px;
+  color: #111827;
+  background: transparent;
+  font-family: inherit;
+}
+
+.gs-bar input::placeholder {
+  color: #9ca3af;
+}
+
+.gs-kbd {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.gs-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(420px, 90vw);
+  max-height: 60vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
+  z-index: 40;
+  padding: 8px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.gs-empty {
+  margin: 0;
+  padding: 10px 8px;
+  font-size: 12.5px;
+  color: #9ca3af;
+}
+
+.gs-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.gs-group + .gs-group {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.gs-group-title {
+  padding: 4px 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.gs-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 7px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.gs-result:hover {
+  background: #f3f4f6;
+}
+
+.gs-result-main {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.gs-result-sub {
+  font-size: 11px;
+  color: #9ca3af;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}

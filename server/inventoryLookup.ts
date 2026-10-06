@@ -34,28 +34,56 @@ export const SUPPORTED_CITIES = [
 ] as const;
 export type CityId = (typeof SUPPORTED_CITIES)[number];
 
-type ScreenFeature = { properties: { mediaSiteId: string | null } };
+export type ScreenFeature = {
+  geometry: { coordinates: [number, number] };
+  properties: {
+    zone: string | null;
+    locality: string | null;
+    name: string | null;
+    pinCode: string | number | null;
+    priceCr: number | null;
+    screenSize: string | null;
+    visualLink: string | null;
+    screens: number | null;
+    households: number | null;
+    impressionsPerMonth: number | null;
+    monthlyAdBudget: number | null;
+    mediaSiteId: string | null;
+    buildingAge: number | null;
+    propertyType: string | null;
+  };
+};
 type ScreenFeatureCollection = { features: ScreenFeature[] };
 
-function loadCityMediaSiteIds(cityId: CityId): Set<string> {
+function loadCityFeaturesFromDisk(cityId: CityId): ScreenFeature[] {
   const raw = fs.readFileSync(path.join(SCREENS_DIR, `${cityId}.json`), "utf-8");
-  const fc = JSON.parse(raw) as ScreenFeatureCollection;
-  const ids = new Set<string>();
-  for (const f of fc.features) {
-    if (f.properties.mediaSiteId) ids.add(f.properties.mediaSiteId);
-  }
-  return ids;
+  return (JSON.parse(raw) as ScreenFeatureCollection).features;
 }
 
-const cache = new Map<CityId, Set<string>>();
+const featureCache = new Map<CityId, ScreenFeature[]>();
+
+// Every property in a city, cached after first read since these files
+// don't change while the server is running. Used by search (across every
+// city) and by the campaign PDF export (full property details for a
+// specific campaign's own shortlisted ids).
+export function getCityFeatures(cityId: CityId): ScreenFeature[] {
+  let features = featureCache.get(cityId);
+  if (!features) {
+    features = loadCityFeaturesFromDisk(cityId);
+    featureCache.set(cityId, features);
+  }
+  return features;
+}
+
+const idCache = new Map<CityId, Set<string>>();
 
 // Master inventory IDs for a city, cached after first read since these files
 // don't change while the server is running.
 export function getKnownMediaSiteIds(cityId: CityId): Set<string> {
-  let ids = cache.get(cityId);
+  let ids = idCache.get(cityId);
   if (!ids) {
-    ids = loadCityMediaSiteIds(cityId);
-    cache.set(cityId, ids);
+    ids = new Set(getCityFeatures(cityId).map((f) => f.properties.mediaSiteId).filter((id): id is string => Boolean(id)));
+    idCache.set(cityId, ids);
   }
   return ids;
 }

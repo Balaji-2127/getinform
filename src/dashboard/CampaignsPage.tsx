@@ -3,6 +3,8 @@ import MapExperience from "../MapExperience";
 import ClientLogo from "./ClientLogo";
 import { ExpandIcon } from "./icons";
 import { CITIES, type CityId } from "../data/cities";
+import EditShortlistModal from "./EditShortlistModal";
+import DuplicateCampaignModal from "./DuplicateCampaignModal";
 import "./CampaignsPage.css";
 
 type CampaignResponse = { clientName: string; campaignName: string; selections: Record<string, string[]> };
@@ -27,13 +29,21 @@ function firstCityWithSelection(selections: Record<string, string[]>): CityId {
 export default function CampaignsPage({
   activeCampaignId,
   onGoUpload,
+  onCampaignCreated,
 }: {
   activeCampaignId: string | null;
   onGoUpload: () => void;
+  // Fired after "Duplicate campaign" creates a new one, so the dashboard
+  // can switch straight to it (same callback every other creation path —
+  // upload, past-campaign "Open →" — already uses).
+  onCampaignCreated: (campaignId: string) => void;
 }) {
   const [state, setState] = useState<
     { status: "idle" } | { status: "loading" } | { status: "error"; message: string } | { status: "ready"; data: CampaignResponse }
   >({ status: "idle" });
+  const [showEdit, setShowEdit] = useState(false);
+  const [showDuplicate, setShowDuplicate] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   // The no-login, full-screen link a client opens to see just their own
   // shortlisted properties (ClientCampaignView, via App.tsx's /campaign/:id
@@ -109,6 +119,33 @@ export default function CampaignsPage({
         </div>
         {state.status === "ready" && (
           <div className="cpg-header-actions-group">
+            <button type="button" className="cpg-copy-link-btn" onClick={() => setShowEdit(true)}>
+              ✎ Edit shortlist
+            </button>
+            <button type="button" className="cpg-copy-link-btn" onClick={() => setShowDuplicate(true)}>
+              ⧉ Duplicate
+            </button>
+            <button
+              type="button"
+              className="cpg-copy-link-btn"
+              disabled={pdfBusy}
+              onClick={async () => {
+                if (state.status !== "ready") return;
+                setPdfBusy(true);
+                try {
+                  // Dynamic import: jsPDF (and the html2canvas it pulls in
+                  // unconditionally, unused here) is sizeable — loading it
+                  // only when someone actually clicks this button keeps it
+                  // out of the main bundle every other page pays for.
+                  const { downloadCampaignPdf } = await import("./campaignPdf");
+                  await downloadCampaignPdf(state.data.clientName, state.data.campaignName, state.data.selections);
+                } finally {
+                  setPdfBusy(false);
+                }
+              }}
+            >
+              {pdfBusy ? "Preparing…" : "⬇ Download PDF"}
+            </button>
             <button
               type="button"
               className="cpg-copy-link-btn"
@@ -176,6 +213,30 @@ export default function CampaignsPage({
             bannerPortalTarget={bannerSlot}
           />
         </div>
+      )}
+
+      {showEdit && state.status === "ready" && activeCampaignId && (
+        <EditShortlistModal
+          campaignId={activeCampaignId}
+          initialSelections={state.data.selections}
+          onClose={() => setShowEdit(false)}
+          onSaved={(selections) => {
+            setState({ status: "ready", data: { ...state.data, selections } });
+            setShowEdit(false);
+          }}
+        />
+      )}
+
+      {showDuplicate && state.status === "ready" && activeCampaignId && (
+        <DuplicateCampaignModal
+          sourceCampaignId={activeCampaignId}
+          defaultClientName={state.data.clientName}
+          onClose={() => setShowDuplicate(false)}
+          onDuplicated={(campaignId) => {
+            setShowDuplicate(false);
+            onCampaignCreated(campaignId);
+          }}
+        />
       )}
     </div>
   );
