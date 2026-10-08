@@ -144,27 +144,32 @@ const PROJECT_SELECTED_BASE_SCALE = 1.3;
 // Campaign-highlight styling: once a campaign context is active (a sales
 // upload's shortlist is loaded), every project pin either belongs to the
 // campaign — blue, pulses harder, drawn noticeably bigger — or doesn't —
-// a light, muted gray, smaller, no pulse. The client's own shortlist is
-// what should visually dominate the map; the rest of Adonmo's inventory
-// is there for context, not to compete with it, so it deliberately
-// recedes instead of outweighing it. See CAMPAIGN_HIGHLIGHT_SELECTED_COLOR
-// below for why selecting a pin doesn't just snap it to one shared
-// "selected" blue regardless of which group it started in.
+// smaller, no pulse, and (see CAMPAIGN_DIM_COLOR) a deliberately quieter
+// color. The client's own shortlist is what should visually dominate the
+// map; the rest of Adonmo's inventory is there for context, not to
+// compete with it, so it deliberately recedes instead of outweighing it.
+// See CAMPAIGN_HIGHLIGHT_SELECTED_COLOR below for why selecting a pin
+// doesn't just snap it to one shared "selected" blue regardless of which
+// group it started in.
 const CAMPAIGN_HIGHLIGHT_COLOR = "#2563eb";
 const CAMPAIGN_HIGHLIGHT_BASE_SCALE = 1.5;
-const CAMPAIGN_DIM_COLOR = "#9ca3af";
+// Went gray (#9ca3af) -> darker gray (#71717a) -> orange (#f97316) ->
+// bright green (#4ade80), settling on a light, muted army/olive green:
+// still clearly its own hue (nowhere near CAMPAIGN_HIGHLIGHT_COLOR's
+// blue below), softer and less saturated than the bright green attempt.
+const CAMPAIGN_DIM_COLOR = "#9aab7a";
 const CAMPAIGN_DIM_BASE_SCALE = 0.8;
 // Selecting a property used to always snap its pin to one universal
-// "selected" sky blue (PROJECT_SELECTED_COLOR) — which, for a dim/grey
+// "selected" sky blue (PROJECT_SELECTED_COLOR) — which, for a dim/green
 // (ordinary inventory, not targeted) property, looked exactly like the
 // "this is yours" campaign-highlight blue once clicked. A client clicking
 // around Adonmo's general inventory would see it turn blue and reasonably
 // think it had just become part of their shortlist. Selected state now
 // stays within whichever color family the pin already belonged to —
-// blue gets a deeper blue, grey gets a deeper grey — so blue always and
-// only means "targeted for you", full stop, selected or not.
+// blue gets a deeper blue, green gets a deeper green — so blue always
+// and only means "targeted for you", full stop, selected or not.
 const CAMPAIGN_HIGHLIGHT_SELECTED_COLOR = "#1e3a8a";
-const CAMPAIGN_DIM_SELECTED_COLOR = "#4b5563";
+const CAMPAIGN_DIM_SELECTED_COLOR = "#6b7a4f";
 
 // Google's 3D map tiles are baked into their own basemap and aren't exposed
 // as an editable/selectable layer through any public API — there's no way

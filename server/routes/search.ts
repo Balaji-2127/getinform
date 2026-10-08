@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { requireAuth } from "./auth.js";
-import { listCampaigns } from "../db.js";
+import { listCampaigns, recordSearch, listRecentSearches } from "../db.js";
 import { SUPPORTED_CITIES, getCityFeatures } from "../inventoryLookup.js";
 
 const router = Router();
@@ -41,6 +41,36 @@ router.get("/search", requireAuth, (req: Request, res: Response) => {
   }
 
   res.json({ campaigns, properties });
+});
+
+// Logs a search *result the rep actually clicked* — called once, right
+// when GlobalSearch opens that result, not on every keystroke. Backs the
+// sidebar's "Recent Searches", a real log of what people went looking
+// for and found rather than a placeholder.
+router.post("/search-history", requireAuth, (req: Request, res: Response) => {
+  const { query, resultType, resultLabel, resultSub, cityId, targetId } = req.body ?? {};
+  if (
+    typeof query !== "string" ||
+    (resultType !== "campaign" && resultType !== "property") ||
+    typeof resultLabel !== "string" ||
+    typeof targetId !== "string"
+  ) {
+    res.status(400).json({ error: "Invalid search history entry" });
+    return;
+  }
+  const entry = recordSearch({
+    query,
+    resultType,
+    resultLabel,
+    resultSub: typeof resultSub === "string" ? resultSub : null,
+    cityId: typeof cityId === "string" ? cityId : null,
+    targetId,
+  });
+  res.json(entry);
+});
+
+router.get("/search-history", requireAuth, (_req: Request, res: Response) => {
+  res.json(listRecentSearches());
 });
 
 export default router;

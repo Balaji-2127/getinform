@@ -16,7 +16,14 @@
   border-right: 1px solid #e5e7eb;
   padding: 18px 14px;
   transition: width 0.15s ease;
-  overflow: hidden;
+  /* Was `overflow: hidden` (both axes) — only ever needed to clip the nav
+     labels horizontally during the collapse/expand width transition, but
+     it also silently blocked vertical scrolling. On a shorter window,
+     content below the fold (the "Upload campaign sheet" button, the
+     bottom of "Saved") became genuinely unreachable — no scrollbar, no
+     scroll, nothing. */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .dash-sidebar.is-collapsed {

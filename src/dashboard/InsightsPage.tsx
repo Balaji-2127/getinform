@@ -3,18 +3,48 @@ import { computeInsights, type Insights } from "./insightsData";
 import "./CampaignsPage.css";
 import "./InsightsPage.css";
 
+type SavedArea = { cityId: string; locality: string };
+
 export default function InsightsPage() {
   const [data, setData] = useState<Insights | null>(null);
+  // Which localities are already starred ("My Areas") — a plain Set of
+  // "cityId::locality" keys, loaded once so each row's star can render
+  // filled/empty immediately instead of flashing unstarred first.
+  const [saved, setSaved] = useState<Set<string> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     computeInsights().then((result) => {
       if (!cancelled) setData(result);
     });
+    fetch("/api/saved-areas")
+      .then((r) => (r.ok ? (r.json() as Promise<SavedArea[]>) : []))
+      .then((areas) => {
+        if (!cancelled) setSaved(new Set(areas.map((a) => `${a.cityId}::${a.locality}`)));
+      })
+      .catch(() => {
+        if (!cancelled) setSaved(new Set());
+      });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const toggleSaved = (cityId: string, locality: string) => {
+    const key = `${cityId}::${locality}`;
+    const isSaved = saved?.has(key) ?? false;
+    setSaved((prev) => {
+      const next = new Set(prev);
+      if (isSaved) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+    fetch("/api/saved-areas", {
+      method: isSaved ? "DELETE" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cityId, locality }),
+    }).catch(() => {});
+  };
 
   const maxCityScreens = data ? Math.max(...data.cities.map((c) => c.screens), 1) : 1;
   const maxLocality = data ? Math.max(...data.topLocalities.map((r) => r.value), 1) : 1;
@@ -59,7 +89,16 @@ export default function InsightsPage() {
               {data.topLocalities.length === 0 ? (
                 <p className="insights-empty">No locality data available.</p>
               ) : (
-                data.topLocalities.map((r) => <BarRow key={r.label} label={r.label} value={r.value} max={maxLocality} />)
+                data.topLocalities.map((r) => (
+                  <BarRow
+                    key={r.label}
+                    label={r.label}
+                    value={r.value}
+                    max={maxLocality}
+                    starred={saved?.has(`${r.cityId}::${r.locality}`) ?? false}
+                    onToggleStar={() => toggleSaved(r.cityId, r.locality)}
+                  />
+                ))
               )}
             </Panel>
 
@@ -105,18 +144,37 @@ function BarRow({
   max,
   sub,
   color = "indigo",
+  starred,
+  onToggleStar,
 }: {
   label: string;
   value: number;
   max: number;
   sub?: string;
   color?: "indigo" | "orange";
+  // Only the locality panel passes these — "My Areas" starring. Omitted
+  // entirely for the city/screen-size panels, which aren't locality rows.
+  starred?: boolean;
+  onToggleStar?: () => void;
 }) {
   const pct = Math.max(4, Math.round((value / max) * 100));
   return (
     <div className="insights-bar-row">
       <div className="insights-bar-label">
-        <span>{label}</span>
+        <span className="insights-bar-label-text">
+          {onToggleStar && (
+            <button
+              type="button"
+              className={"insights-star-btn" + (starred ? " is-starred" : "")}
+              onClick={onToggleStar}
+              title={starred ? "Remove from My Areas" : "Save to My Areas"}
+              aria-pressed={starred}
+            >
+              {starred ? "★" : "☆"}
+            </button>
+          )}
+          <span>{label}</span>
+        </span>
         <span className="insights-bar-value">
           {value.toLocaleString()}
           {sub ? <span className="insights-bar-sub"> · {sub}</span> : null}

@@ -1,0 +1,87 @@
+.mya-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.mya-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mya-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mya-card-head > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mya-card-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mya-card-sub {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.mya-remove-btn {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: #f59e0b;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mya-remove-btn:hover {
+  color: #d97706;
+}
+
+.mya-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mya-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: #f9fafb;
+  border: 1px solid #eef2ff;
+  border-radius: 8px;
+}
+
+.mya-stat-value {
+  font-size: 14px;
+  font-weight: 800;
+  color: #3730a3;
+  font-variant-numeric: tabular-nums;
+}
+
+.mya-stat-label {
+  font-size: 10px;
+  color: #9ca3af;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}

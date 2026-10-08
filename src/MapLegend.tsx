@@ -31,10 +31,6 @@ export default function MapLegend({
         <span>Adonmo inventory</span>
         <span className="map-legend-toggle-state">{showInventory ? "Shown" : "Hidden"}</span>
       </button>
-      <div className="map-legend-row">
-        <span className="map-legend-dot map-legend-dot-selected" />
-        <span>Currently open</span>
-      </div>
       <p className="map-legend-note">Google Maps 3D tiles (alpha) — not a production Google Maps feature yet.</p>
     </div>
   );

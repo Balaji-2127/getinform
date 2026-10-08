@@ -23,7 +23,7 @@ export default class ErrorBoundary extends Component<{ children: ReactNode }, { 
             justifyContent: "center",
             background: "#000000",
             color: "#ffffff",
-            fontFamily: "sans-serif",
+            fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
           }}
         >
           Something went wrong. Please refresh the page.

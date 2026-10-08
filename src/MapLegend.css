@@ -30,22 +30,25 @@
 }
 
 .map-legend-dot-default {
-  background: #9ca3af;
+  /* Matches CAMPAIGN_DIM_COLOR in GoogleInventoryMap.tsx — keep these two in sync. */
+  background: #9aab7a;
 }
 
 .map-legend-dot-highlight {
   background: #2563eb;
 }
 
-.map-legend-dot-selected {
-  background: #0ea5e9;
-}
-
 .map-legend-row-toggle {
   width: 100%;
   border: none;
   background: none;
-  font: inherit;
+  /* font-family only — not the `font` shorthand. That shorthand resets
+     font-size/weight/line-height to "inherit" too, which quietly
+     overrode .map-legend-row's own 11.5px/600 for this row alone (same
+     specificity, this rule just comes later in the file), so the toggle
+     button's text rendered in the browser's default button font instead
+     of matching the row above it. */
+  font-family: inherit;
   text-align: left;
   cursor: pointer;
   border-radius: 6px;

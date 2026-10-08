@@ -4,7 +4,6 @@ import ClientLogo from "./ClientLogo";
 import { ExpandIcon } from "./icons";
 import { CITIES, type CityId } from "../data/cities";
 import EditShortlistModal from "./EditShortlistModal";
-import DuplicateCampaignModal from "./DuplicateCampaignModal";
 import "./CampaignsPage.css";
 
 type CampaignResponse = { clientName: string; campaignName: string; selections: Record<string, string[]> };
@@ -23,26 +22,22 @@ function firstCityWithSelection(selections: Record<string, string[]>): CityId {
 // instead of full-screen (position:absolute + inset:0 fills whichever
 // positioned ancestor it's given). hideBrand suppresses its floating
 // "ADONMO" logo block, which is redundant next to the dashboard shell's
-// own branding/nav — the city-switch buttons themselves still show
-// whenever a campaign spans more than one city, since that's the only way
-// to see each city's highlighted properties in this embedded view.
+// own branding/nav. citySwitcherPortalTarget pulls the multi-city picker
+// off the map entirely too — instead of a button list floating over it,
+// it's a plain dropdown sitting in the stats row below, still the only
+// way to see each city's highlighted properties when a campaign spans
+// more than one.
 export default function CampaignsPage({
   activeCampaignId,
   onGoUpload,
-  onCampaignCreated,
 }: {
   activeCampaignId: string | null;
   onGoUpload: () => void;
-  // Fired after "Duplicate campaign" creates a new one, so the dashboard
-  // can switch straight to it (same callback every other creation path —
-  // upload, past-campaign "Open →" — already uses).
-  onCampaignCreated: (campaignId: string) => void;
 }) {
   const [state, setState] = useState<
     { status: "idle" } | { status: "loading" } | { status: "error"; message: string } | { status: "ready"; data: CampaignResponse }
   >({ status: "idle" });
   const [showEdit, setShowEdit] = useState(false);
-  const [showDuplicate, setShowDuplicate] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
 
   // The no-login, full-screen link a client opens to see just their own
@@ -63,6 +58,9 @@ export default function CampaignsPage({
   // has something to render into as soon as this div mounts, instead of
   // the banner floating over the map itself.
   const [bannerSlot, setBannerSlot] = useState<HTMLDivElement | null>(null);
+  // Same idea for the multi-city dropdown — sits right beside the stats
+  // row instead of floating a city-button list over the map itself.
+  const [citySwitcherSlot, setCitySwitcherSlot] = useState<HTMLDivElement | null>(null);
 
   // The embedded map frame defaults to a bounded panel (matches the rest
   // of this dashboard page) — fullscreen expands it to cover the whole
@@ -122,9 +120,6 @@ export default function CampaignsPage({
             <button type="button" className="cpg-copy-link-btn" onClick={() => setShowEdit(true)}>
               ✎ Edit shortlist
             </button>
-            <button type="button" className="cpg-copy-link-btn" onClick={() => setShowDuplicate(true)}>
-              ⧉ Duplicate
-            </button>
             <button
               type="button"
               className="cpg-copy-link-btn"
@@ -161,7 +156,12 @@ export default function CampaignsPage({
         )}
       </div>
 
-      {state.status === "ready" && <div ref={setBannerSlot} className="cpg-banner-row" />}
+      {state.status === "ready" && (
+        <div className="cpg-banner-row">
+          <div ref={setCitySwitcherSlot} className="cpg-city-switcher-slot" />
+          <div ref={setBannerSlot} className="cpg-banner-slot" />
+        </div>
+      )}
 
       {state.status === "idle" && (
         <div className="cpg-empty">
@@ -211,6 +211,7 @@ export default function CampaignsPage({
             }}
             hideBrand
             bannerPortalTarget={bannerSlot}
+            citySwitcherPortalTarget={citySwitcherSlot}
           />
         </div>
       )}
@@ -223,18 +224,6 @@ export default function CampaignsPage({
           onSaved={(selections) => {
             setState({ status: "ready", data: { ...state.data, selections } });
             setShowEdit(false);
-          }}
-        />
-      )}
-
-      {showDuplicate && state.status === "ready" && activeCampaignId && (
-        <DuplicateCampaignModal
-          sourceCampaignId={activeCampaignId}
-          defaultClientName={state.data.clientName}
-          onClose={() => setShowDuplicate(false)}
-          onDuplicated={(campaignId) => {
-            setShowDuplicate(false);
-            onCampaignCreated(campaignId);
           }}
         />
       )}

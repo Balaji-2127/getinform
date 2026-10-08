@@ -1,3 +1,18 @@
+/* .cpg-page is the shared content container for every dashboard page
+   (Dashboard home, Campaigns, Inventory, Clients, Insights, Reports) —
+   it used to have its own `overflow-y: auto` nested inside .dash-content
+   (Dashboard.css), which *also* scrolls. Two independent scroll
+   containers stacked on top of each other, both eligible to catch the
+   same wheel/trackpad gesture, is exactly what felt "not flexible" and
+   made scrolling over the embedded map feel like it was fighting the
+   map's own scroll-to-zoom. `height: 100%` stays — the map frame below
+   still needs a definite height to flex-fill into — but this no longer
+   clips/scrolls on its own. .dash-content is now the one and only scroll
+   owner for all of these pages; if a page's content is ever taller than
+   the available space, it simply overflows this box (nothing here clips
+   it) and .dash-content scrolls it, cleanly, once, with no second
+   scroll container competing for the same gesture.
+*/
 .cpg-page {
   display: flex;
   flex-direction: column;
@@ -6,7 +21,6 @@
   padding: 24px;
   gap: 18px;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  overflow-y: auto;
 }
 
 .cpg-header {
@@ -207,10 +221,42 @@
 .cpg-banner-row {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
-.cpg-banner-row:empty {
+.cpg-city-switcher-slot:empty {
   display: none;
+}
+
+.cpg-banner-slot {
+  flex: 1;
+  min-width: 0;
+}
+
+.cpg-banner-slot:empty {
+  display: none;
+}
+
+/* The multi-city dropdown MapExperience portals in here — only renders
+   (and takes up this slot) when a campaign actually spans more than one
+   city, same as the city-button list it replaced only showed up then. */
+.map-city-switcher {
+  flex-shrink: 0;
+  min-width: 160px;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  background: #ffffff;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.map-city-switcher:focus {
+  outline: none;
+  border-color: #6366f1;
 }
 
 .cpg-map-frame {

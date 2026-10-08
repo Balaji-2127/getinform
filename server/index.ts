@@ -8,6 +8,8 @@ import campaignsRouter from "./routes/campaigns.js";
 import brandingRouter from "./routes/branding.js";
 import propertyImagesRouter from "./routes/propertyImages.js";
 import searchRouter from "./routes/search.js";
+import savedAreasRouter from "./routes/savedAreas.js";
+import shortlistsRouter from "./routes/shortlists.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -41,6 +43,8 @@ app.use("/api/campaigns", campaignsRouter);
 app.use("/api", brandingRouter);
 app.use("/api", propertyImagesRouter);
 app.use("/api", searchRouter);
+app.use("/api", savedAreasRouter);
+app.use("/api", shortlistsRouter);
 
 if (isProduction) {
   // Single-process deploy: this same server also serves the built SPA, and

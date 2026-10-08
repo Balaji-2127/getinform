@@ -6,6 +6,9 @@ import InventoryPage from "./InventoryPage";
 import ClientsPage from "./ClientsPage";
 import InsightsPage from "./InsightsPage";
 import ReportsPage from "./ReportsPage";
+import MyAreasPage from "./MyAreasPage";
+import ShortlistsPage from "./ShortlistsPage";
+import RecentSearchesPage from "./RecentSearchesPage";
 import ComingSoon from "./ComingSoon";
 import GlobalSearch from "./GlobalSearch";
 import type { CityId } from "../data/cities";
@@ -69,11 +72,16 @@ const SECTION_TITLES: Record<Section, string> = {
 // Insights is real aggregate stats computed from the same per-city
 // inventory files Inventory uses; Dashboard (the landing page) is a
 // summary built from that same campaign + inventory data; Reports is a
-// full sortable/exportable table of that same campaign history — no
-// fabricated CRM, analytics, or industry data anywhere in the five of
-// them. Everything else in the reference layout with no real data or
-// backend behind it yet (AI Assistant, Saved section) renders as an
-// explicit "coming soon" placeholder instead of pretending to work.
+// full sortable/exportable table of that same campaign history. The
+// Saved section is real too: My Areas is localities starred from Market
+// Insights (server/routes/savedAreas.ts), Shortlists is a real aggregate
+// of which properties repeat across different campaigns' selections
+// (server/routes/shortlists.ts), Recent Searches is an actual log of
+// search results clicked from GlobalSearch (server/routes/search.ts's
+// /search-history). No fabricated CRM, analytics, or industry data
+// anywhere in any of them. Only AI Assistant remains an explicit
+// "coming soon" placeholder — making it real means deciding what it
+// actually does first, not something to fake.
 export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
   const [section, setSection] = useState<Section>("dashboard");
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
@@ -202,12 +210,15 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
         <div className="dash-content">
           {section === "dashboard" && <DashboardHome onNavigate={setSection} onOpenCampaign={handleCampaignCreated} />}
           {section === "campaigns" && (
-            <CampaignsPage activeCampaignId={activeCampaignId} onGoUpload={() => setSection("upload")} onCampaignCreated={handleCampaignCreated} />
+            <CampaignsPage activeCampaignId={activeCampaignId} onGoUpload={() => setSection("upload")} />
           )}
           {section === "inventory" && <InventoryPage focusProperty={focusProperty} onFocusHandled={() => setFocusProperty(null)} />}
           {section === "clients" && <ClientsPage onOpenCampaign={handleCampaignCreated} />}
           {section === "insights" && <InsightsPage />}
           {section === "reports" && <ReportsPage onOpenCampaign={handleCampaignCreated} />}
+          {section === "areas" && <MyAreasPage />}
+          {section === "shortlists" && <ShortlistsPage onOpenProperty={handleOpenProperty} />}
+          {section === "recent" && <RecentSearchesPage onOpenCampaign={handleCampaignCreated} onOpenProperty={handleOpenProperty} />}
           {section === "upload" && <UploadCampaign onCampaignCreated={handleCampaignCreated} />}
           {section !== "dashboard" &&
             section !== "campaigns" &&
@@ -215,6 +226,9 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
             section !== "clients" &&
             section !== "insights" &&
             section !== "reports" &&
+            section !== "areas" &&
+            section !== "shortlists" &&
+            section !== "recent" &&
             section !== "upload" && <ComingSoon title={SECTION_TITLES[section]} />}
         </div>
       </div>

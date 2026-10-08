@@ -32,8 +32,15 @@ const PROJECT_TILT = 58;
 const PROJECT_HEADING = 25;
 const PROJECT_RANGE = 420;
 
-const PROJECT_COLOR = "#f97316"; // Adonmo's own inventory, browsed generically — orange, matching the reference mockup's pin color, distinct from the client-facing map's blue/gray scheme (different context, different meaning).
-const PROJECT_SELECTED_COLOR = "#2563eb";
+// Adonmo's own inventory, browsed generically — same green as the
+// campaign map's "general inventory" pins (GoogleInventoryMap's
+// CAMPAIGN_DIM_COLOR/CAMPAIGN_DIM_SELECTED_COLOR), so the color language
+// stays one consistent rule across both maps instead of each inventing
+// its own. Selected stays in the same green family rather than jumping to
+// blue, which elsewhere means "targeted for a client" — using it here
+// would say the wrong thing.
+const PROJECT_COLOR = "#9aab7a";
+const PROJECT_SELECTED_COLOR = "#6b7a4f";
 
 type MarkerEntry = { marker: google.maps.maps3d.Marker3DInteractiveElement; pin: google.maps.marker.PinElement; feature: ProjectFeature };
 

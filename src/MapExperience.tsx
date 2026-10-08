@@ -1,7 +1,24 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import GoogleInventoryMap from "./GoogleInventoryMap";
 import CitySidebar from "./CitySidebar";
-import { CITIES, type CityId } from "./data/cities";
+import { CITIES, type City, type CityId } from "./data/cities";
+
+// The dashboard's embedded view portals this in next to the campaign's
+// own stats row instead of floating a city-button list over the map
+// itself — a plain dropdown reads as part of that row's controls, not
+// another thing competing for space on the map.
+function CitySwitcherDropdown({ activeCity, cities, onSelect }: { activeCity: CityId; cities: City[]; onSelect: (id: CityId) => void }) {
+  return (
+    <select className="map-city-switcher" value={activeCity} onChange={(e) => onSelect(e.target.value as CityId)}>
+      {cities.map((c) => (
+        <option key={c.id} value={c.id}>
+          {c.label}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 // Google's own "alpha channel — for development purposes only" banner (its
 // class name is unstable/internal, hence the aria-label match instead)
@@ -46,6 +63,7 @@ export default function MapExperience({
   campaign,
   hideBrand,
   bannerPortalTarget,
+  citySwitcherPortalTarget,
 }: {
   initialCity: CityId;
   campaign?: CampaignContext;
@@ -54,15 +72,19 @@ export default function MapExperience({
   // shell (including the client's own logo, top-right) — the floating
   // "ADONMO" logo/name block is redundant there. Only applies in that
   // embedded context; defaults to the full-screen client-facing link's
-  // existing behavior, untouched. The city-switch buttons themselves stay
-  // — for a multi-city campaign they're not decoration, they're how you
-  // get from one city's highlighted properties to another's.
+  // existing behavior, untouched.
   hideBrand?: boolean;
   // See GoogleInventoryMap's own bannerPortalTarget — passed straight
   // through so the dashboard can pull the campaign banner out of the map
   // entirely and into its own page header. Undefined on the full-screen
   // client-facing link, which keeps the floating banner.
   bannerPortalTarget?: HTMLElement | null;
+  // Same idea, for the multi-city switcher: the dashboard's embedded view
+  // portals a plain dropdown in next to its own stats row instead of
+  // floating the city-button list over the map. Undefined on the
+  // full-screen client-facing link, which keeps that floating list (it
+  // has no such row to move it into).
+  citySwitcherPortalTarget?: HTMLElement | null;
 }) {
   useGoogleBannerOffset();
   const [activeCity, setActiveCity] = useState<CityId>(initialCity);
@@ -88,9 +110,12 @@ export default function MapExperience({
         bannerPortalTarget={bannerPortalTarget}
       />
 
-      {(!hideBrand || campaignCities.length > 1) && (
-        <CitySidebar activeCity={activeCity} onSelect={setActiveCity} cities={campaignCities} hideBrand={hideBrand} />
-      )}
+      {citySwitcherPortalTarget
+        ? campaignCities.length > 1 &&
+          createPortal(<CitySwitcherDropdown activeCity={activeCity} cities={campaignCities} onSelect={setActiveCity} />, citySwitcherPortalTarget)
+        : (!hideBrand || campaignCities.length > 1) && (
+            <CitySidebar activeCity={activeCity} onSelect={setActiveCity} cities={campaignCities} hideBrand={hideBrand} />
+          )}
     </div>
   );
 }

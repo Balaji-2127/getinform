@@ -9,4 +9,11 @@ body,
 
 body {
   overflow: hidden;
+  /* The one canonical place this app's font stack is defined — every
+     component below re-declares it too (so a component never silently
+     depends on being nested a particular way to look right), but this is
+     the real fallback: without it, anything that ever forgot would fall
+     through to the browser's own default (typically a serif font), not
+     this app's look. */
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }

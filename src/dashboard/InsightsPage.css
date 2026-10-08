@@ -44,11 +44,33 @@
   color: #111827;
 }
 
-.insights-bar-label > span:first-child {
+.insights-bar-label-text {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+}
+
+.insights-star-btn {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+  color: #d1d5db;
+  cursor: pointer;
+}
+
+.insights-star-btn.is-starred {
+  color: #f59e0b;
+}
+
+.insights-star-btn:hover {
+  color: #f59e0b;
 }
 
 .insights-bar-value {
