@@ -1,6 +1,6 @@
+import "./env.js"; // must be the first import — see env.ts for why
 import express, { type Request, type Response, type NextFunction } from "express";
 import cookieSession from "cookie-session";
-import { config as loadEnv } from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import authRouter from "./routes/auth.js";
@@ -12,12 +12,6 @@ import savedAreasRouter from "./routes/savedAreas.js";
 import shortlistsRouter from "./routes/shortlists.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Same .env.local the Vite frontend reads VITE_GOOGLE_MAPS_API_KEY from —
-// this process just also needs SALES_LOGIN_PASSWORD/SESSION_SECRET/PORT
-// from it, since only Vite's dev server loads .env files automatically.
-loadEnv({ path: path.join(__dirname, "..", ".env.local") });
-
 const isProduction = process.env.NODE_ENV === "production";
 
 if (isProduction && !process.env.SESSION_SECRET) {

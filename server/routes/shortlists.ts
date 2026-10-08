@@ -22,8 +22,8 @@ type PopularProperty = {
 // different clients have independently shortlisted is a genuinely
 // useful signal (strong inventory), computed from real data, not
 // invented.
-router.get("/shortlists/popular", requireAuth, (_req: Request, res: Response) => {
-  const campaigns = listCampaignsFull();
+router.get("/shortlists/popular", requireAuth, async (_req: Request, res: Response) => {
+  const campaigns = await listCampaignsFull();
 
   // cityId -> mediaSiteId -> { count, clients }
   const tally = new Map<string, Map<string, { count: number; clients: Set<string> }>>();

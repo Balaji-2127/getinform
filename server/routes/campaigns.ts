@@ -85,8 +85,8 @@ async function parseWorkbook(
   return { selections, skippedSheets, warnings };
 }
 
-router.get("/", requireAuth, (_req: Request, res: Response) => {
-  res.json(listCampaigns());
+router.get("/", requireAuth, async (_req: Request, res: Response) => {
+  res.json(await listCampaigns());
 });
 
 router.post("/upload", requireAuth, upload.single("file"), async (req: Request, res: Response) => {
@@ -120,7 +120,7 @@ router.post("/upload", requireAuth, upload.single("file"), async (req: Request, 
     return;
   }
 
-  const record = insertCampaign({ clientName, campaignName, selections: parsed.selections });
+  const record = await insertCampaign({ clientName, campaignName, selections: parsed.selections });
   res.json({
     campaignId: record.id,
     shareUrl: `/campaign/${record.id}`,
@@ -130,8 +130,8 @@ router.post("/upload", requireAuth, upload.single("file"), async (req: Request, 
   });
 });
 
-router.get<{ id: string }>("/:id", (req, res) => {
-  const record = getCampaign(req.params.id);
+router.get<{ id: string }>("/:id", async (req, res) => {
+  const record = await getCampaign(req.params.id);
   if (!record) {
     res.status(404).json({ error: "Campaign not found" });
     return;
@@ -144,8 +144,8 @@ router.get<{ id: string }>("/:id", (req, res) => {
 // list is filtered down to that city's own known inventory, and unknown
 // city keys are dropped outright — defensive since this is a client-
 // supplied body, not something the server generated itself.
-router.put<{ id: string }>("/:id/selections", requireAuth, (req, res) => {
-  const existing = getCampaign(req.params.id);
+router.put<{ id: string }>("/:id/selections", requireAuth, async (req, res) => {
+  const existing = await getCampaign(req.params.id);
   if (!existing) {
     res.status(404).json({ error: "Campaign not found" });
     return;
@@ -163,7 +163,7 @@ router.put<{ id: string }>("/:id/selections", requireAuth, (req, res) => {
     const kept = ids.filter((id): id is string => typeof id === "string" && known.has(id));
     if (kept.length > 0) cleaned[cityId] = kept;
   }
-  const record = updateCampaignSelections(req.params.id, cleaned);
+  const record = await updateCampaignSelections(req.params.id, cleaned);
   if (!record) {
     res.status(404).json({ error: "Campaign not found" });
     return;

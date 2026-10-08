@@ -14,14 +14,14 @@ const MAX_PROPERTIES = 12;
 // call, so the one search box covers everything the placeholder text
 // promised. Runs server-side rather than shipping all 21 cities' data to
 // the browser just to filter it client-side.
-router.get("/search", requireAuth, (req: Request, res: Response) => {
+router.get("/search", requireAuth, async (req: Request, res: Response) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim().toLowerCase() : "";
   if (!q) {
     res.json({ campaigns: [], properties: [] });
     return;
   }
 
-  const campaigns = listCampaigns()
+  const campaigns = (await listCampaigns())
     .filter((c) => c.clientName.toLowerCase().includes(q) || c.campaignName.toLowerCase().includes(q))
     .slice(0, MAX_CAMPAIGNS)
     .map((c) => ({ id: c.id, clientName: c.clientName, campaignName: c.campaignName, createdAt: c.createdAt }));
@@ -47,7 +47,7 @@ router.get("/search", requireAuth, (req: Request, res: Response) => {
 // when GlobalSearch opens that result, not on every keystroke. Backs the
 // sidebar's "Recent Searches", a real log of what people went looking
 // for and found rather than a placeholder.
-router.post("/search-history", requireAuth, (req: Request, res: Response) => {
+router.post("/search-history", requireAuth, async (req: Request, res: Response) => {
   const { query, resultType, resultLabel, resultSub, cityId, targetId } = req.body ?? {};
   if (
     typeof query !== "string" ||
@@ -58,7 +58,7 @@ router.post("/search-history", requireAuth, (req: Request, res: Response) => {
     res.status(400).json({ error: "Invalid search history entry" });
     return;
   }
-  const entry = recordSearch({
+  const entry = await recordSearch({
     query,
     resultType,
     resultLabel,
@@ -69,8 +69,8 @@ router.post("/search-history", requireAuth, (req: Request, res: Response) => {
   res.json(entry);
 });
 
-router.get("/search-history", requireAuth, (_req: Request, res: Response) => {
-  res.json(listRecentSearches());
+router.get("/search-history", requireAuth, async (_req: Request, res: Response) => {
+  res.json(await listRecentSearches());
 });
 
 export default router;

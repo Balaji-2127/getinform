@@ -43,7 +43,7 @@ A sidebar-nav shell (`Dashboard.tsx`, collapsible) with:
    exact sheet names like `Property List - Hyderabad` to a city).
 2. `server/routes/campaigns.ts` matches each row's `Media Site Id` column against that city's
    known inventory (`server/inventoryLookup.ts`) and stores the matched selections
-   (`server/db.ts`, SQLite).
+   (`server/db.ts`, Firestore).
 3. The upload returns a shareable `/campaign/:id` link immediately — also always re-copyable
    later from the Campaigns page header.
 4. A campaign can be edited (add/remove properties without re-uploading).
@@ -96,7 +96,7 @@ markers arranged around the building), `households`, `impressionsPerMonth`, `mon
 ## Tech stack
 
 - **React 19** + **TypeScript** + **Vite 8** (frontend)
-- **Express 5** + **better-sqlite3** + **cookie-session** (backend API, `server/`)
+- **Express 5** + **Firebase Admin SDK (Firestore)** + **cookie-session** (backend API, `server/`)
 - **Google Maps Platform** — `maps3d` (`Map3DElement`), loaded via Google's official dynamic
   bootstrap (`src/google/loadGoogleMaps.ts`)
 - **ExcelJS** — parses uploaded campaign shortlist workbooks
@@ -124,7 +124,8 @@ cp .env.example .env.local
 
 Fill in `.env.local` — see `.env.example`'s own comments and `PRODUCTION_SERVICES.md` for what
 each variable does and whether it's required. At minimum you need
-`VITE_GOOGLE_MAPS_API_KEY`, `SALES_LOGIN_PASSWORD`, and `SESSION_SECRET`.
+`VITE_GOOGLE_MAPS_API_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON`, `SALES_LOGIN_PASSWORD`, and
+`SESSION_SECRET` — the server won't start without the Firebase one.
 
 ### Scripts
 
@@ -138,10 +139,12 @@ npm run lint      # oxlint
 
 ### Deployment
 
-This app has a real, long-running backend (Express + a local SQLite file) — it does **not**
-run on a static-only host like Vercel's default preset. See **"Hosting"** in
+This app has a real, long-running backend (Express) — it does **not** run on a static-only
+host like Vercel's default preset. See **"Hosting"** in
 [`PRODUCTION_SERVICES.md`](./PRODUCTION_SERVICES.md) for the full explanation and a
-Render/Railway setup walkthrough, including the persistent-disk requirement for `DATA_DIR`.
+Render/Railway setup walkthrough. Campaign data lives in Firestore rather than a local file,
+so (unlike an earlier version of this app) no persistent disk is required on whichever host
+you pick.
 
 ## Project structure
 
@@ -167,7 +170,7 @@ src/
 
 server/
 ├── index.ts                  # Express app, sessions, static serving in production
-├── db.ts                      # better-sqlite3 — campaigns, search_history, saved_areas
+├── db.ts                      # Firestore — campaigns, searchHistory, savedAreas
 ├── inventoryLookup.ts         # known Media Site Ids per city, for upload matching
 ├── sheetMapping.ts            # upload sheet name → city id
 └── routes/
