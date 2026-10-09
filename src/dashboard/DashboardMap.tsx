@@ -101,6 +101,10 @@ export default function DashboardMap({
           tilt: CITY_TILT,
           heading: CITY_HEADING,
         });
+        // See GoogleInventoryMap.tsx's matching note — Google's new
+        // Map3DElement.colorScheme (shipped 2026-10-08) defaults to
+        // following the viewer's system theme; pinned to LIGHT here too.
+        (map as unknown as { colorScheme: string }).colorScheme = "LIGHT";
         containerRef.current.appendChild(map);
         mapElRef.current = map;
         setMapReady(true);

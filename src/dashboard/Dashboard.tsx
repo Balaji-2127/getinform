@@ -11,6 +11,7 @@ import ShortlistsPage from "./ShortlistsPage";
 import RecentSearchesPage from "./RecentSearchesPage";
 import ComingSoon from "./ComingSoon";
 import GlobalSearch from "./GlobalSearch";
+import { ToastProvider } from "./Toast";
 import type { CityId } from "../data/cities";
 import {
   AiIcon,
@@ -88,9 +89,15 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
   // Remembered per-browser so a rep who collapses it once doesn't have to
   // redo it every reload — just a display preference, never read back by
   // anything else, so a plain try/catch-guarded localStorage read is fine.
+  // With no saved preference yet (first visit), default to collapsed on a
+  // narrow/phone-width screen instead of always starting expanded — the
+  // full 220px labeled sidebar leaves barely any room for actual content
+  // at phone widths. An explicit saved preference always wins either way.
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try {
-      return localStorage.getItem("dash-sidebar-collapsed") === "1";
+      const saved = localStorage.getItem("dash-sidebar-collapsed");
+      if (saved !== null) return saved === "1";
+      return window.matchMedia("(max-width: 640px)").matches;
     } catch {
       return false;
     }
@@ -132,6 +139,7 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
   };
 
   return (
+    <ToastProvider>
     <div className="dash-shell">
       <aside className={"dash-sidebar" + (collapsed ? " is-collapsed" : "")}>
         <div className="dash-brand">
@@ -233,5 +241,6 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
         </div>
       </div>
     </div>
+    </ToastProvider>
   );
 }

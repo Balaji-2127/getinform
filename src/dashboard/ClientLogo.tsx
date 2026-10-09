@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import "./ClientLogo.css";
 
 // Resolves the client's own logo dynamically (server-side: Gemini guesses
-// their website domain by name, then Clearbit's public logo endpoint
+// their website domain by name, then Google's public favicon service
 // serves the actual image — the same trick a company's own site uses for
 // its header logo). Falls back to a plain initials badge whenever either
 // step doesn't pan out, so a wrong/unknown client name never shows a

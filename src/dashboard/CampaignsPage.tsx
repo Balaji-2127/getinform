@@ -4,6 +4,7 @@ import ClientLogo from "./ClientLogo";
 import { ExpandIcon } from "./icons";
 import { CITIES, type CityId } from "../data/cities";
 import EditShortlistModal from "./EditShortlistModal";
+import { useToast } from "./Toast";
 import "./CampaignsPage.css";
 
 type CampaignResponse = { clientName: string; campaignName: string; selections: Record<string, string[]> };
@@ -34,6 +35,7 @@ export default function CampaignsPage({
   activeCampaignId: string | null;
   onGoUpload: () => void;
 }) {
+  const showToast = useToast();
   const [state, setState] = useState<
     { status: "idle" } | { status: "loading" } | { status: "error"; message: string } | { status: "ready"; data: CampaignResponse }
   >({ status: "idle" });
@@ -134,6 +136,9 @@ export default function CampaignsPage({
                   // out of the main bundle every other page pays for.
                   const { downloadCampaignPdf } = await import("./campaignPdf");
                   await downloadCampaignPdf(state.data.clientName, state.data.campaignName, state.data.selections);
+                  showToast("PDF downloaded");
+                } catch {
+                  showToast("Could not generate PDF — try again", "error");
                 } finally {
                   setPdfBusy(false);
                 }

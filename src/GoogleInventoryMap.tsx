@@ -364,6 +364,15 @@ export default function GoogleInventoryMap({
           tilt: CITY_TILT,
           heading: CITY_HEADING,
         });
+        // Google shipped Map3DElement.colorScheme (light/dark ROADMAP
+        // styling) on 2026-10-08 — its default apparently follows the
+        // viewer's system/browser theme, which is why this map suddenly
+        // started rendering dark for anyone on a dark-mode device/browser
+        // with no change on our end. Pinned to LIGHT to match the rest of
+        // this app's UI regardless of viewer settings. Not yet in
+        // @types/google.maps (released one day before this fix), hence
+        // the cast rather than a typed property.
+        (map as unknown as { colorScheme: string }).colorScheme = "LIGHT";
         map.addEventListener("gmp-click", () => {
           // Background/POI click — mirrors the old "empty space drops the
           // screen selection" behavior instead of yanking the camera.

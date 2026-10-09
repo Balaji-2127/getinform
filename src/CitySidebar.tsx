@@ -12,7 +12,7 @@ export default function CitySidebar({
   // A campaign only ever covers some cities — picking one with nothing
   // shortlisted in it would just show an empty, unhighlighted map, so
   // MapExperience scopes this down to the campaign's own cities instead
-  // of always offering all four. Defaults to every city for the plain,
+  // of always offering every city. Defaults to every city for the plain,
   // no-campaign case.
   cities?: City[];
   // The dashboard's embedded view already has its own header with the

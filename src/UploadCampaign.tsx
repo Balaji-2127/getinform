@@ -190,9 +190,9 @@ export default function UploadCampaign({
                     <span className="upload-history-client">{c.clientName}</span>
                     <span className="upload-history-name"> · {c.campaignName}</span>
                   </div>
-                  <a href={`/campaign/${c.id}`} target="_blank" rel="noreferrer" onClick={() => onCampaignCreated?.(c.id)}>
+                  <button type="button" onClick={() => onCampaignCreated?.(c.id)}>
                     Open →
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>

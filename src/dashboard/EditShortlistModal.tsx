@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CITIES, loadCityScreens, type CityId } from "../data/cities";
+import { useToast } from "./Toast";
 import "./EditShortlistModal.css";
 
 type PropertyRow = { cityId: CityId; mediaSiteId: string; name: string; locality: string | null; zone: string | null };
@@ -30,6 +31,7 @@ export default function EditShortlistModal({
   onClose: () => void;
   onSaved: (selections: Record<string, string[]>) => void;
 }) {
+  const showToast = useToast();
   const [rows, setRows] = useState<PropertyRow[] | null>(null);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [added, setAdded] = useState<PropertyRow[]>([]);
@@ -111,6 +113,7 @@ export default function EditShortlistModal({
       if (!res.ok) throw new Error("Could not save changes");
       const data = (await res.json()) as { selections: Record<string, string[]> };
       onSaved(data.selections);
+      showToast("Shortlist updated");
     } catch {
       setError("Could not save changes — try again.");
     } finally {

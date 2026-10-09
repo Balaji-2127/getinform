@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { computeInsights, type Insights } from "./insightsData";
+import { useToast } from "./Toast";
 import "./CampaignsPage.css";
 import "./InsightsPage.css";
 
 type SavedArea = { cityId: string; locality: string };
 
 export default function InsightsPage() {
+  const showToast = useToast();
   const [data, setData] = useState<Insights | null>(null);
   // Which localities are already starred ("My Areas") — a plain Set of
   // "cityId::locality" keys, loaded once so each row's star can render
@@ -43,7 +45,21 @@ export default function InsightsPage() {
       method: isSaved ? "DELETE" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cityId, locality }),
-    }).catch(() => {});
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        showToast(isSaved ? "Removed from My Areas" : "Added to My Areas");
+      })
+      .catch(() => {
+        // Revert the optimistic update — the save didn't actually happen.
+        setSaved((prev) => {
+          const next = new Set(prev);
+          if (isSaved) next.add(key);
+          else next.delete(key);
+          return next;
+        });
+        showToast("Couldn't save — try again", "error");
+      });
   };
 
   const maxCityScreens = data ? Math.max(...data.cities.map((c) => c.screens), 1) : 1;

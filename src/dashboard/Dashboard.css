@@ -189,34 +189,6 @@
   flex-shrink: 0;
 }
 
-.dash-search-bar {
-  flex: 1;
-  max-width: 360px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 8px 12px;
-  color: #9ca3af;
-  font-size: 12.5px;
-}
-
-.dash-search-bar span:nth-child(2) {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dash-kbd {
-  padding: 1px 6px;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  font-size: 10px;
-  color: #9ca3af;
-}
-
 .dash-toptabs {
   display: flex;
   gap: 4px;
@@ -274,4 +246,18 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
+}
+
+@media (max-width: 640px) {
+  /* The nav pill row just repeats the (now auto-collapsed) sidebar's own
+     icons — redundant at this width, and the first thing to overflow a
+     phone-width topbar alongside search + bell + avatar. */
+  .dash-toptabs {
+    display: none;
+  }
+
+  .dash-topbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
 }

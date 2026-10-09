@@ -118,3 +118,13 @@
   white-space: nowrap;
   max-width: 100%;
 }
+
+@media (max-width: 640px) {
+  .gs-root {
+    max-width: none;
+  }
+
+  .gs-kbd {
+    display: none;
+  }
+}

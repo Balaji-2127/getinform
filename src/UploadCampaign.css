@@ -239,8 +239,14 @@
   color: #9ca3af;
 }
 
-.upload-history a {
+.upload-history button {
+  border: none;
+  background: none;
+  padding: 0;
   color: #4338ca;
   font-weight: 600;
+  font-size: inherit;
+  font-family: inherit;
   white-space: nowrap;
+  cursor: pointer;
 }

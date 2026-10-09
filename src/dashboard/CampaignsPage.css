@@ -34,6 +34,7 @@
 .cpg-header-actions-group {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   flex-shrink: 0;
 }
@@ -311,5 +312,21 @@
   }
   .cpg-body {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .cpg-page {
+    padding: 14px;
+    gap: 14px;
+  }
+  .cpg-stats-row {
+    grid-template-columns: 1fr;
+  }
+  .cpg-header h1 {
+    font-size: 19px;
+  }
+  .cpg-banner-row {
+    flex-wrap: wrap;
   }
 }

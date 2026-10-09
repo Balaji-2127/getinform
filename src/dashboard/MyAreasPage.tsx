@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CITIES, loadCityScreens } from "../data/cities";
+import { useToast } from "./Toast";
 import "./CampaignsPage.css";
 import "./MyAreasPage.css";
 
@@ -15,6 +16,7 @@ function cityLabel(cityId: string): string {
 // per-city inventory data every other page uses, not a frozen snapshot
 // taken at save time.
 export default function MyAreasPage() {
+  const showToast = useToast();
   const [areas, setAreas] = useState<SavedArea[] | null>(null);
   const [stats, setStats] = useState<AreaStats[] | null>(null);
 
@@ -69,13 +71,24 @@ export default function MyAreasPage() {
   }, [areas]);
 
   const removeArea = (area: SavedArea) => {
+    const previousAreas = areas;
+    const previousStats = stats;
     setAreas((prev) => prev?.filter((a) => !(a.cityId === area.cityId && a.locality === area.locality)) ?? null);
     setStats((prev) => prev?.filter((a) => !(a.cityId === area.cityId && a.locality === area.locality)) ?? null);
     fetch("/api/saved-areas", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(area),
-    }).catch(() => {});
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        showToast("Removed from My Areas");
+      })
+      .catch(() => {
+        setAreas(previousAreas);
+        setStats(previousStats);
+        showToast("Couldn't remove — try again", "error");
+      });
   };
 
   return (
