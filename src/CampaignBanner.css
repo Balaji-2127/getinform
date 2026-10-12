@@ -6,13 +6,16 @@
   z-index: 15;
   width: min(560px, calc(100% - 460px));
   min-width: 280px;
-  background: #ffffff;
+  background: var(--c-surface);
   border: 1px solid #bfdbfe;
   border-top: 3px solid #2563eb;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  border-radius: var(--r-lg);
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.18),
+    0 12px 32px rgba(16, 24, 40, 0.28);
   padding: 14px 18px;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  animation: campaign-banner-in 320ms var(--ease-out);
+  font-family: var(--font-sans);
 }
 
 .campaign-banner-inline {
@@ -69,7 +72,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 800;
-  color: #111827;
+  color: var(--c-text);
   letter-spacing: -0.01em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -142,4 +145,28 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+}
+
+/* The client's first impression of the whole shared link — seen once, so a
+   slightly more generous entrance than the rest of the app earns its keep. */
+@keyframes campaign-banner-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.campaign-banner-stat-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.campaign-banner-tour {
+  --press: 0.96;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }

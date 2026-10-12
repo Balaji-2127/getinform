@@ -178,3 +178,163 @@ export function SidebarCollapseIcon({ size = 16 }: IconProps) {
     </svg>
   );
 }
+
+/* ---------------------------------------------------------------------------
+   Everything below replaces an emoji that used to stand in for it.
+
+   The stat cards, the "My Areas" star, and most button glyphs were literal
+   emoji characters (🏢 🖥️ 🏠 ₹ 📢 🤝 ★ ✎ ⬇ 🔗 ▶ ↻ ✕ ← →). Emoji are
+   rendered by the OS, not by us: the same card that looks acceptable on
+   macOS renders as a flat, differently-sized, differently-aligned glyph in
+   Segoe UI Emoji on Windows, and none of them can inherit currentColor. In
+   an app that already had a consistent 1.8-stroke icon set sitting in this
+   very file, they were the single most visible unfinished detail.
+--------------------------------------------------------------------------- */
+
+export function BuildingIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M4 21V6a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v15" />
+      <path d="M13 10h6a1 1 0 0 1 1 1v10" />
+      <path d="M3 21h18" />
+      <path d="M7 9h2M7 13h2M7 17h2M16 14h1M16 17h1" />
+    </svg>
+  );
+}
+
+export function ScreenIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <rect x="2.5" y="4" width="19" height="12.5" rx="1.8" />
+      <path d="M9 20h6" />
+      <path d="M12 16.5V20" />
+    </svg>
+  );
+}
+
+export function HouseholdIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M3 10.5 12 4l9 6.5" />
+      <path d="M5.5 9.5V20h13V9.5" />
+      <path d="M10 20v-5h4v5" />
+    </svg>
+  );
+}
+
+// Drawn rather than the "₹" character: as text it inherited the body font's
+// own weight and sat on a different baseline from every neighbouring icon.
+export function RupeeIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M7 4h10" />
+      <path d="M7 9h10" />
+      <path d="M14 4c0 3.5-2.2 5-7 5" />
+      <path d="M7 9c5.5 0 7.5 3 4 11" />
+    </svg>
+  );
+}
+
+export function StarIcon({ size = 18, filled = false }: IconProps & { filled?: boolean }) {
+  return (
+    <svg {...base(size)} fill={filled ? "currentColor" : "none"}>
+      <path d="M12 3.6l2.6 5.3 5.9.85-4.25 4.15 1 5.85L12 16.95l-5.25 2.75 1-5.85L3.5 9.75l5.9-.85z" />
+    </svg>
+  );
+}
+
+export function PencilIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M4 20h4L19 9a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5z" />
+      <path d="M14.5 6.5 17.5 9.5" />
+    </svg>
+  );
+}
+
+export function LinkIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M9.5 14.5a3.5 3.5 0 0 1 0-5l3-3a3.5 3.5 0 0 1 5 5l-1.5 1.5" />
+      <path d="M14.5 9.5a3.5 3.5 0 0 1 0 5l-3 3a3.5 3.5 0 0 1-5-5L8 11" />
+    </svg>
+  );
+}
+
+export function CheckIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M4.5 12.5l4.5 4.5L19.5 6.5" />
+    </svg>
+  );
+}
+
+export function CloseIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
+export function ArrowLeftIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M19 12H5" />
+      <path d="M11 6l-6 6 6 6" />
+    </svg>
+  );
+}
+
+export function ArrowRightIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M5 12h14" />
+      <path d="M13 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+export function PlayIcon({ size = 14 }: IconProps) {
+  return (
+    <svg {...base(size)} fill="currentColor">
+      <path d="M8 5.5v13l11-6.5z" />
+    </svg>
+  );
+}
+
+export function StopIcon({ size = 14 }: IconProps) {
+  return (
+    <svg {...base(size)} fill="currentColor">
+      <rect x="6.5" y="6.5" width="11" height="11" rx="1.5" />
+    </svg>
+  );
+}
+
+export function RestartIcon({ size = 14 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M20 12a8 8 0 1 1-2.6-5.9" />
+      <path d="M20 4v4h-4" />
+    </svg>
+  );
+}
+
+export function MapIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M9 3.5 3.5 5.5v15L9 18.5l6 2 5.5-2v-15L15 5.5z" />
+      <path d="M9 3.5v15M15 5.5v15" />
+    </svg>
+  );
+}
+
+export function UploadIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M12 16V4" />
+      <path d="M7 9l5-5 5 5" />
+      <path d="M4 20h16" />
+    </svg>
+  );
+}

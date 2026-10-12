@@ -11,16 +11,16 @@
   min-width: 220px;
   max-width: 320px;
   padding: 9px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   border-radius: 8px;
   font-size: 13px;
-  color: #111827;
+  color: var(--c-text);
   font-family: inherit;
 }
 
 .reports-search:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--c-brand-accent);
 }
 
 .reports-toolbar-right {
@@ -35,15 +35,15 @@
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--c-text-3);
 }
 
 .reports-sort-label select {
   padding: 7px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   border-radius: 8px;
   font-size: 12.5px;
-  color: #111827;
+  color: var(--c-text);
   background: #ffffff;
   font-family: inherit;
 }
@@ -53,7 +53,7 @@
   align-items: center;
   gap: 6px;
   border: none;
-  background: #4338ca;
+  background: var(--c-brand);
   color: #ffffff;
   border-radius: 8px;
   padding: 9px 14px;
@@ -64,21 +64,30 @@
 }
 
 .reports-export-btn:hover {
-  background: #3730a3;
+  background: var(--c-brand-hover);
 }
 
 .reports-table-wrap {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
   overflow: auto;
+  box-shadow: var(--sh-sm);
+  /* Fills the space left under the stats row and toolbar so the table body
+     scrolls inside this box rather than scrolling the whole page. That's
+     what makes the sticky header below actually engage — with the wrap
+     sized to its content there was never an internal scrollport for the
+     header to stick to. min-height keeps it usable on a short window,
+     where the page simply scrolls as before. */
+  flex: 1;
+  min-height: 240px;
 }
 
 .reports-empty {
   margin: 0;
   padding: 24px;
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--c-text-4);
   text-align: center;
 }
 
@@ -93,17 +102,17 @@
   padding: 12px 16px;
   font-size: 11px;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--c-text-3);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--c-border);
   white-space: nowrap;
 }
 
 .reports-table td {
   padding: 12px 16px;
-  border-bottom: 1px solid #f3f4f6;
-  color: #111827;
+  border-bottom: 1px solid var(--c-border-soft);
+  color: var(--c-text);
   white-space: nowrap;
 }
 
@@ -120,19 +129,19 @@
 }
 
 .reports-cell-muted {
-  color: #6b7280;
+  color: var(--c-text-3);
 }
 
 .reports-cell-num {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  color: #3730a3;
+  color: var(--c-brand-hover);
 }
 
 .reports-open-btn {
   border: none;
   background: none;
-  color: #4338ca;
+  color: var(--c-brand);
   font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
@@ -147,4 +156,23 @@
   .reports-table td:nth-child(4) {
     display: none;
   }
+}
+
+.reports-table tbody tr {
+  transition: background-color var(--t-hover) ease;
+}
+
+/* Numeric columns use tabular figures so the digits line up into actual
+   columns instead of ragging against each other row to row. */
+.reports-cell-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.reports-table th {
+  /* Keeps the header readable while the body scrolls under it in a long
+     report, which is the whole reason this table is in a scroll box. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--c-surface);
 }

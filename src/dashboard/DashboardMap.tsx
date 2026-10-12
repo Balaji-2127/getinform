@@ -52,6 +52,7 @@ export default function DashboardMap({
   expanded,
   onToggleExpanded,
   focusMediaSiteId,
+  onFocusConsumed,
 }: {
   cityId: CityId;
   onCityChange: (id: CityId) => void;
@@ -66,6 +67,11 @@ export default function DashboardMap({
   // lookup inside the city-data effect below catches that case once the
   // new city's markers exist).
   focusMediaSiteId?: string | null;
+  // Fires once this map has acted on focusMediaSiteId, so the parent can
+  // clear it. Without that the id stayed set indefinitely and the
+  // city-load effect below re-applied it every time that city came back
+  // around, yanking the camera to a long-forgotten search result.
+  onFocusConsumed?: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapElRef = useRef<google.maps.maps3d.Map3DElement | null>(null);
@@ -206,6 +212,10 @@ export default function DashboardMap({
       renderAllProjects(fc.features);
       if (focusMediaSiteId) {
         const entry = projectMarkersRef.current.get(focusMediaSiteId);
+        // Consumed either way: every one of this city's markers exists by
+        // now, so if the target isn't among them it never will be here,
+        // and holding onto it would only misfire on a later city switch.
+        onFocusConsumed?.();
         if (entry) {
           selectFeature(entry);
           return;
@@ -225,7 +235,12 @@ export default function DashboardMap({
   useEffect(() => {
     if (!focusMediaSiteId) return;
     const entry = projectMarkersRef.current.get(focusMediaSiteId);
-    if (entry) selectFeature(entry);
+    // Only consumed on a hit here — a miss means the target's city hasn't
+    // finished loading yet, and the city-load effect above still needs it.
+    if (entry) {
+      onFocusConsumed?.();
+      selectFeature(entry);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusMediaSiteId]);
 

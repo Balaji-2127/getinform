@@ -40,6 +40,12 @@ router.post("/login", (req: Request, res: Response) => {
     res.status(401).json({ error: "Incorrect password" });
     return;
   }
+  // Correct password — drop this IP's attempt count rather than letting
+  // successful logins burn through the same budget as failed ones. The cap
+  // exists to slow a brute-force script, and a whole sales office can share
+  // one NAT'd IP, so counting legitimate logins toward it would lock real
+  // users out after ten sign-ins.
+  loginAttempts.delete(req.ip ?? "unknown");
   if (req.session) req.session.loggedIn = true;
   res.json({ loggedIn: true });
 });

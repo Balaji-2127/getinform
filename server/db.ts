@@ -82,7 +82,12 @@ export async function listCampaigns(): Promise<(Omit<CampaignRecord, "selections
   const snap = await campaignsCol.orderBy("createdAt", "desc").get();
   return snap.docs.map((doc) => {
     const data = doc.data() as CampaignFields;
-    const counts = Object.fromEntries(Object.entries(data.selections).map(([city, ids]) => [city, ids.length]));
+    // Tolerant of a doc without a usable selections map: one malformed
+    // record shouldn't throw and take down every page that lists
+    // campaigns (the dashboard home, Clients, Reports, global search).
+    const counts = Object.fromEntries(
+      Object.entries(data.selections ?? {}).map(([city, ids]) => [city, Array.isArray(ids) ? ids.length : 0]),
+    );
     return { id: doc.id, clientName: data.clientName, campaignName: data.campaignName, createdAt: data.createdAt, counts };
   });
 }
@@ -93,7 +98,12 @@ export async function listCampaigns(): Promise<(Omit<CampaignRecord, "selections
 // ids repeat across different campaigns.
 export async function listCampaignsFull(): Promise<CampaignRecord[]> {
   const snap = await campaignsCol.orderBy("createdAt", "desc").get();
-  return snap.docs.map((doc) => ({ id: doc.id, ...(doc.data() as CampaignFields) }));
+  return snap.docs.map((doc) => {
+    const data = doc.data() as CampaignFields;
+    // Same reasoning as listCampaigns' own guard above — callers iterate
+    // `selections` directly, so it has to be an object either way.
+    return { id: doc.id, ...data, selections: data.selections ?? {} };
+  });
 }
 
 export type SearchHistoryEntry = {

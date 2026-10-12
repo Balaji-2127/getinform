@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ClientLogo from "./ClientLogo";
+import { ArrowRightIcon } from "./icons";
 import { cityLabel, fetchCampaigns, groupByClient, type CampaignListItem } from "./campaignHistory";
 import "./CampaignsPage.css";
 import "./ClientsPage.css";
@@ -54,7 +55,7 @@ export default function ClientsPage({ onOpenCampaign }: { onOpenCampaign: (campa
               <p>No clients match "{query}".</p>
             </div>
           ) : (
-            <div className="clients-grid">
+            <div className="clients-grid stagger">
               {filtered.map((g) => (
                 <div key={g.clientName} className="clients-card">
                   <ClientLogo clientName={g.clientName} />
@@ -80,7 +81,7 @@ export default function ClientsPage({ onOpenCampaign }: { onOpenCampaign: (campa
                           <span className="clients-campaign-date">{new Date(c.createdAt).toLocaleDateString()}</span>
                         </div>
                         <button type="button" onClick={() => onOpenCampaign(c.id)}>
-                          Open →
+                          Open <ArrowRightIcon size={13} />
                         </button>
                       </li>
                     ))}

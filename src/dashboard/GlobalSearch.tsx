@@ -12,6 +12,11 @@ function cityLabel(cityId: string): string {
   return CITIES.find((c) => c.id === cityId)?.label ?? cityId;
 }
 
+// Mac keyboards have no Ctrl-K convention for this — showing "Ctrl K"
+// there would be wrong even now that the shortcut works, since the handler
+// accepts either modifier.
+const SHORTCUT_LABEL = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? "⌘ K" : "Ctrl K";
+
 // Fire-and-forget — logs a search result the rep actually opened (never
 // every keystroke) so "Recent Searches" in the sidebar is a real record
 // of what people looked for and found. A failure here never blocks the
@@ -49,6 +54,7 @@ export default function GlobalSearch({
   const [result, setResult] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const q = query.trim();
@@ -68,6 +74,29 @@ export default function GlobalSearch({
     return () => clearTimeout(handle);
   }, [query]);
 
+  // The search bar has always shown a "Ctrl K" hint, but nothing ever
+  // listened for it — the badge advertised a shortcut that did nothing.
+  // Accepts Cmd as well as Ctrl (the label below matches the platform),
+  // and Escape closes the dropdown and drops focus, which is the other
+  // half of what anyone reaching for a keyboard here expects.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+        inputRef.current?.select();
+        setOpen(true);
+        return;
+      }
+      if (e.key === "Escape" && document.activeElement === inputRef.current) {
+        setOpen(false);
+        inputRef.current?.blur();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   // Click-outside closes the results dropdown without clearing what was typed.
   useEffect(() => {
     if (!open) return;
@@ -85,6 +114,7 @@ export default function GlobalSearch({
       <div className="gs-bar">
         <SearchIcon size={15} />
         <input
+          ref={inputRef}
           type="text"
           placeholder="Search properties, localities, clients, or keywords…"
           value={query}
@@ -94,7 +124,7 @@ export default function GlobalSearch({
           }}
           onFocus={() => setOpen(true)}
         />
-        {!query && <span className="gs-kbd">Ctrl K</span>}
+        {!query && <span className="gs-kbd">{SHORTCUT_LABEL}</span>}
       </div>
 
       {open && query.trim() && (

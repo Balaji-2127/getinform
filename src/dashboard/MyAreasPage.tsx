@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CITIES, loadCityScreens } from "../data/cities";
 import { useToast } from "./Toast";
+import { StarIcon } from "./icons";
 import "./CampaignsPage.css";
 import "./MyAreasPage.css";
 
@@ -11,7 +12,7 @@ function cityLabel(cityId: string): string {
   return CITIES.find((c) => c.id === cityId)?.label ?? cityId;
 }
 
-// Real localities a rep starred from Market Insights (see the ☆ button
+// Real localities a rep starred from Market Insights (see the star button
 // on its "Top localities" panel) — stats recomputed live from the same
 // per-city inventory data every other page uses, not a frozen snapshot
 // taken at save time.
@@ -109,7 +110,7 @@ export default function MyAreasPage() {
 
       {areas !== null && areas.length === 0 && (
         <div className="cpg-empty">
-          <p>No areas saved yet — open Market Insights and click the ☆ next to any locality in "Top localities by screen count".</p>
+          <p>No areas saved yet — open Market Insights and click the star next to any locality in "Top localities by screen count".</p>
         </div>
       )}
 
@@ -120,7 +121,7 @@ export default function MyAreasPage() {
       )}
 
       {stats && stats.length > 0 && (
-        <div className="mya-grid">
+        <div className="mya-grid stagger">
           {stats.map((a) => (
             <div key={`${a.cityId}-${a.locality}`} className="mya-card">
               <div className="mya-card-head">
@@ -129,7 +130,7 @@ export default function MyAreasPage() {
                   <span className="mya-card-sub">{a.cityLabel}</span>
                 </div>
                 <button type="button" className="mya-remove-btn" onClick={() => removeArea(a)} title="Remove from My Areas">
-                  ★
+                  <StarIcon size={15} filled />
                 </button>
               </div>
               <div className="mya-stats">

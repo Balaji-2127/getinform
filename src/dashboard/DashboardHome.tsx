@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { cityLabel, fetchCampaigns, groupByClient, type CampaignListItem } from "./campaignHistory";
 import { computeInsights, type Insights } from "./insightsData";
 import ClientLogo from "./ClientLogo";
+import StatCard from "./StatCard";
+import { ArrowRightIcon, BuildingIcon, CampaignsIcon, ClientsIcon, InsightsIcon, InventoryIcon, ScreenIcon, UploadIcon } from "./icons";
 import "./CampaignsPage.css";
 import "./DashboardHome.css";
 
@@ -41,10 +43,10 @@ export default function DashboardHome({
       </div>
 
       <div className="cpg-stats-row">
-        <StatCard icon="📢" label="Campaigns" sub="Uploaded so far" value={campaigns ? campaigns.length.toLocaleString() : "…"} color="indigo" />
-        <StatCard icon="🤝" label="Clients" sub="Distinct clients served" value={campaigns ? clientGroups.length.toLocaleString() : "…"} color="green" />
-        <StatCard icon="🏢" label="Total Properties" sub="Across all inventory" value={insights ? insights.totals.properties.toLocaleString() : "…"} color="orange" />
-        <StatCard icon="🖥️" label="Total Screens" sub="Across all inventory" value={insights ? insights.totals.screens.toLocaleString() : "…"} color="blue" />
+        <StatCard icon={<CampaignsIcon />} label="Campaigns" sub="Uploaded so far" value={campaigns && campaigns.length.toLocaleString()} tone="indigo" />
+        <StatCard icon={<ClientsIcon />} label="Clients" sub="Distinct clients served" value={campaigns && clientGroups.length.toLocaleString()} tone="green" />
+        <StatCard icon={<BuildingIcon />} label="Total Properties" sub="Across all inventory" value={insights && insights.totals.properties.toLocaleString()} tone="orange" />
+        <StatCard icon={<ScreenIcon />} label="Total Screens" sub="Across all inventory" value={insights && insights.totals.screens.toLocaleString()} tone="blue" />
       </div>
 
       <div className="dash-home-grid">
@@ -52,11 +54,22 @@ export default function DashboardHome({
           <div className="dash-home-panel-head">
             <h2>Recent campaigns</h2>
             <button type="button" className="dash-home-link" onClick={() => onNavigate("campaigns")}>
-              View all →
+              View all <ArrowRightIcon size={13} />
             </button>
           </div>
 
-          {campaigns === null && <p className="dash-home-empty">Loading…</p>}
+          {campaigns === null && (
+            <ul className="dash-home-campaign-list">
+              {Array.from({ length: 4 }, (_, i) => (
+                <li key={i}>
+                  <div className="dash-home-skel-text">
+                    <span className="dash-home-skel-name skel" />
+                    <span className="dash-home-skel-meta skel" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
           {campaigns !== null && campaigns.length === 0 && (
             <div className="dash-home-cta">
               <p>No campaigns uploaded yet — upload your first shortlist to see it here.</p>
@@ -83,7 +96,7 @@ export default function DashboardHome({
                       </span>
                     </div>
                     <button type="button" onClick={() => onOpenCampaign(c.id)}>
-                      Open →
+                      Open <ArrowRightIcon size={13} />
                     </button>
                   </li>
                 );
@@ -98,28 +111,28 @@ export default function DashboardHome({
           </div>
           <div className="dash-home-actions">
             <button type="button" className="dash-home-action" onClick={() => onNavigate("upload")}>
-              <span className="dash-home-action-icon">📤</span>
+              <span className="dash-home-action-icon"><UploadIcon size={17} /></span>
               <span>
                 <strong>Upload a campaign</strong>
                 <small>Turn a shortlist into a shareable map</small>
               </span>
             </button>
             <button type="button" className="dash-home-action" onClick={() => onNavigate("inventory")}>
-              <span className="dash-home-action-icon">🗺️</span>
+              <span className="dash-home-action-icon"><InventoryIcon size={17} /></span>
               <span>
                 <strong>Browse inventory</strong>
                 <small>Explore every property, no campaign needed</small>
               </span>
             </button>
             <button type="button" className="dash-home-action" onClick={() => onNavigate("insights")}>
-              <span className="dash-home-action-icon">📊</span>
+              <span className="dash-home-action-icon"><InsightsIcon size={17} /></span>
               <span>
                 <strong>Market insights</strong>
                 <small>See where reach and density are highest</small>
               </span>
             </button>
             <button type="button" className="dash-home-action" onClick={() => onNavigate("clients")}>
-              <span className="dash-home-action-icon">🤝</span>
+              <span className="dash-home-action-icon"><ClientsIcon size={17} /></span>
               <span>
                 <strong>View clients</strong>
                 <small>Everyone you've run a campaign for</small>
@@ -133,7 +146,7 @@ export default function DashboardHome({
             <div className="dash-home-panel-head">
               <h2>Top clients</h2>
               <button type="button" className="dash-home-link" onClick={() => onNavigate("clients")}>
-                View all →
+                View all <ArrowRightIcon size={13} />
               </button>
             </div>
             <ul className="dash-home-top-clients">
@@ -154,15 +167,3 @@ export default function DashboardHome({
   );
 }
 
-function StatCard({ icon, label, sub, value, color }: { icon: string; label: string; sub: string; value: string; color: "indigo" | "green" | "orange" | "blue" }) {
-  return (
-    <div className={`cpg-stat-card cpg-stat-${color}`}>
-      <span className="cpg-stat-icon">{icon}</span>
-      <div>
-        <span className="cpg-stat-value">{value}</span>
-        <span className="cpg-stat-label">{label}</span>
-        <span className="cpg-stat-sub">{sub}</span>
-      </div>
-    </div>
-  );
-}

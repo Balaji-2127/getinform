@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import DashboardMap from "./DashboardMap";
 import PropertyDetailPanel from "./PropertyDetailPanel";
 import { CITIES, loadCityScreens, type CityId } from "../data/cities";
+import StatCard from "./StatCard";
+import { BuildingIcon, HouseholdIcon, RupeeIcon, ScreenIcon } from "./icons";
 import type { ProjectFeature } from "../google/clustering";
 import "./CampaignsPage.css";
 
@@ -76,10 +78,10 @@ export default function InventoryPage({
       </div>
 
       <div className="cpg-stats-row">
-        <StatCard icon="🏢" label="Properties" sub="Screen locations available" value={totals ? totals.properties.toLocaleString() : "…"} color="indigo" />
-        <StatCard icon="🖥️" label="Screens" sub="Active screens in area" value={totals ? totals.screens.toLocaleString() : "…"} color="green" />
-        <StatCard icon="🏠" label="Households" sub="Potential reach" value={totals ? totals.households.toLocaleString() : "…"} color="orange" />
-        <StatCard icon="₹" label="Ad Budget (Mo)" sub="Estimated monthly budget" value={totals ? `₹${totals.budget.toLocaleString()}` : "…"} color="blue" />
+        <StatCard icon={<BuildingIcon />} label="Properties" sub="Screen locations available" value={totals && totals.properties.toLocaleString()} tone="indigo" />
+        <StatCard icon={<ScreenIcon />} label="Screens" sub="Active screens in area" value={totals && totals.screens.toLocaleString()} tone="green" />
+        <StatCard icon={<HouseholdIcon />} label="Households" sub="Potential reach" value={totals && totals.households.toLocaleString()} tone="orange" />
+        <StatCard icon={<RupeeIcon />} label="Ad Budget (Mo)" sub="Estimated monthly budget" value={totals && `₹${totals.budget.toLocaleString()}`} tone="blue" />
       </div>
 
       <div className="cpg-body">
@@ -91,6 +93,7 @@ export default function InventoryPage({
           expanded={expanded}
           onToggleExpanded={() => setExpanded((v) => !v)}
           focusMediaSiteId={pendingFocusId}
+          onFocusConsumed={() => setPendingFocusId(null)}
         />
         <PropertyDetailPanel feature={selected} onBack={() => setSelected(null)} />
       </div>
@@ -98,15 +101,3 @@ export default function InventoryPage({
   );
 }
 
-function StatCard({ icon, label, sub, value, color }: { icon: string; label: string; sub: string; value: string; color: "indigo" | "green" | "orange" | "blue" }) {
-  return (
-    <div className={`cpg-stat-card cpg-stat-${color}`}>
-      <span className="cpg-stat-icon">{icon}</span>
-      <div>
-        <span className="cpg-stat-value">{value}</span>
-        <span className="cpg-stat-label">{label}</span>
-        <span className="cpg-stat-sub">{sub}</span>
-      </div>
-    </div>
-  );
-}

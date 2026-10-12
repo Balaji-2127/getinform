@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import MapExperience from "../MapExperience";
 import ClientLogo from "./ClientLogo";
-import { ExpandIcon } from "./icons";
+import { CheckIcon, CloseIcon, ExpandIcon, ExportIcon, LinkIcon, PencilIcon } from "./icons";
 import { CITIES, type CityId } from "../data/cities";
 import EditShortlistModal from "./EditShortlistModal";
+import { copyToClipboard } from "../copyToClipboard";
 import { useToast } from "./Toast";
 import "./CampaignsPage.css";
 
@@ -120,7 +121,7 @@ export default function CampaignsPage({
         {state.status === "ready" && (
           <div className="cpg-header-actions-group">
             <button type="button" className="cpg-copy-link-btn" onClick={() => setShowEdit(true)}>
-              ✎ Edit shortlist
+              <PencilIcon size={14} /> Edit shortlist
             </button>
             <button
               type="button"
@@ -144,17 +145,41 @@ export default function CampaignsPage({
                 }
               }}
             >
-              {pdfBusy ? "Preparing…" : "⬇ Download PDF"}
+              {pdfBusy ? (
+                "Preparing…"
+              ) : (
+                <>
+                  <ExportIcon size={14} /> Download PDF
+                </>
+              )}
             </button>
             <button
               type="button"
               className="cpg-copy-link-btn"
-              onClick={() => {
-                if (shareLink) navigator.clipboard.writeText(shareLink).then(() => setCopied(true));
+              onClick={async () => {
+                if (!shareLink) return;
+                if (await copyToClipboard(shareLink)) {
+                  setCopied(true);
+                  // Revert the label so the button reads as a button again
+                  // rather than being stuck on "Copied" for the rest of the
+                  // session (it only used to reset on a campaign switch).
+                  setTimeout(() => setCopied(false), 2000);
+                  showToast("Client link copied");
+                } else {
+                  showToast("Couldn't copy — the link is in this button's tooltip", "error");
+                }
               }}
               title={shareLink ?? undefined}
             >
-              {copied ? "✓ Copied" : "🔗 Copy client link"}
+              {copied ? (
+                <>
+                  <CheckIcon size={14} /> Copied
+                </>
+              ) : (
+                <>
+                  <LinkIcon size={14} /> Copy client link
+                </>
+              )}
             </button>
             <ClientLogo clientName={state.data.clientName} />
           </div>
@@ -200,7 +225,11 @@ export default function CampaignsPage({
             onClick={() => setFullscreen((f) => !f)}
             title={fullscreen ? "Exit fullscreen" : "Expand to fullscreen"}
           >
-            {fullscreen ? "✕ Exit fullscreen" : (
+            {fullscreen ? (
+              <>
+                <CloseIcon size={14} /> Exit fullscreen
+              </>
+            ) : (
               <>
                 <ExpandIcon size={14} /> Fullscreen
               </>

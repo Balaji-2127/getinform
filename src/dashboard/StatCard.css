@@ -1,0 +1,102 @@
+/* The previous card was a flat pastel wash (a tinted background + a tinted
+   1px border, no shadow) with an emoji floating on a translucent white
+   square. Two problems: a solid colour field competes with the actual
+   number for attention, and with no elevation the card read as a coloured
+   rectangle drawn on the page rather than a surface sitting on it.
+
+   This keeps the exact same four-colour coding — it just moves the colour
+   off the card body and onto the icon tile, where it identifies the metric
+   without shouting over it, and lets the card itself be a proper white
+   surface with real elevation. */
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  box-shadow: var(--sh-xs);
+  transition:
+    box-shadow var(--t-hover) ease,
+    border-color var(--t-hover) ease;
+}
+
+.stat-card-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-md);
+}
+
+.stat-card-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stat-card-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--c-text);
+  letter-spacing: -0.02em;
+  /* Without this, a value ticking from 1,199 to 1,200 changes width and
+     nudges the label beneath it — proportional digits have different
+     advances. Every number in this app that can change is tabular. */
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.stat-card-value-skel {
+  width: 64px;
+  height: 20px;
+  margin-bottom: 3px;
+}
+
+.stat-card-label {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text-2);
+}
+
+.stat-card-sub {
+  font-size: 10.5px;
+  color: var(--c-text-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tones: the icon tile carries the hue, the card stays white. */
+.stat-card-indigo .stat-card-icon {
+  background: var(--c-brand-soft);
+  color: #4f46e5;
+}
+
+.stat-card-green .stat-card-icon {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.stat-card-orange .stat-card-icon {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.stat-card-blue .stat-card-icon {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+/* Gated behind a real pointer: on a touch device :hover sticks after a tap,
+   leaving the card stuck in its raised state. */
+@media (hover: hover) and (pointer: fine) {
+  .stat-card:hover {
+    box-shadow: var(--sh-md);
+    border-color: var(--c-border-strong);
+  }
+}

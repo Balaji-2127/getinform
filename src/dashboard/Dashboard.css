@@ -2,9 +2,9 @@
   position: absolute;
   inset: 0;
   display: flex;
-  background: #f9fafb;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  color: #111827;
+  background: var(--c-bg);
+  font-family: var(--font-sans);
+  color: var(--c-text);
 }
 
 .dash-sidebar {
@@ -13,9 +13,9 @@
   display: flex;
   flex-direction: column;
   background: #ffffff;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--c-border);
   padding: 18px 14px;
-  transition: width 0.15s ease;
+  transition: width var(--t-overlay) var(--ease-in-out);
   /* Was `overflow: hidden` (both axes) — only ever needed to clip the nav
      labels horizontally during the collapse/expand width transition, but
      it also silently blocked vertical scrolling. On a shorter window,
@@ -51,20 +51,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: #6b7280;
-  border-radius: 7px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text-3);
+  border-radius: var(--r-sm);
   cursor: pointer;
 }
 
 .dash-collapse-btn:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--c-surface-hover);
+  color: var(--c-text-2);
 }
 
 .dash-sidebar.is-collapsed .dash-collapse-btn {
   margin-left: 0;
+}
+
+/* The chevron points the way the click will move the rail. Transitioned
+   rather than swapped so the flip reads as the same arrow turning around,
+   not as a different icon appearing. */
+.dash-collapse-btn svg {
+  transition: transform var(--t-overlay) var(--ease-in-out);
 }
 
 .dash-sidebar.is-collapsed .dash-collapse-btn svg {
@@ -75,9 +82,10 @@
   width: 26px;
   height: 26px;
   flex-shrink: 0;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--c-border);
   object-fit: cover;
+  box-shadow: var(--sh-xs);
 }
 
 .dash-brand div {
@@ -94,7 +102,7 @@
 
 .dash-brand-sub {
   font-size: 9.5px;
-  color: #9ca3af;
+  color: var(--c-text-4);
 }
 
 .dash-nav {
@@ -104,6 +112,11 @@
 }
 
 .dash-nav-item {
+  position: relative;
+  /* A nav row is far wider than it is tall; the default press scale would
+     swing its edges by a dozen pixels, which reads as the layout jumping
+     rather than as a button responding. */
+  --press: 0.985;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -125,18 +138,37 @@
 }
 
 .dash-nav-item:hover {
-  background: #f3f4f6;
+  background: var(--c-surface-hover);
 }
 
 .dash-nav-item.is-active {
-  background: #eef2ff;
-  color: #4338ca;
+  background: var(--c-brand-soft);
+  color: var(--c-brand);
+}
+
+/* A short accent bar on the active row. The tinted pill alone identified
+   the current section, but at a glance the sidebar read as a flat list of
+   equal rows — this gives the eye something to land on immediately. */
+.dash-nav-item.is-active::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  width: 3px;
+  height: 18px;
+  transform: translateY(-50%);
+  border-radius: 0 2px 2px 0;
+  background: var(--c-brand);
+}
+
+.dash-sidebar.is-collapsed .dash-nav-item.is-active::before {
+  left: -10px;
 }
 
 .dash-saved {
   margin-top: 20px;
   padding-top: 14px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--c-border-soft);
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -146,7 +178,7 @@
   padding: 0 10px 6px;
   font-size: 10.5px;
   font-weight: 700;
-  color: #9ca3af;
+  color: var(--c-text-4);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -158,7 +190,7 @@
   justify-content: center;
   gap: 6px;
   border: none;
-  background: #4338ca;
+  background: var(--c-brand);
   color: #ffffff;
   border-radius: 8px;
   padding: 10px;
@@ -166,10 +198,12 @@
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: var(--sh-sm);
 }
 
 .dash-upload-btn:hover {
-  background: #3730a3;
+  background: var(--c-brand-hover);
+  box-shadow: var(--sh-md);
 }
 
 .dash-main {
@@ -184,9 +218,13 @@
   align-items: center;
   gap: 16px;
   padding: 12px 20px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
   flex-shrink: 0;
+  /* Lifts the bar off the scrolling content beneath it, so the page reads
+     as sliding under a fixed header rather than the two sharing a plane. */
+  box-shadow: var(--sh-xs);
+  z-index: 10;
 }
 
 .dash-toptabs {
@@ -197,27 +235,33 @@
 }
 
 .dash-toptab {
+  --press: 0.96;
   border: none;
   background: none;
   padding: 7px 12px;
   border-radius: 999px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--c-text-3);
   cursor: pointer;
   white-space: nowrap;
 }
 
+.dash-toptab:hover:not(.is-active) {
+  background: var(--c-surface-hover);
+  color: var(--c-text-2);
+}
+
 .dash-toptab.is-active {
-  background: #eef2ff;
-  color: #4338ca;
+  background: var(--c-brand-soft);
+  color: var(--c-brand);
 }
 
 .dash-bell {
   flex-shrink: 0;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   background: #ffffff;
-  color: #6b7280;
+  color: var(--c-text-3);
   border-radius: 8px;
   width: 34px;
   height: 34px;
@@ -232,13 +276,20 @@
   flex-shrink: 0;
   width: 34px;
   height: 34px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: none;
-  background: #4338ca;
+  background: var(--c-brand);
   color: #ffffff;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   cursor: pointer;
+  box-shadow: var(--sh-sm);
+}
+
+.dash-avatar:hover {
+  background: var(--c-brand-hover);
+  box-shadow: var(--sh-md);
 }
 
 .dash-content {

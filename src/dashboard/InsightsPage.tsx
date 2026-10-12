@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { computeInsights, type Insights } from "./insightsData";
+import StatCard from "./StatCard";
+import { BuildingIcon, HouseholdIcon, RupeeIcon, ScreenIcon, StarIcon } from "./icons";
 import { useToast } from "./Toast";
 import "./CampaignsPage.css";
 import "./InsightsPage.css";
@@ -76,21 +78,29 @@ export default function InsightsPage() {
         </div>
       </div>
 
+      <div className="cpg-stats-row">
+        <StatCard icon={<BuildingIcon />} label="Total Properties" sub="Across all cities" value={data && data.totals.properties.toLocaleString()} tone="indigo" />
+        <StatCard icon={<ScreenIcon />} label="Total Screens" sub="Active DOOH screens" value={data && data.totals.screens.toLocaleString()} tone="green" />
+        <StatCard icon={<HouseholdIcon />} label="Household Reach" sub="Potential households/mo" value={data && data.totals.households.toLocaleString()} tone="orange" />
+        <StatCard icon={<RupeeIcon />} label="Ad Budget (Mo)" sub="Est. full-inventory value" value={data && `₹${data.totals.budget.toLocaleString()}`} tone="blue" />
+      </div>
+
       {!data && (
-        <div className="cpg-empty">
-          <p>Crunching inventory numbers…</p>
+        <div className="insights-grid">
+          <Panel title="Screens by city">
+            <BarSkeleton rows={6} />
+          </Panel>
+          <Panel title="Top localities by screen count">
+            <BarSkeleton rows={6} />
+          </Panel>
+          <Panel title="Screen size mix">
+            <BarSkeleton rows={4} />
+          </Panel>
         </div>
       )}
 
       {data && (
         <>
-          <div className="cpg-stats-row">
-            <StatCard icon="🏢" label="Total Properties" sub="Across all cities" value={data.totals.properties.toLocaleString()} color="indigo" />
-            <StatCard icon="🖥️" label="Total Screens" sub="Active DOOH screens" value={data.totals.screens.toLocaleString()} color="green" />
-            <StatCard icon="🏠" label="Household Reach" sub="Potential households/mo" value={data.totals.households.toLocaleString()} color="orange" />
-            <StatCard icon="₹" label="Ad Budget (Mo)" sub="Est. full-inventory value" value={`₹${data.totals.budget.toLocaleString()}`} color="blue" />
-          </div>
-
           <div className="insights-grid">
             <Panel title="Screens by city">
               {data.cities
@@ -132,16 +142,19 @@ export default function InsightsPage() {
   );
 }
 
-function StatCard({ icon, label, sub, value, color }: { icon: string; label: string; sub: string; value: string; color: "indigo" | "green" | "orange" | "blue" }) {
+
+// Mirrors BarRow's own two-line shape (label line, then track) so the
+// layout doesn't jump when the real bars replace these.
+function BarSkeleton({ rows }: { rows: number }) {
   return (
-    <div className={`cpg-stat-card cpg-stat-${color}`}>
-      <span className="cpg-stat-icon">{icon}</span>
-      <div>
-        <span className="cpg-stat-value">{value}</span>
-        <span className="cpg-stat-label">{label}</span>
-        <span className="cpg-stat-sub">{sub}</span>
-      </div>
-    </div>
+    <>
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="insights-bar-skel-row">
+          <span className="insights-bar-skel-label skel" />
+          <span className="insights-bar-skel-track skel" />
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -186,7 +199,7 @@ function BarRow({
               title={starred ? "Remove from My Areas" : "Save to My Areas"}
               aria-pressed={starred}
             >
-              {starred ? "★" : "☆"}
+              <StarIcon size={15} filled={starred} />
             </button>
           )}
           <span>{label}</span>

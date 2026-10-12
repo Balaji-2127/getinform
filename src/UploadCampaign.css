@@ -9,13 +9,13 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .upload-eyebrow {
   font-size: 11px;
   font-weight: 700;
-  color: #6366f1;
+  color: var(--c-brand-accent);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -24,14 +24,14 @@
   margin: 4px 0 4px;
   font-size: 24px;
   font-weight: 800;
-  color: #111827;
+  color: var(--c-text);
   letter-spacing: -0.01em;
 }
 
 .upload-sub {
   margin: 0;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--c-text-3);
   line-height: 1.5;
   max-width: 560px;
 }
@@ -47,7 +47,7 @@
   flex: 1 1 380px;
   max-width: 460px;
   background: #ffffff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   border-radius: 12px;
   padding: 20px;
 }
@@ -69,27 +69,32 @@
   gap: 5px;
   font-size: 11.5px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--c-text-3);
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
 .upload-form input[type="text"],
 .upload-form input:not([type]),
+/* The one control on this form that still read as a raw browser widget
+   sitting between two styled text fields. A dashed edge says "put a file
+   here" the way a solid one doesn't. */
 .upload-form input[type="file"] {
   padding: 9px 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 13px;
+  border: 1px dashed var(--c-border-strong);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+  font-size: 12.5px;
   font-weight: 400;
   text-transform: none;
-  color: #111827;
+  color: var(--c-text-3);
   letter-spacing: normal;
+  cursor: pointer;
 }
 
 .upload-form input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--c-brand-accent);
 }
 
 .upload-error {
@@ -108,7 +113,7 @@
   flex-direction: column;
   gap: 3px;
   font-size: 11.5px;
-  color: #b91c1c;
+  color: var(--c-danger-text);
 }
 
 .upload-form button,
@@ -116,7 +121,7 @@
   padding: 10px 12px;
   border: none;
   border-radius: 8px;
-  background: #4338ca;
+  background: var(--c-brand);
   color: #ffffff;
   font-size: 13px;
   font-weight: 700;
@@ -125,18 +130,18 @@
 
 .upload-form button:hover:not(:disabled),
 .upload-share-row button:hover {
-  background: #3730a3;
+  background: var(--c-brand-hover);
 }
 
 .upload-form button:disabled {
-  background: #c7d2fe;
+  background: var(--c-brand-disabled);
   cursor: default;
 }
 
 .upload-result {
   margin-top: 18px;
   padding-top: 18px;
-  border-top: 1px solid #eef2ff;
+  border-top: 1px solid var(--c-brand-soft);
 }
 
 .upload-result-title {
@@ -155,10 +160,10 @@
 .upload-share-row input {
   flex: 1;
   padding: 8px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   border-radius: 8px;
   font-size: 12px;
-  color: #374151;
+  color: var(--c-text-2);
 }
 
 .upload-matched {
@@ -169,13 +174,13 @@
   flex-direction: column;
   gap: 3px;
   font-size: 12.5px;
-  color: #111827;
+  color: var(--c-text);
 }
 
 .upload-skipped {
   margin: 0 0 10px;
   font-size: 11.5px;
-  color: #9ca3af;
+  color: var(--c-text-4);
   line-height: 1.4;
 }
 
@@ -186,22 +191,47 @@
   flex-direction: column;
   gap: 3px;
   font-size: 11.5px;
-  color: #b45309;
+  color: var(--c-warn-text);
   line-height: 1.4;
+}
+
+/* Row holding "Open in Campaigns" next to the client-preview link — only
+   reached when an upload came back with warnings/skipped sheets, where the
+   page deliberately stays put so the rep reads them first. */
+.upload-result-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.upload-open-btn {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 7px;
+  background: var(--c-brand);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.upload-open-btn:hover {
+  background: var(--c-brand-hover);
 }
 
 .upload-preview-link {
   display: inline-block;
   font-size: 12.5px;
   font-weight: 600;
-  color: #4338ca;
+  color: var(--c-brand);
 }
 
 .upload-history h2 {
   margin: 0 0 12px;
   font-size: 13px;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--c-text-3);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -222,7 +252,7 @@
   gap: 10px;
   font-size: 12.5px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--c-border-soft);
 }
 
 .upload-history li:last-child {
@@ -232,21 +262,68 @@
 
 .upload-history-client {
   font-weight: 700;
-  color: #111827;
+  color: var(--c-text);
 }
 
 .upload-history-name {
-  color: #9ca3af;
+  color: var(--c-text-4);
 }
 
 .upload-history button {
   border: none;
   background: none;
   padding: 0;
-  color: #4338ca;
+  color: var(--c-brand);
   font-weight: 600;
   font-size: inherit;
   font-family: inherit;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.upload-card {
+  box-shadow: var(--sh-sm);
+}
+
+.upload-form button[type="submit"],
+.upload-open-btn,
+.upload-share-row button {
+  --press: 0.97;
+}
+
+.upload-form button[type="submit"] {
+  box-shadow: var(--sh-sm);
+}
+
+.upload-form button[type="submit"]:hover:not(:disabled) {
+  box-shadow: var(--sh-md);
+}
+
+.upload-open-btn:hover {
+  box-shadow: var(--sh-md);
+}
+
+.upload-form input[type="file"]:hover {
+  border-color: var(--c-brand-accent);
+  background: var(--c-brand-soft);
+}
+
+.upload-form input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xs);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.upload-preview-link,
+.upload-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }

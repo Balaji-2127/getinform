@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CITIES, type CityId } from "../data/cities";
+import { BuildingIcon, CampaignsIcon } from "./icons";
 import "./CampaignsPage.css";
 import "./RecentSearchesPage.css";
 
@@ -79,7 +80,9 @@ export default function RecentSearchesPage({
               className="rsp-row"
               onClick={() => (e.resultType === "campaign" ? onOpenCampaign(e.targetId) : onOpenProperty(e.cityId as CityId, e.targetId))}
             >
-              <span className={`rsp-type-icon rsp-type-${e.resultType}`}>{e.resultType === "campaign" ? "📢" : "🏢"}</span>
+              <span className={`rsp-type-icon rsp-type-${e.resultType}`}>
+                {e.resultType === "campaign" ? <CampaignsIcon size={15} /> : <BuildingIcon size={15} />}
+              </span>
               <div className="rsp-row-text">
                 <span className="rsp-row-main">{e.resultLabel}</span>
                 <span className="rsp-row-sub">

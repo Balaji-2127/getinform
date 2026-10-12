@@ -2,16 +2,16 @@
   width: 100%;
   max-width: 320px;
   padding: 9px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   border-radius: 8px;
   font-size: 13px;
-  color: #111827;
+  color: var(--c-text);
   font-family: inherit;
 }
 
 .clients-search:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--c-brand-accent);
 }
 
 .clients-grid {
@@ -25,16 +25,17 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
   padding: 16px;
+  box-shadow: var(--sh-sm);
 }
 
 .clients-sub {
   margin: 0;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--c-text-4);
 }
 
 .clients-stat-row {
@@ -48,8 +49,8 @@
   flex-direction: column;
   gap: 2px;
   padding: 8px 10px;
-  background: #f9fafb;
-  border: 1px solid #eef2ff;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-brand-soft);
   border-radius: 8px;
   min-width: 0;
 }
@@ -57,13 +58,13 @@
 .clients-stat-value {
   font-size: 16px;
   font-weight: 800;
-  color: #3730a3;
+  color: var(--c-brand-hover);
   font-variant-numeric: tabular-nums;
 }
 
 .clients-stat-label {
   font-size: 10.5px;
-  color: #9ca3af;
+  color: var(--c-text-4);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -73,7 +74,7 @@
   list-style: none;
   margin: 0;
   padding: 10px 0 0;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--c-border-soft);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -97,7 +98,7 @@
 .clients-campaign-name {
   font-size: 12.5px;
   font-weight: 700;
-  color: #111827;
+  color: var(--c-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -105,14 +106,14 @@
 
 .clients-campaign-date {
   font-size: 10.5px;
-  color: #9ca3af;
+  color: var(--c-text-4);
 }
 
 .clients-campaign-list button {
   flex-shrink: 0;
   border: none;
   background: none;
-  color: #4338ca;
+  color: var(--c-brand);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -121,4 +122,25 @@
 
 .clients-campaign-list button:hover {
   text-decoration: underline;
+}
+
+/* Gated behind a real pointer: on touch, :hover sticks after a tap and
+   leaves the card stuck in its raised state. */
+@media (hover: hover) and (pointer: fine) {
+  .clients-card {
+    transition:
+      box-shadow var(--t-hover) ease,
+      border-color var(--t-hover) ease,
+      transform var(--t-hover) var(--ease-out);
+  }
+
+  .clients-card:hover {
+    box-shadow: var(--sh-md);
+    border-color: var(--c-border-strong);
+    transform: translateY(-2px);
+  }
+}
+
+.clients-stat-value {
+  font-variant-numeric: tabular-nums;
 }

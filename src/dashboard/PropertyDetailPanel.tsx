@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { ProjectFeature } from "../google/clustering";
 import { generateSyntheticScreens } from "../syntheticScreens";
+import { ArrowLeftIcon, ArrowRightIcon } from "./icons";
 import "./PropertyDetailPanel.css";
 
 type Tab = "screens" | "details" | "nearby";
@@ -24,13 +25,13 @@ export default function PropertyDetailPanel({ feature, onBack }: { feature: Proj
   return (
     <div className="pdp-panel">
       <button type="button" className="pdp-back-all" onClick={onBack}>
-        ← Back to all properties
+        <ArrowLeftIcon size={14} /> Back to all properties
       </button>
 
       <div className="pdp-photo">
         {p.visualLink ? (
           <a href={p.visualLink} target="_blank" rel="noreferrer" className="pdp-photo-link">
-            View property photos →
+            View property photos <ArrowRightIcon size={13} />
           </a>
         ) : (
           <span className="pdp-photo-placeholder">No photos available</span>

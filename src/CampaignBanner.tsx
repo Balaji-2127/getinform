@@ -1,4 +1,5 @@
 import ClientLogo from "./dashboard/ClientLogo";
+import { PlayIcon, RestartIcon, StopIcon } from "./dashboard/icons";
 import "./CampaignBanner.css";
 
 export type CampaignSummary = {
@@ -58,20 +59,22 @@ export default function CampaignBanner({
 
   const tourControl = touring ? (
     <button type="button" className="campaign-banner-tour" onClick={onStopTour}>
-      {`■ Stop tour (${tourProgress?.current ?? 0}/${tourProgress?.total ?? 0})`}
+      <StopIcon size={11} />
+      {` Stop tour (${tourProgress?.current ?? 0}/${tourProgress?.total ?? 0})`}
     </button>
   ) : tourPause ? (
     <div className="campaign-banner-tour-group">
       <button type="button" className="campaign-banner-tour campaign-banner-tour-ghost" onClick={onStartTour}>
-        ↻ Restart
+        <RestartIcon size={13} /> Restart
       </button>
       <button type="button" className="campaign-banner-tour" onClick={onResumeTour}>
-        {`▶ Resume (${tourPause.index + 1}/${tourPause.total})`}
+        <PlayIcon size={11} />
+        {` Resume (${tourPause.index + 1}/${tourPause.total})`}
       </button>
     </div>
   ) : (
     <button type="button" className="campaign-banner-tour" onClick={onStartTour}>
-      ▶ Tour the shortlist
+      <PlayIcon size={11} /> Tour the shortlist
     </button>
   );
 

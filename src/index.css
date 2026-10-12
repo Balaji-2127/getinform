@@ -1,3 +1,81 @@
+/* ---------------------------------------------------------------------------
+   Design tokens.
+
+   Before this existed, all 25 CSS files in this app each hardcoded the same
+   hexes (#4338ca, #e5e7eb, #6b7280, ...), re-declared the font stack, and
+   picked radii from 6/7/8/10/12px with no system behind the choice. Nothing
+   could be tuned in one place, and the values had already drifted apart
+   (two different indigos for "the accent colour", four different card
+   borders). These are the same colours the app already used — lifted into
+   one layer rather than restyled — plus the elevation, easing and duration
+   scales it never had.
+--------------------------------------------------------------------------- */
+:root {
+  --font-sans: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Neutrals */
+  --c-bg: #f6f7f9;
+  --c-surface: #ffffff;
+  --c-surface-2: #f9fafb;
+  --c-surface-hover: #f3f4f6;
+  --c-border: #e5e7eb;
+  --c-border-soft: #f3f4f6;
+  --c-border-strong: #d1d5db;
+  --c-text: #111827;
+  --c-text-2: #374151;
+  --c-text-3: #6b7280;
+  --c-text-4: #9ca3af;
+
+  /* Brand */
+  --c-brand: #4338ca;
+  --c-brand-hover: #3730a3;
+  --c-brand-accent: #6366f1;
+  --c-brand-soft: #eef2ff;
+  --c-brand-soft-border: #e0e7ff;
+  --c-brand-disabled: #c7d2fe;
+
+  /* Semantic */
+  --c-success: #16a34a;
+  --c-danger: #dc2626;
+  --c-danger-text: #b91c1c;
+  --c-danger-border: #fca5a5;
+  --c-warn-text: #b45309;
+
+  /* Radii */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-pill: 999px;
+
+  /* Elevation. Tinted toward the text colour rather than pure black —
+     a neutral-black shadow over a warm-grey page reads as dirty grey. */
+  --sh-xs: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --sh-sm: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --sh-md: 0 4px 12px rgba(16, 24, 40, 0.07), 0 2px 4px rgba(16, 24, 40, 0.04);
+  --sh-lg: 0 12px 28px rgba(16, 24, 40, 0.1), 0 4px 8px rgba(16, 24, 40, 0.05);
+  --sh-xl: 0 24px 48px rgba(16, 24, 40, 0.14), 0 8px 16px rgba(16, 24, 40, 0.06);
+
+  /* Motion. The built-in CSS easings are too weak to read as deliberate;
+     these are the stronger custom variants. ease-in is deliberately absent
+     — it delays the initial movement, which is the exact moment the user is
+     watching most closely, so it makes everything feel sluggish. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  --t-press: 120ms;
+  --t-hover: 160ms;
+  --t-pop: 180ms;
+  --t-overlay: 220ms;
+
+  /* How far a pressable element scales down while held. Set per-component:
+     0.97 reads right on a normal button, but on a full-width list row the
+     same ratio swings the edges by a dozen pixels, so those rows override
+     it to something much subtler. */
+  --press: 0.97;
+}
+
 html,
 body,
 #root {
@@ -10,10 +88,165 @@ body,
 body {
   overflow: hidden;
   /* The one canonical place this app's font stack is defined — every
-     component below re-declares it too (so a component never silently
-     depends on being nested a particular way to look right), but this is
-     the real fallback: without it, anything that ever forgot would fall
-     through to the browser's own default (typically a serif font), not
-     this app's look. */
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+     component below points at --font-sans rather than re-declaring the
+     stack, so there's no longer a dozen copies to keep in sync. */
+  font-family: var(--font-sans);
+  /* Inter's own metrics are tight enough that the browser's default
+     synthetic adjustments work against it. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---------------------------------------------------------------------------
+   Pressable elements.
+
+   Nothing in this app previously had an :active state — roughly sixty
+   buttons, none of which acknowledged being pressed. A press is the one
+   moment the user is asking "did it hear me?", and a 120ms scale answers
+   that before any network round-trip can. Applied at the element level so
+   every button gets it without touching all 25 stylesheets, including ones
+   added later.
+--------------------------------------------------------------------------- */
+button,
+[role="button"] {
+  font-family: inherit;
+  transition:
+    transform var(--t-press) var(--ease-out),
+    background-color var(--t-hover) ease,
+    border-color var(--t-hover) ease,
+    box-shadow var(--t-hover) ease,
+    color var(--t-hover) ease,
+    opacity var(--t-hover) ease;
+}
+
+button:not(:disabled):active {
+  transform: scale(var(--press));
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  transition:
+    border-color var(--t-hover) ease,
+    box-shadow var(--t-hover) ease,
+    background-color var(--t-hover) ease;
+}
+
+/* ---------------------------------------------------------------------------
+   Focus.
+
+   There were no :focus-visible styles anywhere, and one control
+   (.map-city-switcher) stripped the browser default outright with
+   `outline: none` on :focus, leaving keyboard users with no indication at
+   all. :focus-visible rather than :focus so a mouse click never leaves a
+   ring behind — which is the reason people reach for `outline: none` in
+   the first place.
+
+   Deliberately no border-radius here: `outline` already follows the
+   element's own corner rounding, so setting one would instead *override*
+   the real radius of whatever is focused — turning a pill button square
+   for as long as it holds focus.
+--------------------------------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid var(--c-brand-accent);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   Skeletons. Every async surface in this app used to say "Loading…" or
+   "Crunching inventory numbers…" as bare text, which reads as a stall.
+   A shape standing in for the content that's coming reads as progress,
+   and makes the wait feel shorter than it measurably is.
+--------------------------------------------------------------------------- */
+.skel {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-xs);
+  background: #eceef1;
+}
+
+.skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  animation: skel-sweep 1.3s infinite;
+}
+
+@keyframes skel-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* A fast sweep makes the app feel like it loads faster than a slow one,
+   at identical actual load times — so this stays brisk. */
+
+/* ---------------------------------------------------------------------------
+   Entrances. Used by content that arrives asynchronously (a fetch
+   resolving), never by anything reached from the sidebar — switching
+   sections happens dozens of times a day and animating it would just put
+   a delay in front of a keystroke.
+--------------------------------------------------------------------------- */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger > * {
+  animation: rise-in var(--t-overlay) var(--ease-out) backwards;
+}
+
+/* Capped at six: beyond that the last item would be waiting on a visible
+   delay, and a stagger that makes someone wait has stopped being decorative. */
+.stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stagger > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.stagger > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.stagger > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.stagger > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.stagger > *:nth-child(n + 6) {
+  animation-delay: 200ms;
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion. Not "no motion": opacity and colour changes still aid
+   comprehension and are not what triggers motion sickness. What goes is
+   movement and scaling.
+--------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  button:not(:disabled):active {
+    transform: none;
+  }
+
+  .skel::after {
+    display: none;
+  }
 }

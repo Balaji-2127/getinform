@@ -319,6 +319,15 @@ export default function GoogleInventoryMap({
   // clicked something" — a manual click should cancel the tour, the tour's
   // own step should obviously not cancel itself.
   const tourAdvancingRef = useRef(false);
+  // The map's own background-click listener is attached once, during the
+  // one-time bootstrap effect, so it permanently captured the very first
+  // render's stopTour — whose `touring`/`tourProgress` were still their
+  // initial false/null. Clicking the map during a tour therefore stopped
+  // it without ever recording where it got to, so CampaignBanner never
+  // offered Resume (only the listener's own path was affected; the Stop
+  // button re-reads a fresh closure every render and worked fine). This
+  // ref always holds the current one.
+  const stopTourRef = useRef<() => void>(() => {});
 
   const cityLabel = CITIES.find((c) => c.id === cityId)?.label ?? cityId;
 
@@ -376,7 +385,7 @@ export default function GoogleInventoryMap({
         map.addEventListener("gmp-click", () => {
           // Background/POI click — mirrors the old "empty space drops the
           // screen selection" behavior instead of yanking the camera.
-          stopTour();
+          stopTourRef.current();
           setSelectedScreen((current) => (current ? null : current));
           setViewLevel((level) => (level === "screen" ? "project" : level));
         });
@@ -550,6 +559,7 @@ export default function GoogleInventoryMap({
     setTouring(false);
     setTourProgress(null);
   };
+  stopTourRef.current = stopTour;
 
   // Walks the campaign's own shortlisted properties one at a time starting
   // at fromIndex (0 for a fresh start, tourPause.index to resume) — each

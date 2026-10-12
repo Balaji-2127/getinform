@@ -160,7 +160,11 @@ router.put<{ id: string }>("/:id/selections", requireAuth, async (req, res) => {
     const ids = body[cityId];
     if (!Array.isArray(ids)) continue;
     const known = getKnownMediaSiteIds(cityId);
-    const kept = ids.filter((id): id is string => typeof id === "string" && known.has(id));
+    // Deduped as well as filtered — a repeated id would otherwise be stored
+    // twice, inflating this city's count everywhere it's displayed (the
+    // campaign list, Reports, the map banner) and double-counting the same
+    // property in the "most shortlisted" aggregate.
+    const kept = [...new Set(ids.filter((id): id is string => typeof id === "string" && known.has(id)))];
     if (kept.length > 0) cleaned[cityId] = kept;
   }
   const record = await updateCampaignSelections(req.params.id, cleaned);

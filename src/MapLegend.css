@@ -3,12 +3,14 @@
   left: 16px;
   bottom: 16px;
   z-index: 5;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.18),
+    0 12px 32px rgba(16, 24, 40, 0.28);
   padding: 10px 12px;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
   max-width: 240px;
 }
 
@@ -18,7 +20,7 @@
   gap: 8px;
   font-size: 11.5px;
   font-weight: 600;
-  color: #374151;
+  color: var(--c-text-2);
   padding: 3px 0;
 }
 
@@ -57,7 +59,7 @@
 }
 
 .map-legend-row-toggle:hover {
-  background: #f9fafb;
+  background: var(--c-surface-2);
 }
 
 .map-legend-row-toggle.is-off {
@@ -65,7 +67,7 @@
 }
 
 .map-legend-row-toggle.is-off .map-legend-dot {
-  background: #e5e7eb;
+  background: var(--c-border);
 }
 
 .map-legend-toggle-state {
@@ -73,7 +75,7 @@
   padding-left: 8px;
   font-size: 10px;
   font-weight: 700;
-  color: #9ca3af;
+  color: var(--c-text-4);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   flex-shrink: 0;
@@ -82,8 +84,21 @@
 .map-legend-note {
   margin: 6px 0 0;
   padding-top: 6px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--c-border-soft);
   font-size: 9.5px;
-  color: #9ca3af;
+  color: var(--c-text-4);
   line-height: 1.4;
+}
+
+/* This row is a toggle, so it should acknowledge a press. Scaled gently —
+   it's a wide row inside a small panel. */
+.map-legend-row-toggle {
+  --press: 0.97;
+}
+
+/* A 10px dot sitting directly on satellite imagery has no guaranteed
+   contrast against whatever is underneath it; a thin white ring separates
+   it from the map the same way the panel's own border does. */
+.map-legend-dot {
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9);
 }

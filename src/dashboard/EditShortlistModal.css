@@ -1,13 +1,36 @@
 .esm-overlay {
   position: fixed;
   inset: 0;
-  z-index: 200;
-  background: rgba(17, 24, 39, 0.5);
+  z-index: 150;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: rgba(17, 24, 39, 0.45);
+  /* Blurring what's behind the dialog does the job a darker scrim would
+     otherwise have to do, without crushing the page to near-black. */
+  backdrop-filter: blur(3px);
+  animation: esm-overlay-in var(--t-overlay) var(--ease-out);
+}
+
+@keyframes esm-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes esm-card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .esm-card {
@@ -15,10 +38,14 @@
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+  background: var(--c-surface);
+  border-radius: var(--r-xl);
   padding: 20px;
+  box-shadow: var(--sh-xl);
+  /* Centre origin is right here: a modal isn't anchored to a trigger, it
+     appears in the middle of the viewport, so that's where it should grow
+     from. (Popovers are the opposite — see .gs-dropdown.) */
+  animation: esm-card-in var(--t-overlay) var(--ease-out);
 }
 
 .esm-header {
@@ -31,28 +58,31 @@
   margin: 0;
   font-size: 17px;
   font-weight: 800;
-  color: #111827;
+  color: var(--c-text);
 }
 
 .esm-close {
+  --press: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--c-surface-hover);
+  color: var(--c-text-3);
   width: 26px;
   height: 26px;
-  border-radius: 999px;
-  font-size: 16px;
+  border-radius: var(--r-pill);
   cursor: pointer;
 }
 
 .esm-close:hover {
-  background: #e5e7eb;
+  background: var(--c-border);
 }
 
 .esm-sub {
   margin: 4px 0 14px;
   font-size: 12.5px;
-  color: #6b7280;
+  color: var(--c-text-3);
 }
 
 .esm-add {
@@ -63,7 +93,7 @@
 .esm-add input {
   width: 100%;
   padding: 9px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   border-radius: 8px;
   font-size: 13px;
   font-family: inherit;
@@ -71,7 +101,7 @@
 
 .esm-add input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--c-brand-accent);
 }
 
 .esm-add-results {
@@ -82,7 +112,7 @@
   max-height: 220px;
   overflow-y: auto;
   background: #ffffff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   border-radius: 10px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
   z-index: 10;
@@ -99,7 +129,7 @@
 }
 
 .esm-add-row:hover {
-  background: #f9fafb;
+  background: var(--c-surface-2);
 }
 
 .esm-add-row > div {
@@ -110,9 +140,9 @@
 
 .esm-add-btn {
   flex-shrink: 0;
-  border: 1px solid #c7d2fe;
-  background: #eef2ff;
-  color: #4338ca;
+  border: 1px solid var(--c-brand-disabled);
+  background: var(--c-brand-soft);
+  color: var(--c-brand);
   padding: 5px 10px;
   border-radius: 999px;
   font-size: 11.5px;
@@ -122,7 +152,7 @@
 }
 
 .esm-add-btn:hover:not(:disabled) {
-  background: #e0e7ff;
+  background: var(--c-brand-soft-border);
 }
 
 .esm-add-btn:disabled {
@@ -134,7 +164,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--c-border-soft);
   padding-top: 10px;
 }
 
@@ -147,7 +177,7 @@
   margin-bottom: 4px;
   font-size: 11px;
   font-weight: 700;
-  color: #9ca3af;
+  color: var(--c-text-4);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -169,7 +199,7 @@
 .esm-row-name {
   font-size: 13px;
   font-weight: 700;
-  color: #111827;
+  color: var(--c-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -177,7 +207,7 @@
 
 .esm-row-sub {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--c-text-4);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -187,7 +217,7 @@
   flex-shrink: 0;
   border: none;
   background: none;
-  color: #b91c1c;
+  color: var(--c-danger-text);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -201,13 +231,13 @@
   margin: 0;
   padding: 10px 4px;
   font-size: 12.5px;
-  color: #9ca3af;
+  color: var(--c-text-4);
 }
 
 .esm-error {
   margin: 10px 0 0;
   font-size: 12.5px;
-  color: #b91c1c;
+  color: var(--c-danger-text);
 }
 
 .esm-actions {
@@ -216,13 +246,13 @@
   gap: 10px;
   margin-top: 14px;
   padding-top: 14px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--c-border-soft);
 }
 
 .esm-cancel-btn {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   background: #ffffff;
-  color: #374151;
+  color: var(--c-text-2);
   padding: 9px 16px;
   border-radius: 8px;
   font-size: 12.5px;
@@ -231,12 +261,12 @@
 }
 
 .esm-cancel-btn:hover {
-  background: #f9fafb;
+  background: var(--c-surface-2);
 }
 
 .esm-save-btn {
   border: none;
-  background: #4338ca;
+  background: var(--c-brand);
   color: #ffffff;
   padding: 9px 18px;
   border-radius: 8px;
@@ -246,10 +276,36 @@
 }
 
 .esm-save-btn:hover:not(:disabled) {
-  background: #3730a3;
+  background: var(--c-brand-hover);
 }
 
 .esm-save-btn:disabled {
-  background: #c7d2fe;
+  background: var(--c-brand-disabled);
   cursor: default;
+}
+
+.esm-add-btn,
+.esm-remove-btn,
+.esm-save-btn,
+.esm-cancel-btn {
+  --press: 0.96;
+}
+
+.esm-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.esm-save-btn {
+  box-shadow: var(--sh-sm);
+}
+
+.esm-save-btn:hover:not(:disabled) {
+  box-shadow: var(--sh-md);
+}
+
+.esm-row,
+.esm-add-row {
+  transition: background-color var(--t-hover) ease;
 }

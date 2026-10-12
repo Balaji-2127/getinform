@@ -6,17 +6,18 @@
 }
 
 .insights-panel {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
   padding: 16px;
+  box-shadow: var(--sh-sm);
 }
 
 .insights-panel h2 {
   margin: 0 0 14px;
   font-size: 12px;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--c-text-3);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -30,7 +31,7 @@
 .insights-empty {
   margin: 0;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--c-text-4);
 }
 
 .insights-bar-label {
@@ -41,7 +42,7 @@
   margin-bottom: 4px;
   font-size: 12.5px;
   font-weight: 700;
-  color: #111827;
+  color: var(--c-text);
 }
 
 .insights-bar-label-text {
@@ -61,7 +62,7 @@
   padding: 0;
   font-size: 13px;
   line-height: 1;
-  color: #d1d5db;
+  color: var(--c-border-strong);
   cursor: pointer;
 }
 
@@ -76,19 +77,19 @@
 .insights-bar-value {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
-  color: #4338ca;
+  color: var(--c-brand);
   font-weight: 700;
 }
 
 .insights-bar-sub {
-  color: #9ca3af;
+  color: var(--c-text-4);
   font-weight: 600;
 }
 
 .insights-bar-track {
   height: 8px;
   border-radius: 999px;
-  background: #f3f4f6;
+  background: var(--c-surface-hover);
   overflow: hidden;
 }
 
@@ -98,9 +99,53 @@
 }
 
 .insights-bar-fill.insights-bar-indigo {
-  background: #4338ca;
+  background: var(--c-brand);
 }
 
 .insights-bar-fill.insights-bar-orange {
   background: #f97316;
+}
+
+/* Bars grow out of their own baseline when the data lands. scaleX from 0
+   is normally the thing to avoid — but a bar chart is the exception: a
+   zero-length bar is a real value, not an object materialising from
+   nothing. transform rather than width so this never touches layout. */
+.insights-bar-fill {
+  transform-origin: left center;
+  animation: bar-grow 520ms var(--ease-out);
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.insights-star-btn {
+  --press: 0.88;
+  transition:
+    color var(--t-hover) ease,
+    transform var(--t-press) var(--ease-out);
+}
+
+/* Skeleton stand-ins while the 21 per-city inventory files are being
+   crunched — this is the slowest page in the app, and bare text saying so
+   read as a stall. */
+.insights-bar-skel-row {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.insights-bar-skel-label {
+  width: 42%;
+  height: 11px;
+}
+
+.insights-bar-skel-track {
+  height: 8px;
+  border-radius: var(--r-pill);
 }

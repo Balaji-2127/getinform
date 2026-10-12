@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { requireAuth } from "./auth.js";
 import { listCampaignsFull } from "../db.js";
-import { getCityFeatures, type CityId } from "../inventoryLookup.js";
+import { getCityFeatures, SUPPORTED_CITIES, type CityId } from "../inventoryLookup.js";
 
 const router = Router();
 
@@ -48,6 +48,10 @@ router.get("/shortlists/popular", requireAuth, async (_req: Request, res: Respon
 
   const results: PopularProperty[] = [];
   for (const [cityId, cityTally] of tally) {
+    // A city key we don't have an inventory file for (a stale id left in an
+    // old campaign, say) would make getCityFeatures throw ENOENT and 500
+    // this whole page — skip it and still report every other city.
+    if (!SUPPORTED_CITIES.includes(cityId as CityId)) continue;
     const featureById = new Map(getCityFeatures(cityId as CityId).map((f) => [f.properties.mediaSiteId, f.properties]));
     for (const [mediaSiteId, entry] of cityTally) {
       const props = featureById.get(mediaSiteId);

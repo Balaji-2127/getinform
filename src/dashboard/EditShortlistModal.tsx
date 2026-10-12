@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CITIES, loadCityScreens, type CityId } from "../data/cities";
 import { useToast } from "./Toast";
+import { CloseIcon, PlusIcon } from "./icons";
 import "./EditShortlistModal.css";
 
 type PropertyRow = { cityId: CityId; mediaSiteId: string; name: string; locality: string | null; zone: string | null };
@@ -96,14 +97,24 @@ export default function EditShortlistModal({
   const handleSave = async () => {
     setSaving(true);
     setError(null);
-    const selections: Record<string, string[]> = {};
+    // Deduped per city: the same property must never be sent twice, both
+    // because it would double that city's count and because the server
+    // stores the list verbatim.
+    const perCity = new Map<string, Set<string>>();
+    const include = (cityId: string, mediaSiteId: string) => {
+      let set = perCity.get(cityId);
+      if (!set) {
+        set = new Set();
+        perCity.set(cityId, set);
+      }
+      set.add(mediaSiteId);
+    };
     for (const r of rows ?? []) {
       if (removed.has(currentKey(r.cityId, r.mediaSiteId))) continue;
-      (selections[r.cityId] ??= []).push(r.mediaSiteId);
+      include(r.cityId, r.mediaSiteId);
     }
-    for (const r of added) {
-      (selections[r.cityId] ??= []).push(r.mediaSiteId);
-    }
+    for (const r of added) include(r.cityId, r.mediaSiteId);
+    const selections: Record<string, string[]> = Object.fromEntries([...perCity].map(([cityId, ids]) => [cityId, [...ids]]));
     try {
       const res = await fetch(`/api/campaigns/${campaignId}/selections`, {
         method: "PUT",
@@ -129,7 +140,7 @@ export default function EditShortlistModal({
         <div className="esm-header">
           <h2>Edit shortlist</h2>
           <button type="button" className="esm-close" onClick={onClose} aria-label="Close">
-            ×
+            <CloseIcon size={15} />
           </button>
         </div>
         <p className="esm-sub">{totalCount.toLocaleString()} properties currently shortlisted.</p>
@@ -161,15 +172,36 @@ export default function EditShortlistModal({
                         className="esm-add-btn"
                         disabled={included}
                         onClick={() => {
-                          setAdded((prev) => [...prev, { cityId: p.cityId as CityId, mediaSiteId: p.mediaSiteId, name: p.name, locality: p.locality, zone: p.zone }]);
-                          setRemoved((prev) => {
-                            const next = new Set(prev);
-                            next.delete(currentKey(p.cityId, p.mediaSiteId));
-                            return next;
-                          });
+                          const key = currentKey(p.cityId, p.mediaSiteId);
+                          // Re-adding one of the campaign's *own* properties
+                          // after removing it this session is an un-remove,
+                          // not an addition. Pushing it to `added` as well
+                          // left it in both lists at once: the city group
+                          // below rendered it twice (duplicate React keys),
+                          // the header count double-counted it, and the save
+                          // persisted the same mediaSiteId twice.
+                          if ((rows ?? []).some((r) => currentKey(r.cityId, r.mediaSiteId) === key)) {
+                            setRemoved((prev) => {
+                              const next = new Set(prev);
+                              next.delete(key);
+                              return next;
+                            });
+                            return;
+                          }
+                          setAdded((prev) =>
+                            prev.some((r) => currentKey(r.cityId, r.mediaSiteId) === key)
+                              ? prev
+                              : [...prev, { cityId: p.cityId as CityId, mediaSiteId: p.mediaSiteId, name: p.name, locality: p.locality, zone: p.zone }],
+                          );
                         }}
                       >
-                        {included ? "Added" : "+ Add"}
+                        {included ? (
+                          "Added"
+                        ) : (
+                          <>
+                            <PlusIcon size={12} /> Add
+                          </>
+                        )}
                       </button>
                     </div>
                   );

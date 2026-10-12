@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { CITIES } from "./data/cities";
+import { copyToClipboard } from "./copyToClipboard";
+import { ArrowRightIcon } from "./dashboard/icons";
+import { useToast } from "./dashboard/Toast";
 import "./UploadCampaign.css";
 
 type UploadResult = {
@@ -31,6 +34,7 @@ export default function UploadCampaign({
   // showing it immediately instead of only handing back a shareable link.
   onCampaignCreated?: (campaignId: string) => void;
 }) {
+  const showToast = useToast();
   const [clientName, setClientName] = useState("");
   const [campaignName, setCampaignName] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -75,7 +79,20 @@ export default function UploadCampaign({
       const uploadResult = data as UploadResult;
       setResult(uploadResult);
       loadPastCampaigns();
-      onCampaignCreated?.(uploadResult.campaignId);
+      // The server reports per-sheet problems that still left a usable
+      // campaign behind (a sheet it didn't recognize, or one whose rows
+      // matched no known inventory — see parseWorkbook's `warnings`).
+      // Jumping straight to the embedded campaign view unmounts this page
+      // and threw all of that away unread, which defeats the point of the
+      // server sending it. So: navigate immediately only on a clean
+      // upload, and otherwise stay here with the result panel showing
+      // what went wrong plus its own button to carry on.
+      const hasNotices = (uploadResult.warnings?.length ?? 0) > 0 || (uploadResult.skippedSheets?.length ?? 0) > 0;
+      if (hasNotices) {
+        showToast("Campaign created, but some sheets need a look", "error");
+      } else {
+        onCampaignCreated?.(uploadResult.campaignId);
+      }
     } catch {
       setError("Could not reach the server");
     } finally {
@@ -147,8 +164,15 @@ export default function UploadCampaign({
                 <input readOnly value={shareLink ?? ""} onFocus={(e) => e.currentTarget.select()} />
                 <button
                   type="button"
-                  onClick={() => {
-                    if (shareLink) navigator.clipboard.writeText(shareLink).then(() => setCopied(true));
+                  onClick={async () => {
+                    if (!shareLink) return;
+                    if (await copyToClipboard(shareLink)) {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                      showToast("Client link copied");
+                    } else {
+                      showToast("Couldn't copy — select the link above and copy it manually", "error");
+                    }
                   }}
                 >
                   {copied ? "Copied" : "Copy"}
@@ -173,9 +197,16 @@ export default function UploadCampaign({
                   ))}
                 </ul>
               )}
-              <a className="upload-preview-link" href={result.shareUrl} target="_blank" rel="noreferrer">
-                Preview the highlighted map →
-              </a>
+              <div className="upload-result-actions">
+                {onCampaignCreated && (
+                  <button type="button" className="upload-open-btn" onClick={() => onCampaignCreated(result.campaignId)}>
+                    Open in Campaigns <ArrowRightIcon size={13} />
+                  </button>
+                )}
+                <a className="upload-preview-link" href={result.shareUrl} target="_blank" rel="noreferrer">
+                  Preview the highlighted map <ArrowRightIcon size={13} />
+                </a>
+              </div>
             </div>
           )}
         </div>
@@ -191,7 +222,7 @@ export default function UploadCampaign({
                     <span className="upload-history-name"> · {c.campaignName}</span>
                   </div>
                   <button type="button" onClick={() => onCampaignCreated?.(c.id)}>
-                    Open →
+                    Open <ArrowRightIcon size={13} />
                   </button>
                 </li>
               ))}

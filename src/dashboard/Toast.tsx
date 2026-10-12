@@ -2,13 +2,20 @@ import { createContext, useCallback, useContext, useState, type ReactNode } from
 import "./Toast.css";
 
 type ToastTone = "success" | "error";
-type ToastEntry = { id: number; message: string; tone: ToastTone };
+// `leaving` drives the exit animation. Without it a toast simply stopped
+// existing mid-sentence — it animated in politely and then blinked out of
+// the page, which reads as a glitch rather than as a dismissal.
+type ToastEntry = { id: number; message: string; tone: ToastTone; leaving: boolean };
 
 type ToastContextValue = (message: string, tone?: ToastTone) => void;
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 const AUTO_DISMISS_MS = 2800;
+// Exit runs faster than enter on purpose: entering, the toast is asking to
+// be read, so it can take its time; leaving, it's just getting out of the
+// way, and a slow exit makes the UI feel like it's lagging behind you.
+const EXIT_MS = 160;
 
 // Wraps the dashboard shell once, at the top (see Dashboard.tsx) — any
 // page or modal anywhere inside it can call useToast() to show a brief
@@ -22,9 +29,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback<ToastContextValue>((message, tone = "success") => {
     const id = Date.now() + Math.random();
-    setToasts((prev) => [...prev, { id, message, tone }]);
+    setToasts((prev) => [...prev, { id, message, tone, leaving: false }]);
     setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
+      setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, EXIT_MS);
     }, AUTO_DISMISS_MS);
   }, []);
 
@@ -33,7 +43,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="toast-stack" role="status" aria-live="polite">
         {toasts.map((t) => (
-          <div key={t.id} className={`toast toast-${t.tone}`}>
+          <div key={t.id} className={`toast toast-${t.tone}` + (t.leaving ? " is-leaving" : "")}>
             {t.message}
           </div>
         ))}

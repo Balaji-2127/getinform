@@ -40,6 +40,15 @@ app.use("/api", searchRouter);
 app.use("/api", savedAreasRouter);
 app.use("/api", shortlistsRouter);
 
+// Unknown /api paths have to 404 as JSON. Without this they fall through to
+// the SPA catch-all below and resolve with index.html at HTTP 200, so a
+// client fetch sails past its `res.ok` check and then blows up inside
+// res.json() on an HTML body — a typo'd or removed endpoint would surface
+// as an unexplained parse error rather than a plain 404.
+app.use("/api", (_req: Request, res: Response) => {
+  res.status(404).json({ error: "Not found" });
+});
+
 if (isProduction) {
   // Single-process deploy: this same server also serves the built SPA, and
   // falls back to index.html for any non-API path so the client-side

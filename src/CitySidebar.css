@@ -5,11 +5,11 @@
   z-index: 20;
   width: 200px;
   background: #ffffff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
   padding: 16px;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .city-sidebar-brand {
@@ -26,7 +26,7 @@
   /* A real logo photo, not a transparent mark — a rounded corner + thin
      border reads as a clean badge instead of a glow around a rectangle
      (which is what the old drop-shadow treatment was tuned for). */
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   object-fit: cover;
 }
 
@@ -34,14 +34,14 @@
   margin: 0;
   font-size: 16px;
   font-weight: 800;
-  color: #111827;
+  color: var(--c-text);
   letter-spacing: 0.02em;
 }
 
 .city-sidebar-sub {
   margin: 2px 0 14px;
   font-size: 11.5px;
-  color: #9ca3af;
+  color: var(--c-text-4);
 }
 
 .city-sidebar nav {
@@ -52,9 +52,9 @@
 
 .city-button {
   padding: 9px 12px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  color: #374151;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface-2);
+  color: var(--c-text-2);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -63,11 +63,19 @@
 }
 
 .city-button:hover {
-  background: #f3f4f6;
+  background: var(--c-surface-hover);
 }
 
 .city-button.is-active {
-  background: #eef2ff;
-  border-color: #6366f1;
-  color: #3730a3;
+  background: var(--c-brand-soft);
+  border-color: var(--c-brand-accent);
+  color: var(--c-brand-hover);
+}
+
+.city-button {
+  --press: 0.97;
+  transition:
+    background-color var(--t-hover) ease,
+    color var(--t-hover) ease,
+    transform var(--t-press) var(--ease-out);
 }

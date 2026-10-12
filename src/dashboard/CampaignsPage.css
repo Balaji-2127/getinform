@@ -20,7 +20,7 @@
   min-height: 0;
   padding: 24px;
   gap: 18px;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .cpg-header {
@@ -43,39 +43,58 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: #374151;
-  border-radius: 999px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  border-radius: var(--r-pill);
   padding: 8px 14px;
   font-size: 12.5px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: var(--sh-xs);
 }
 
-.cpg-copy-link-btn:hover {
-  background: #f3f4f6;
+.cpg-copy-link-btn:hover:not(:disabled) {
+  background: var(--c-surface-hover);
+  border-color: var(--c-border-strong);
+  box-shadow: var(--sh-sm);
+}
+
+.cpg-copy-link-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Keeps the icon optically centred against the cap height of the label
+   rather than its line box, which otherwise sits it a pixel low. */
+.cpg-copy-link-btn svg {
+  margin-top: -1px;
 }
 
 .cpg-eyebrow {
-  font-size: 11px;
+  display: block;
+  font-size: 10.5px;
   font-weight: 700;
-  color: #6366f1;
-  letter-spacing: 0.05em;
+  color: var(--c-brand-accent);
+  letter-spacing: 0.07em;
 }
 
 .cpg-header h1 {
   margin: 4px 0 4px;
   font-size: 24px;
-  font-weight: 800;
-  color: #111827;
+  font-weight: 700;
+  color: var(--c-text);
+  /* Inter needs negative tracking at display sizes — its default spacing is
+     tuned for body text and reads loose above ~20px. */
+  letter-spacing: -0.021em;
+  line-height: 1.2;
 }
 
 .cpg-header p {
   margin: 0;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--c-text-3);
 }
 
 .cpg-header-actions {
@@ -89,9 +108,9 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   background: #ffffff;
-  color: #374151;
+  color: var(--c-text-2);
   border-radius: 8px;
   padding: 9px 12px;
   font-size: 12.5px;
@@ -108,70 +127,6 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
-}
-
-.cpg-stat-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid transparent;
-}
-
-.cpg-stat-icon {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  font-size: 16px;
-  background: rgba(255, 255, 255, 0.6);
-}
-
-.cpg-stat-card div {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.cpg-stat-value {
-  font-size: 18px;
-  font-weight: 800;
-  color: #111827;
-}
-
-.cpg-stat-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #374151;
-}
-
-.cpg-stat-sub {
-  font-size: 10.5px;
-  color: #9ca3af;
-}
-
-.cpg-stat-indigo {
-  background: #eef2ff;
-  border-color: #e0e7ff;
-}
-
-.cpg-stat-green {
-  background: #ecfdf5;
-  border-color: #d1fae5;
-}
-
-.cpg-stat-orange {
-  background: #fff7ed;
-  border-color: #fed7aa;
-}
-
-.cpg-stat-blue {
-  background: #eff6ff;
-  border-color: #bfdbfe;
 }
 
 .cpg-body {
@@ -192,21 +147,29 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
-  background: #ffffff;
-  border: 1px dashed #d1d5db;
-  border-radius: 12px;
-  color: #6b7280;
+  background: var(--c-surface);
+  border: 1px dashed var(--c-border-strong);
+  border-radius: var(--r-lg);
+  color: var(--c-text-3);
   font-size: 14px;
+  text-align: center;
+  padding: 24px;
+}
+
+.cpg-empty p {
+  max-width: 44ch;
+  margin: 0;
+  line-height: 1.5;
 }
 
 .cpg-empty-error {
-  color: #b91c1c;
-  border-color: #fca5a5;
+  color: var(--c-danger-text);
+  border-color: var(--c-danger-border);
 }
 
 .cpg-empty-btn {
   border: none;
-  background: #4338ca;
+  background: var(--c-brand);
   color: #ffffff;
   padding: 10px 18px;
   border-radius: 8px;
@@ -215,8 +178,13 @@
   cursor: pointer;
 }
 
+.cpg-empty-btn {
+  box-shadow: var(--sh-sm);
+}
+
 .cpg-empty-btn:hover {
-  background: #3730a3;
+  background: var(--c-brand-hover);
+  box-shadow: var(--sh-md);
 }
 
 .cpg-banner-row {
@@ -245,28 +213,35 @@
   flex-shrink: 0;
   min-width: 160px;
   padding: 12px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   border-radius: 10px;
   font-size: 15px;
   font-weight: 700;
-  color: #111827;
+  color: var(--c-text);
   background: #ffffff;
   font-family: inherit;
   cursor: pointer;
 }
 
-.map-city-switcher:focus {
-  outline: none;
-  border-color: #6366f1;
+.map-city-switcher:hover {
+  border-color: var(--c-border-strong);
+}
+
+/* Was `:focus { outline: none }`, which stripped the focus ring for
+   keyboard users outright. :focus-visible keeps the global ring where it's
+   needed and still never shows it on a mouse click. */
+.map-city-switcher:focus-visible {
+  border-color: var(--c-brand-accent);
 }
 
 .cpg-map-frame {
   position: relative;
   flex: 1;
   min-height: 600px;
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   overflow: hidden;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
+  box-shadow: var(--sh-md);
 }
 
 .cpg-map-frame.is-fullscreen {
@@ -290,20 +265,21 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   background: #ffffff;
-  color: #374151;
+  color: var(--c-text-2);
   border-radius: 8px;
   padding: 8px 12px;
   font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .cpg-fullscreen-btn:hover {
-  background: #f3f4f6;
+  background: var(--c-surface-hover);
+  box-shadow: var(--sh-lg);
 }
 
 @media (max-width: 900px) {

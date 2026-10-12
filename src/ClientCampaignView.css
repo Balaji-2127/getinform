@@ -5,13 +5,13 @@
   align-items: center;
   justify-content: center;
   background: #000000;
-  color: #f3f4f6;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--c-surface-hover);
+  font-family: var(--font-sans);
   font-size: 14px;
   text-align: center;
   padding: 24px;
 }
 
 .campaign-view-error {
-  color: #fca5a5;
+  color: var(--c-danger-border);
 }

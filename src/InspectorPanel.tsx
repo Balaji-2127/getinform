@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import "./InspectorPanel.css";
 import type { SyntheticScreen } from "./syntheticScreens";
+import { ArrowLeftIcon, ArrowRightIcon } from "./dashboard/icons";
 
 // Despite the name, this isn't rendered as a UI "cluster" view anymore —
 // the map draws every property as its own pin now, never grouped behind a
@@ -58,7 +59,7 @@ export default function InspectorPanel({
   return (
     <div className="inspector-panel">
       <button type="button" className="inspector-back-all" onClick={onClose}>
-        ← Back to all properties
+        <ArrowLeftIcon size={14} /> Back to all properties
       </button>
 
       {crumbs.length > 1 && (
@@ -115,7 +116,7 @@ function ProjectView({ project }: { project: ProjectPanelInfo }) {
 
       {project.visualLink && (
         <a className="inspector-photos-link" href={project.visualLink} target="_blank" rel="noreferrer">
-          View property photos →
+          View property photos <ArrowRightIcon size={13} />
         </a>
       )}
 
@@ -231,7 +232,7 @@ function ScreenView({
       </p>
 
       <button type="button" className="inspector-back" onClick={() => onNavigate("project")}>
-        ← Back to {project.name}
+        <ArrowLeftIcon size={14} /> Back to {project.name}
       </button>
     </>
   );

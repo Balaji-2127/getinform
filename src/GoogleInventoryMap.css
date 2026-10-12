@@ -8,9 +8,9 @@
   gap: 10px;
   padding: 12px 18px;
   background: rgba(17, 24, 39, 0.9);
-  color: #f3f4f6;
+  color: var(--c-surface-hover);
   border-radius: 999px;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
   z-index: 30;
@@ -39,7 +39,7 @@
   padding: 10px 14px;
   background: #fee2e2;
   color: #991b1b;
-  border: 1px solid #fca5a5;
+  border: 1px solid var(--c-danger-border);
   border-radius: 8px;
   font-family: monospace;
   font-size: 13px;

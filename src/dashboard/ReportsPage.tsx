@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { cityLabel, fetchCampaigns, groupByClient, type CampaignListItem } from "./campaignHistory";
+import StatCard from "./StatCard";
+import { ArrowRightIcon, BuildingIcon, CampaignsIcon, ClientsIcon, ExportIcon } from "./icons";
 import "./CampaignsPage.css";
 import "./ReportsPage.css";
 
@@ -46,7 +48,13 @@ export default function ReportsPage({ onOpenCampaign }: { onOpenCampaign: (campa
   }, [campaigns, query, sortKey]);
 
   const totalClients = campaigns ? groupByClient(campaigns).length : 0;
-  const totalProperties = rows.reduce((sum, r) => sum + r.properties, 0);
+  // Every campaign's properties, not just the ones surviving the search
+  // box — this sits in the same "Total …" stat row as the campaign and
+  // client counts, which are both unfiltered, so deriving it from the
+  // filtered `rows` made the three disagree the moment anyone typed a query.
+  const totalProperties = campaigns
+    ? campaigns.reduce((sum, c) => sum + Object.values(c.counts).reduce((n, count) => n + count, 0), 0)
+    : 0;
 
   const exportCsv = () => {
     const header = ["Client", "Campaign", "Date", "Cities", "Properties shortlisted"];
@@ -61,8 +69,15 @@ export default function ReportsPage({ onOpenCampaign }: { onOpenCampaign: (campa
     const a = document.createElement("a");
     a.href = url;
     a.download = `campaign-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    // The anchor has to be in the document for the click to count as a
+    // user-initiated download in Firefox — a detached one silently did
+    // nothing there. And revoking the blob URL synchronously after click()
+    // can pull it out from under the download before the browser has read
+    // it, so that waits a tick.
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
   return (
@@ -90,9 +105,9 @@ export default function ReportsPage({ onOpenCampaign }: { onOpenCampaign: (campa
       {campaigns !== null && campaigns.length > 0 && (
         <>
           <div className="cpg-stats-row">
-            <StatCard icon="📢" label="Total Campaigns" value={campaigns.length.toLocaleString()} color="indigo" />
-            <StatCard icon="🤝" label="Clients Served" value={totalClients.toLocaleString()} color="green" />
-            <StatCard icon="🏢" label="Properties Shortlisted" value={totalProperties.toLocaleString()} color="orange" />
+            <StatCard icon={<CampaignsIcon />} label="Total Campaigns" value={campaigns.length.toLocaleString()} tone="indigo" />
+            <StatCard icon={<ClientsIcon />} label="Clients Served" value={totalClients.toLocaleString()} tone="green" />
+            <StatCard icon={<BuildingIcon />} label="Properties Shortlisted" value={totalProperties.toLocaleString()} tone="orange" />
           </div>
 
           <div className="reports-toolbar">
@@ -113,7 +128,7 @@ export default function ReportsPage({ onOpenCampaign }: { onOpenCampaign: (campa
                 </select>
               </label>
               <button type="button" className="reports-export-btn" onClick={exportCsv}>
-                ⬇ Export CSV
+                <ExportIcon size={14} /> Export CSV
               </button>
             </div>
           </div>
@@ -143,7 +158,7 @@ export default function ReportsPage({ onOpenCampaign }: { onOpenCampaign: (campa
                       <td className="reports-cell-num">{r.properties.toLocaleString()}</td>
                       <td>
                         <button type="button" className="reports-open-btn" onClick={() => onOpenCampaign(r.id)}>
-                          Open →
+                          Open <ArrowRightIcon size={13} />
                         </button>
                       </td>
                     </tr>
@@ -158,14 +173,3 @@ export default function ReportsPage({ onOpenCampaign }: { onOpenCampaign: (campa
   );
 }
 
-function StatCard({ icon, label, value, color }: { icon: string; label: string; value: string; color: "indigo" | "green" | "orange" }) {
-  return (
-    <div className={`cpg-stat-card cpg-stat-${color}`}>
-      <span className="cpg-stat-icon">{icon}</span>
-      <div>
-        <span className="cpg-stat-value">{value}</span>
-        <span className="cpg-stat-label">{label}</span>
-      </div>
-    </div>
-  );
-}

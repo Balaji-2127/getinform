@@ -12,33 +12,49 @@
 }
 
 .toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 18px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 13px;
-  font-weight: 600;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 500;
+  font-family: var(--font-sans);
   color: #ffffff;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--sh-lg);
   white-space: nowrap;
-  animation: toast-in 0.15s ease-out;
+  /* Enters from below and exits downward too — one direction, so the motion
+     reads as the toast coming from and returning to the same place rather
+     than arriving on one axis and vanishing on another. */
+  animation: toast-in var(--t-overlay) var(--ease-out);
+  transition:
+    opacity var(--t-pop) var(--ease-out),
+    transform var(--t-pop) var(--ease-out);
+}
+
+.toast.is-leaving {
+  opacity: 0;
+  /* Not scale(0) — nothing in the real world shrinks to literally nothing,
+     and a toast that does reads as deleted rather than dismissed. */
+  transform: translateY(8px) scale(0.96);
 }
 
 .toast-success {
-  background: #16a34a;
+  background: var(--c-success);
 }
 
 .toast-error {
-  background: #dc2626;
+  background: var(--c-danger);
 }
 
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -53,5 +69,6 @@
   .toast {
     white-space: normal;
     text-align: center;
+    justify-content: center;
   }
 }

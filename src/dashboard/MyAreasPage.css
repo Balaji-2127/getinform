@@ -5,13 +5,14 @@
 }
 
 .mya-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-shadow: var(--sh-sm);
 }
 
 .mya-card-head {
@@ -30,7 +31,7 @@
 .mya-card-title {
   font-size: 14px;
   font-weight: 800;
-  color: #111827;
+  color: var(--c-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -38,15 +39,18 @@
 
 .mya-card-sub {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--c-text-4);
 }
 
 .mya-remove-btn {
+  --press: 0.88;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: none;
   color: #f59e0b;
-  font-size: 16px;
   line-height: 1;
   cursor: pointer;
 }
@@ -66,22 +70,41 @@
   flex-direction: column;
   gap: 2px;
   padding: 8px 10px;
-  background: #f9fafb;
-  border: 1px solid #eef2ff;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-brand-soft);
   border-radius: 8px;
 }
 
 .mya-stat-value {
   font-size: 14px;
   font-weight: 800;
-  color: #3730a3;
+  color: var(--c-brand-hover);
   font-variant-numeric: tabular-nums;
 }
 
 .mya-stat-label {
   font-size: 10px;
-  color: #9ca3af;
+  color: var(--c-text-4);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mya-card {
+    transition:
+      box-shadow var(--t-hover) ease,
+      border-color var(--t-hover) ease,
+      transform var(--t-hover) var(--ease-out);
+  }
+
+  .mya-card:hover {
+    box-shadow: var(--sh-md);
+    border-color: var(--c-border-strong);
+    transform: translateY(-2px);
+  }
+}
+
+.mya-stat-value {
+  font-variant-numeric: tabular-nums;
 }

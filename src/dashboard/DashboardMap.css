@@ -4,10 +4,11 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
   overflow: hidden;
+  box-shadow: var(--sh-sm);
 }
 
 .dm-panel-expanded {
@@ -22,14 +23,14 @@
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border-bottom: 1px solid #e5e7eb;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  border-bottom: 1px solid var(--c-border);
+  font-family: var(--font-sans);
   flex-wrap: wrap;
 }
 
 .dm-mode-toggle {
   display: flex;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -37,7 +38,7 @@
 .dm-mode-toggle button {
   border: none;
   background: #ffffff;
-  color: #6b7280;
+  color: var(--c-text-3);
   padding: 6px 12px;
   font-size: 12px;
   font-weight: 600;
@@ -49,17 +50,17 @@
 }
 
 .dm-mode-toggle button.is-active {
-  background: #eef2ff;
-  color: #4338ca;
+  background: var(--c-brand-soft);
+  color: var(--c-brand);
 }
 
 .dm-city-select {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  color: var(--c-text-2);
   background: #ffffff;
 }
 
@@ -69,10 +70,10 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   border-radius: 8px;
   padding: 6px 10px;
-  color: #9ca3af;
+  color: var(--c-text-4);
   font-size: 12.5px;
 }
 
@@ -80,9 +81,9 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--c-border);
   background: #ffffff;
-  color: #6b7280;
+  color: var(--c-text-3);
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 12px;
@@ -103,7 +104,7 @@
   position: relative;
   flex: 1;
   min-height: 0;
-  background: #f3f4f6;
+  background: var(--c-surface-hover);
 }
 
 .dm-loading,
@@ -112,13 +113,13 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
-  color: #6b7280;
+  color: var(--c-text-3);
 }
 
 .dm-error {
-  color: #b91c1c;
+  color: var(--c-danger-text);
 }
 
 .dm-caption {
@@ -128,9 +129,25 @@
   padding: 4px 10px;
   background: rgba(255, 255, 255, 0.9);
   border-radius: 999px;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 700;
-  color: #374151;
+  color: var(--c-text-2);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.dm-mode-toggle button,
+.dm-icon-btn,
+.dm-city-select {
+  --press: 0.97;
+}
+
+.dm-city-select:hover {
+  border-color: var(--c-border-strong);
+}
+
+/* The caption sits directly on the map tiles, where a plain text colour
+   has no guaranteed contrast — the imagery underneath it can be anything. */
+.dm-caption {
+  backdrop-filter: blur(4px);
 }
