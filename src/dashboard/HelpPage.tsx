@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import DemoPlayer, { type DemoPlayerHandle } from "./DemoPlayer";
 import { DEMO_CHAPTERS, DEMO_DURATION } from "./demoChapters";
 import { PlayIcon } from "./icons";
 import "./CampaignsPage.css";
@@ -93,19 +94,14 @@ const FAQS: Faq[] = [
 ];
 
 export default function HelpPage() {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const playerRef = useRef<DemoPlayerHandle>(null);
   const [open, setOpen] = useState<number | null>(0);
   const [active, setActive] = useState<string | null>(null);
 
   const jumpTo = (at: number, id: string) => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.currentTime = at;
     setActive(id);
-    void v.play().catch(() => {
-      // Autoplay can be refused before any user gesture; seeking still worked,
-      // so leave the frame parked there rather than surfacing an error.
-    });
+    // A chapter click is a user gesture, so playing straight away is allowed.
+    playerRef.current?.seekTo(at, true);
   };
 
   return (
@@ -115,25 +111,23 @@ export default function HelpPage() {
           <span className="cpg-eyebrow">HELP &amp; FAQS</span>
           <h1>How the application works</h1>
           <p>
-            A {Math.round(DEMO_DURATION / 60)}-minute walkthrough of the whole product, start to finish — signing in, uploading a
-            shortlist, editing it and sending it to a client. Plus answers to the questions that come up most.
+            A {Math.round(DEMO_DURATION / 60)}-minute walkthrough of the whole product — creating a campaign, editing it, adding
+            cities, and sending it to a client. Use the ←/→ keys or the 10-second buttons to skip, and the chapters to jump
+            straight to a section. Plus answers to the questions that come up most.
           </p>
         </div>
       </div>
 
       <div className="help-grid">
         <div className="help-video-card">
-          <video
-            ref={videoRef}
-            className="help-video"
+          <DemoPlayer
+            ref={playerRef}
             src="/demo.mp4"
             poster="/demo-poster.jpg"
-            controls
-            preload="metadata"
-            onTimeUpdate={(e) => {
-              // Keeps the chapter list in step when someone scrubs the video
-              // itself rather than clicking a chapter.
-              const t = e.currentTarget.currentTime;
+            chapters={DEMO_CHAPTERS}
+            onTime={(t) => {
+              // Keeps the chapter list in step however the viewer moved —
+              // skip buttons, keyboard, or dragging the timeline.
               const current = [...DEMO_CHAPTERS].reverse().find((c) => t >= c.at);
               setActive(current?.id ?? null);
             }}

@@ -1,35 +1,35 @@
 [01]  01-intro.wav
-This is Adonmo. It turns a client's shortlist into a map they can actually explore. Here's the whole thing, start to finish.
+Here's a quick tour of Adonmo. In the next few minutes, you'll see everything you need. From a client's spreadsheet, to a live map they can actually explore.
 
-[02]  02-login.wav
-Sign in with the team's shared password.
+[02]  02-dashboard.wav
+This is where you land. Your campaigns, your clients, and the size of your whole inventory, all at a glance. Your most recent campaigns sit just below, so you can pick one straight back up.
 
 [03]  03-upload.wav
-To build a campaign, click Upload campaign sheet. Enter the client's name and a campaign name, then attach your inventory sheet with the rows you aren't pitching deleted. One tab per city.
+To start a campaign, click Upload campaign sheet. Give it the client's name and a campaign name. That's what your client will see. Then attach your shortlist. It's the master sheet you already use, with the properties you're not pitching removed, and one tab per city.
 
 [04]  04-submit.wav
-Upload it. Every row is matched against your live inventory, so only properties you genuinely have come through.
+Click upload. Every row is checked against your live inventory, so only real, available properties make it in.
 
 [05]  05-map.wav
-And there's the campaign. Their properties in blue, on a real three-dimensional map. Everything else you have sits behind in green, for context. Screens, households and monthly budget are totalled along the top.
+And here it is. Your client's properties in blue, on a real 3D map, with the rest of your inventory in green so they can see what else is nearby. The totals up top are the numbers clients always ask for. Screens, households, and monthly budget.
 
 [06]  06-tour.wav
-Press Tour the shortlist, and it flies from property to property on its own, stopping on each one with its numbers. Start it on a client call and just talk.
+On a call, press Tour the shortlist. It moves from one property to the next and stops on each one, so you can simply talk your client through it.
 
 [07]  07-edit.wav
-Clients change their minds, and you don't need a new sheet for that. Edit shortlist lets you drop properties, or search and add new ones from any city.
+If the client wants changes, you don't need a new sheet. Open Edit shortlist, remove anything they don't want, search for anything they'd like to add, and save. The map updates straight away.
 
-[08]  08-save.wav
-Save, and the map redraws around the change straight away.
+[08]  08-update.wav
+And when they want to expand into more cities, use Update sheet. Upload the new version and choose Add to this campaign. Everything you had stays, and the new cities come in. It's still the same campaign, and the same link.
 
 [09]  09-share.wav
-When it's ready, copy the client link. That's one URL — no login, nothing for them to install.
+When it's ready, copy the client link and send it over. They don't need a login or an app. This is exactly what they'll see, with their own branding on it.
 
-[10]  10-client.wav
-This is what your client opens. Full screen, their own logo on it, and the same guided tour so they can walk it again after the call.
+[10]  10-inventory.wav
+Back in the app, Inventory lets you explore everything you have, city by city. Search for a property, check its numbers, see which clients already have it, and add it straight to any campaign.
 
-[11]  11-inventory.wav
-Outside of any campaign, browse your whole portfolio across twenty-one cities. Market Insights shows where your reach actually is, and Reports exports every campaign to CSV or PDF.
+[11]  11-reports.wav
+Reports keeps every campaign in one place. You can export them to a spreadsheet, open any of them again, or remove the ones you no longer need.
 
 [12]  12-close.wav
-That's it. Upload the sheet you already have, and send your client a map they'll remember. It's all under Help and FAQs whenever you need it again.
+And if you ever need a refresher, this video and answers to the most common questions are always under Help and FAQs. That's it. You're ready to build your first campaign.

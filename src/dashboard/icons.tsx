@@ -359,3 +359,71 @@ export function TrashIcon({ size = 15 }: IconProps) {
     </svg>
   );
 }
+
+/* ---- video player ------------------------------------------------------ */
+
+export function PauseIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)} fill="currentColor" stroke="none">
+      <rect x="6" y="4.5" width="4" height="15" rx="1.2" />
+      <rect x="14" y="4.5" width="4" height="15" rx="1.2" />
+    </svg>
+  );
+}
+
+// Circular arrows with the "10" inside — the convention every major player
+// uses, so nobody has to learn what the button does.
+export function SkipBackIcon({ size = 20 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" />
+      <path d="M4 3.5v4h4" />
+      <text x="12" y="15.4" textAnchor="middle" fontSize="7.4" fontWeight="700" fill="currentColor" stroke="none" fontFamily="inherit">10</text>
+    </svg>
+  );
+}
+
+export function SkipForwardIcon({ size = 20 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" />
+      <path d="M20 3.5v4h-4" />
+      <text x="12" y="15.4" textAnchor="middle" fontSize="7.4" fontWeight="700" fill="currentColor" stroke="none" fontFamily="inherit">10</text>
+    </svg>
+  );
+}
+
+export function VolumeIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M4 9.5v5h3.5L12 19V5L7.5 9.5z" fill="currentColor" stroke="none" />
+      <path d="M15.5 9a4.2 4.2 0 0 1 0 6" />
+      <path d="M18 6.5a7.6 7.6 0 0 1 0 11" />
+    </svg>
+  );
+}
+
+export function MuteIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M4 9.5v5h3.5L12 19V5L7.5 9.5z" fill="currentColor" stroke="none" />
+      <path d="M16 9.5l5 5M21 9.5l-5 5" />
+    </svg>
+  );
+}
+
+export function FullscreenIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+    </svg>
+  );
+}
+
+export function ExitFullscreenIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />
+    </svg>
+  );
+}

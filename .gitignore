@@ -36,6 +36,10 @@ video/shots/
 # too large to track.
 video/.rec/
 video/narration/_line.txt
+# Every raw TTS take narrate.mjs downloaded (PACE_ONLY=1 re-paces from these
+# without calling the API again). Useful locally, not worth 6 MB in history.
+video/narration/takes/
+video/.tmp-graphics/
 
 # Audit screenshots (video/audit.mjs) — regenerable, review-only.
 video/audit/

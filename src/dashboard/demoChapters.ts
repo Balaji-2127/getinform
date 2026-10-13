@@ -2,62 +2,57 @@
 // Regenerate with: node video/mux.mjs
 export type DemoChapter = { id: string; at: number; label: string };
 
-export const DEMO_DURATION = 157.80;
+export const DEMO_DURATION = 159.69;
 
 export const DEMO_CHAPTERS: DemoChapter[] = [
   {
-    "id": "02-login",
-    "at": 10.97,
-    "label": "Sign in"
+    "id": "02-dashboard",
+    "at": 10.42,
+    "label": "Your dashboard"
   },
   {
     "id": "03-upload",
-    "at": 15.29,
-    "label": "Upload the shortlist"
-  },
-  {
-    "id": "04-submit",
-    "at": 30.19,
-    "label": "Matched against live inventory"
+    "at": 23.28,
+    "label": "Create a campaign"
   },
   {
     "id": "05-map",
-    "at": 39.53,
-    "label": "Their shortlist, live on the map"
+    "at": 47.71,
+    "label": "Your client's map"
   },
   {
     "id": "06-tour",
-    "at": 57.02,
-    "label": "Press play — it presents for you"
+    "at": 64.45,
+    "label": "Present it on a call"
   },
   {
     "id": "07-edit",
-    "at": 71.55,
-    "label": "Edit it without re-uploading"
+    "at": 75.6,
+    "label": "Make changes"
   },
   {
-    "id": "08-save",
-    "at": 84.48,
-    "label": "Save — the map updates instantly"
+    "id": "08-update",
+    "at": 88.59,
+    "label": "Add more cities"
   },
   {
     "id": "09-share",
-    "at": 99.36,
-    "label": "One link to send"
+    "at": 104.12,
+    "label": "Send it to your client"
   },
   {
-    "id": "10-client",
-    "at": 108.09,
-    "label": "What your client sees"
+    "id": "10-inventory",
+    "at": 115.93,
+    "label": "Explore your inventory"
   },
   {
-    "id": "11-inventory",
-    "at": 119.1,
-    "label": "Everything else: inventory, insights, reports"
+    "id": "11-reports",
+    "at": 134.32,
+    "label": "Keep track of campaigns"
   },
   {
     "id": "12-close",
-    "at": 143.69,
-    "label": "Stop sending spreadsheets"
+    "at": 144.39,
+    "label": "Help whenever you need it"
   }
 ];

@@ -17,7 +17,7 @@ import { mkdirSync, existsSync, readFileSync, statSync, writeFileSync } from "no
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
-import { steps, DEMO } from "./walkthrough.mjs";
+import { steps, DEMO, OUTRO_HOLD_SECONDS } from "./walkthrough.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -45,8 +45,10 @@ const env = readFileSync(join(root, ".env.local"), "utf8");
 const PASSWORD = (env.match(/^SALES_LOGIN_PASSWORD=(.*)$/m) || [])[1]?.trim();
 if (!PASSWORD) throw new Error("SALES_LOGIN_PASSWORD missing from .env.local");
 
-const sheetPath = resolve(root, DEMO.sheet);
-if (!existsSync(sheetPath)) throw new Error(`demo sheet missing: ${sheetPath}`);
+// Both workbooks the walkthrough uploads, checked before Chrome even starts.
+for (const name of [DEMO.firstSheet, DEMO.updateSheet]) {
+  if (!existsSync(resolve(root, name))) throw new Error(`demo sheet missing: ${name}`);
+}
 
 // ------------------------------------------------------------------ chrome
 const profile = join(tmpdir(), "getinform-rec-profile");
@@ -134,6 +136,7 @@ const OVERLAY = `(() => {
   if (document.getElementById('__demo_layer')) return 'exists';
   const style = document.createElement('style');
   style.textContent = \`
+    #__demo_cursor, #__demo_caption { display: none !important; }
     #__demo_cursor {
       position: fixed; left: 0; top: 0; z-index: 2147483647;
       width: 26px; height: 26px; margin: -13px 0 0 -13px; pointer-events: none;
@@ -210,14 +213,21 @@ const byText = (s, t) => `[...document.querySelectorAll(${JSON.stringify(s)})].f
 
 let cursor = { x: W / 2, y: H / 2 };
 
+// Everything the post-production pass needs to redraw, stamped on the same
+// clock as the frames: cursor glides, clicks, and camera focus changes.
+const events = [];
+const now = () => (Date.now() - t0) / 1000;
+// How long the drawn cursor takes to glide between targets. Long enough to
+// read as a hand moving, short enough not to drag.
+const GLIDE = 0.62;
+
 async function moveToExpr(expr, label) {
   const p = await rectOf(expr);
   if (!p) throw new Error(`cannot locate ${label}`);
+  if (recording) events.push({ type: "move", t: now(), from: { ...cursor }, to: p, dur: GLIDE });
   cursor = p;
-  await evaluate(`window.__demoMove(${p.x.toFixed(1)}, ${p.y.toFixed(1)})`);
-  // Matches the cursor's own CSS transition so the click lands after it
-  // arrives, not while it is still gliding.
-  await sleep(680);
+  // The click (if any) lands just after the drawn cursor arrives.
+  await sleep(GLIDE * 1000 + 60);
   return p;
 }
 
@@ -228,7 +238,7 @@ async function moveToExpr(expr, label) {
 // inventory, insights, clients and reports steps all time out in the first
 // recording. A DOM click cannot miss, and on screen it is indistinguishable.
 async function clickExpr(expr, label) {
-  await evaluate(`window.__demoClick()`);
+  if (recording) events.push({ type: "click", t: now(), at: { ...cursor } });
   const ok = await evaluate(`(() => {
     const el = ${expr};
     if (!el) return false;
@@ -300,7 +310,33 @@ let campaignId = null;
 const ctx = {
   password: PASSWORD,
   demo: DEMO,
-  sheetPath,
+  sheet: (name) => resolve(root, name),
+  // Camera: ask post-production to ease in on an element (scale = zoom) and
+  // later back out. The rectangle is measured now, so the zoom frames what
+  // was actually on screen at this moment.
+  focus: async (selector, zoom) => {
+    const r = await evaluate(`(() => {
+      const el = document.querySelector(${JSON.stringify(selector)});
+      if (!el) return null;
+      const b = el.getBoundingClientRect();
+      return { x: b.left + b.width / 2, y: b.top + b.height / 2, w: b.width, h: b.height };
+    })()`);
+    if (r && recording) events.push({ type: "focus", t: now(), cx: r.x, cy: r.y, zoom });
+  },
+  unfocus: async () => {
+    if (recording) events.push({ type: "focus", t: now(), cx: W / 2, cy: H / 2, zoom: 1 });
+  },
+  selectOptionByText: async (s, text) => {
+    await evaluate(`(() => {
+      const el = document.querySelector(${JSON.stringify(s)});
+      const i = [...el.options].findIndex(o => o.textContent.trim().toLowerCase() === ${JSON.stringify(text.toLowerCase())});
+      if (i < 0) return false;
+      el.selectedIndex = i;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    })()`);
+    await sleep(400);
+  },
   sleep,
   waitFor,
   waitForMap: async (extra) => {
@@ -450,10 +486,21 @@ function sendCap(method, params = {}) {
 
 const marks = [];
 let t0 = 0;
+const runStartedAt = Date.now();
 
 try {
   await send("Page.enable");
   await send("Runtime.enable");
+  // Google's "alpha channel… development only" strip appears a moment after
+  // each map mounts — often between our dismiss calls, so it got captured.
+  // Dismiss it from inside the page the instant it shows up.
+  await send("Page.addScriptToEvaluateOnNewDocument", { source: `
+    new MutationObserver(() => {
+      for (const el of document.querySelectorAll('a,button')) {
+        if (el.textContent.trim() === 'Dismiss' && el.offsetParent !== null) el.click();
+      }
+    }).observe(document, { childList: true, subtree: true });
+  ` });
   await send("DOM.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: 1, mobile: false });
 
@@ -506,15 +553,15 @@ try {
   })()`).catch(() => {});
   await sleep(1500);
 
-  // Sign back out so the recording genuinely opens on the login screen,
-  // which is where a rep actually starts.
-  log("signing out so the recording starts where a rep starts…");
-  await evaluate(`fetch('/api/logout', { method: 'POST' }).then(r => r.json())`).catch(() => {});
+  // The video opens on the dashboard, already signed in. An earlier cut
+  // opened on the login box and typed the password on camera, which taught
+  // nothing and put a password field in the first frame of the product video.
   await send("Page.navigate", { url: APP });
-  await sleep(3000);
+  await sleep(2500);
   await injectOverlay();
-  await waitFor(`document.querySelector('.login-card')`, 30000);
-  await sleep(800);
+  await waitFor(`document.querySelector('.dash-home-campaign-list button, .dash-home-cta')`, 40000);
+  await dismissGoogleBanner();
+  await sleep(1200);
 
   log(`recording ${steps.length} steps…\n`);
   await send("Page.bringToFront").catch(() => {});
@@ -524,10 +571,8 @@ try {
 
   for (const step of steps) {
     const at = (Date.now() - t0) / 1000;
-    marks.push({ id: step.id, at });
-    lastCaption = step.caption || "";
+    marks.push({ id: step.id, at, label: step.label ?? null });
     await injectOverlay();
-    await evaluate(`window.__demoCaption(${JSON.stringify(lastCaption)})`).catch(() => {});
 
     const narrWav = join(here, "narration", `${step.id}.wav`);
     const narrSecs = existsSync(narrWav) ? durationOf(narrWav) : 0;
@@ -545,8 +590,8 @@ try {
     log(`  ${step.id.padEnd(16)} @${at.toFixed(1).padStart(6)}s  (${((Date.now() - started) / 1000).toFixed(1)}s, voice ${narrSecs.toFixed(1)}s)`);
   }
 
-  await evaluate(`window.__demoCaption('')`).catch(() => {});
-  await sleep(1200);
+  // A still tail for the outro card to fade in over.
+  await sleep(OUTRO_HOLD_SECONDS * 1000);
   recording = false;
   await capture;
   log(`
@@ -590,6 +635,27 @@ execFileSync("ffmpeg", [
 if (!existsSync(RAW) || statSync(RAW).size < 10000) throw new Error("recording failed to encode");
 
 writeFileSync(join(work, "marks.json"), JSON.stringify(marks, null, 2));
+writeFileSync(join(work, "events.json"), JSON.stringify(events, null, 2));
+log(`${events.filter((e) => e.type === "move").length} cursor moves, ${events.filter((e) => e.type === "click").length} clicks, ${events.filter((e) => e.type === "focus").length} camera moves logged`);
+
+// ------------------------------------------------------------ cleanup
+// The walkthrough uploads a real campaign so the upload is genuinely shown.
+// Remove it again — but only campaigns created during this run under the
+// demo client name, so nothing a person made can be caught by this.
+try {
+  const login = await fetch(`${APP}/api/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: PASSWORD }),
+  });
+  const cookie = login.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
+  const list = await (await fetch(`${APP}/api/campaigns`, { headers: { cookie } })).json();
+  const mine = list.filter((c) => c.clientName === DEMO.client && Date.parse(c.createdAt) >= runStartedAt - 5000);
+  for (const c of mine) await fetch(`${APP}/api/campaigns/${c.id}`, { method: "DELETE", headers: { cookie } });
+  log(`removed ${mine.length} demo campaign(s) created by this run`);
+} catch (err) {
+  log(`  (couldn't remove the demo campaign: ${err.message} — delete "${DEMO.client}" from Reports)`);
+}
 log(`raw recording: ${(statSync(RAW).size / 1024 / 1024).toFixed(1)} MB  ${durationOf(RAW).toFixed(1)}s`);
 log(`marks -> ${join(work, "marks.json")}\n`);
 log(`now run:  node video/mux.mjs`);

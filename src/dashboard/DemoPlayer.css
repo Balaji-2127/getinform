@@ -1,0 +1,385 @@
+.dp {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #07070c;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  outline: none;
+  user-select: none;
+  /* The pointer hides with the controls while playing, as in any player —
+     a stray arrow parked over the video is distracting. */
+  cursor: default;
+}
+
+.dp:not(.dp-awake) {
+  cursor: none;
+}
+
+.dp:focus-visible {
+  box-shadow: 0 0 0 3px var(--c-brand-accent);
+}
+
+.dp.dp-fs {
+  border-radius: 0;
+}
+
+.dp-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #07070c;
+}
+
+/* ---- big play button, before the first play ---- */
+.dp-bigplay {
+  --press: 0.94;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 84px;
+  height: 84px;
+  margin: -42px 0 0 -42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 5px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--c-brand);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition:
+    transform var(--t-press) var(--ease-out),
+    background-color var(--t-hover) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dp-bigplay:hover {
+    background: #ffffff;
+    transform: scale(1.06);
+  }
+}
+
+/* ---- skip feedback ---- */
+.dp-flash {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+  transform: translateY(-50%);
+  animation: dp-flash 650ms var(--ease-out) forwards;
+}
+
+.dp-flash-back {
+  left: 12%;
+}
+
+.dp-flash-fwd {
+  right: 12%;
+}
+
+@keyframes dp-flash {
+  0% {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.9);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---- control bar ---- */
+.dp-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 36px 16px 10px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.4) 55%, rgba(0, 0, 0, 0) 100%);
+  color: #fff;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--t-overlay) ease,
+    transform var(--t-overlay) var(--ease-out);
+  pointer-events: none;
+}
+
+.dp-awake .dp-bar {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* ---- timeline ---- */
+.dp-track {
+  position: relative;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.dp-track-rail {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: height var(--t-hover) ease;
+}
+
+/* Thickens under the pointer so it's an easier target, the way YouTube's does. */
+.dp-track:hover .dp-track-rail,
+.dp-track.is-scrubbing .dp-track-rail {
+  height: 6px;
+}
+
+.dp-track-buffer,
+.dp-track-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: inherit;
+}
+
+.dp-track-buffer {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.dp-track-fill {
+  background: #818cf8;
+}
+
+/* Chapter boundaries, so you can see where each section starts. */
+.dp-track-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.dp-track-knob {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transform: scale(0);
+  transition: transform var(--t-hover) var(--ease-out);
+  pointer-events: none;
+}
+
+.dp-track:hover .dp-track-knob,
+.dp-track.is-scrubbing .dp-track-knob {
+  transform: scale(1);
+}
+
+.dp-tip {
+  position: absolute;
+  bottom: 24px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: rgba(17, 24, 39, 0.92);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.dp-tip-time {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dp-tip-label {
+  font-size: 11px;
+  color: #c7d2fe;
+}
+
+/* ---- button row ---- */
+.dp-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.dp-btn {
+  --press: 0.9;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+.dp-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.dp-btn:focus-visible {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 0;
+}
+
+.dp-time {
+  margin-left: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dp-time-sep {
+  opacity: 0.55;
+  padding: 0 2px;
+}
+
+.dp-chapter {
+  margin-left: 10px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.dp-spacer {
+  flex: 1;
+}
+
+.dp-vol {
+  display: flex;
+  align-items: center;
+}
+
+/* The slider stays tucked away until you reach for volume. */
+.dp-vol-slider {
+  width: 0;
+  opacity: 0;
+  accent-color: #fff;
+  transition:
+    width var(--t-pop) var(--ease-out),
+    opacity var(--t-pop) ease;
+  cursor: pointer;
+}
+
+.dp-vol:hover .dp-vol-slider,
+.dp-vol:focus-within .dp-vol-slider {
+  width: 76px;
+  opacity: 1;
+  margin: 0 6px 0 2px;
+}
+
+.dp-speed {
+  position: relative;
+}
+
+.dp-speed-btn {
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 44px;
+}
+
+.dp-speed-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  display: flex;
+  flex-direction: column;
+  min-width: 108px;
+  padding: 5px;
+  border-radius: 10px;
+  background: rgba(17, 24, 39, 0.96);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transform-origin: bottom right;
+  animation: dp-menu var(--t-pop) var(--ease-out);
+}
+
+@keyframes dp-menu {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.dp-speed-item {
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: #fff;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dp-speed-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.dp-speed-item.is-on {
+  color: #a5b4fc;
+  font-weight: 700;
+}
+
+/* On a narrow screen the chapter name and volume slider are the first to go:
+   the transport controls matter more. */
+@media (max-width: 640px) {
+  .dp-chapter,
+  .dp-vol-slider {
+    display: none;
+  }
+
+  .dp-bar {
+    padding: 28px 8px 6px;
+  }
+
+  .dp-btn {
+    min-width: 34px;
+    height: 34px;
+  }
+}
