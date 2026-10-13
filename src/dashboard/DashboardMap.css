@@ -151,3 +151,91 @@
 .dm-caption {
   backdrop-filter: blur(4px);
 }
+
+/* The search box was a static div; it is a real input now, so it needs to
+   look and behave like one, and host its own results list. */
+.dm-search {
+  position: relative;
+}
+
+.dm-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--c-text);
+}
+
+.dm-search input::placeholder {
+  color: var(--c-text-4);
+}
+
+.dm-search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  min-width: 240px;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 20;
+  padding: 6px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-lg);
+  /* Grows out of the box it belongs to, not its own centre. */
+  transform-origin: top left;
+  animation: dm-search-pop var(--t-pop) var(--ease-out);
+}
+
+@keyframes dm-search-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.dm-search-result {
+  --press: 0.995;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 7px 8px;
+  border-radius: var(--r-xs);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dm-search-result:hover {
+  background: var(--c-surface-hover);
+}
+
+.dm-search-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.dm-search-sub {
+  font-size: 11px;
+  color: var(--c-text-4);
+}
+
+.dm-search-empty {
+  margin: 0;
+  padding: 8px;
+  font-size: 12px;
+  color: var(--c-text-4);
+}

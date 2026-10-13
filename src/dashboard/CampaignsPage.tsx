@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import MapExperience from "../MapExperience";
 import ClientLogo from "./ClientLogo";
-import { CheckIcon, CloseIcon, ExpandIcon, ExportIcon, LinkIcon, PencilIcon } from "./icons";
+import { CheckIcon, CloseIcon, ExpandIcon, ExportIcon, LinkIcon, PencilIcon, UploadIcon } from "./icons";
 import { CITIES, type CityId } from "../data/cities";
 import EditShortlistModal from "./EditShortlistModal";
+import UpdateSheetModal from "./UpdateSheetModal";
 import { copyToClipboard } from "../copyToClipboard";
 import { useToast } from "./Toast";
 import "./CampaignsPage.css";
@@ -41,6 +42,7 @@ export default function CampaignsPage({
     { status: "idle" } | { status: "loading" } | { status: "error"; message: string } | { status: "ready"; data: CampaignResponse }
   >({ status: "idle" });
   const [showEdit, setShowEdit] = useState(false);
+  const [showUpdateSheet, setShowUpdateSheet] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
 
   // The no-login, full-screen link a client opens to see just their own
@@ -122,6 +124,9 @@ export default function CampaignsPage({
           <div className="cpg-header-actions-group">
             <button type="button" className="cpg-copy-link-btn" onClick={() => setShowEdit(true)}>
               <PencilIcon size={14} /> Edit shortlist
+            </button>
+            <button type="button" className="cpg-copy-link-btn" onClick={() => setShowUpdateSheet(true)}>
+              <UploadIcon size={14} /> Update sheet
             </button>
             <button
               type="button"
@@ -248,6 +253,20 @@ export default function CampaignsPage({
             citySwitcherPortalTarget={citySwitcherSlot}
           />
         </div>
+      )}
+
+      {showUpdateSheet && state.status === "ready" && activeCampaignId && (
+        <UpdateSheetModal
+          campaignId={activeCampaignId}
+          currentSelections={state.data.selections}
+          onClose={() => setShowUpdateSheet(false)}
+          onUpdated={(selections) => {
+            // Updates in place rather than closing: the map behind redraws
+            // straight away, and the modal keeps showing the per-city
+            // before/after numbers so they can actually be read.
+            setState({ status: "ready", data: { ...state.data, selections } });
+          }}
+        />
       )}
 
       {showEdit && state.status === "ready" && activeCampaignId && (

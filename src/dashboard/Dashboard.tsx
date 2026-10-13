@@ -17,7 +17,6 @@ import type { CityId } from "../data/cities";
 import {
   AiIcon,
   AreasIcon,
-  BellIcon,
   CampaignsIcon,
   ClientsIcon,
   DashboardIcon,
@@ -145,6 +144,13 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
     setSection("campaigns");
   };
 
+  // Deleting the campaign that's currently loaded on the Campaigns tab has
+  // to clear it here too, or switching back to that tab shows "Campaign not
+  // found" for something the user just deliberately removed.
+  const handleCampaignDeleted = (campaignId: string) => {
+    setActiveCampaignId((current) => (current === campaignId ? null : current));
+  };
+
   // Global search's property results jump here — switches to Inventory
   // and hands the target off to InventoryPage, which switches city (if
   // needed) and selects it on the map.
@@ -185,6 +191,10 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
               className={"dash-nav-item" + (section === item.id ? " is-active" : "")}
               onClick={() => setSection(item.id)}
               title={collapsed ? item.label : undefined}
+              // Collapsed, these render as an icon with no text at all, so
+              // the accessible name has to come from somewhere else.
+              aria-label={item.label}
+              aria-current={section === item.id ? "page" : undefined}
             >
               <item.icon />
               {!collapsed && item.label}
@@ -201,6 +211,10 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
               className={"dash-nav-item" + (section === item.id ? " is-active" : "")}
               onClick={() => setSection(item.id)}
               title={collapsed ? item.label : undefined}
+              // Collapsed, these render as an icon with no text at all, so
+              // the accessible name has to come from somewhere else.
+              aria-label={item.label}
+              aria-current={section === item.id ? "page" : undefined}
             >
               <item.icon />
               {!collapsed && item.label}
@@ -208,7 +222,13 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
           ))}
         </div>
 
-        <button type="button" className="dash-upload-btn" onClick={() => setSection("upload")} title={collapsed ? "Upload campaign sheet" : undefined}>
+        <button
+          type="button"
+          className="dash-upload-btn"
+          onClick={() => setSection("upload")}
+          title={collapsed ? "Upload campaign sheet" : undefined}
+          aria-label="Upload campaign sheet"
+        >
           <PlusIcon size={14} /> {!collapsed && "Upload campaign sheet"}
         </button>
       </aside>
@@ -223,9 +243,6 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
               </button>
             ))}
           </nav>
-          <button type="button" className="dash-bell" disabled title="Not yet implemented">
-            <BellIcon />
-          </button>
           <button type="button" className="dash-avatar" onClick={handleLogout} title="Log out">
             BD
           </button>
@@ -236,10 +253,12 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
           {section === "campaigns" && (
             <CampaignsPage activeCampaignId={activeCampaignId} onGoUpload={() => setSection("upload")} />
           )}
-          {section === "inventory" && <InventoryPage focusProperty={focusProperty} onFocusHandled={() => setFocusProperty(null)} />}
-          {section === "clients" && <ClientsPage onOpenCampaign={handleCampaignCreated} />}
+          {section === "inventory" && (
+            <InventoryPage focusProperty={focusProperty} onFocusHandled={() => setFocusProperty(null)} onOpenCampaign={handleCampaignCreated} />
+          )}
+          {section === "clients" && <ClientsPage onOpenCampaign={handleCampaignCreated} onCampaignDeleted={handleCampaignDeleted} />}
           {section === "insights" && <InsightsPage />}
-          {section === "reports" && <ReportsPage onOpenCampaign={handleCampaignCreated} />}
+          {section === "reports" && <ReportsPage onOpenCampaign={handleCampaignCreated} onCampaignDeleted={handleCampaignDeleted} />}
           {section === "help" && <HelpPage />}
           {section === "areas" && <MyAreasPage />}
           {section === "shortlists" && <ShortlistsPage onOpenProperty={handleOpenProperty} />}

@@ -14,7 +14,9 @@ import "./CampaignsPage.css";
 export default function InventoryPage({
   focusProperty,
   onFocusHandled,
+  onOpenCampaign,
 }: {
+  onOpenCampaign?: (campaignId: string) => void;
   // Set by the dashboard's global search when a rep picks a property
   // result from a city other than whatever's currently showing — switches
   // to it here, then DashboardMap itself picks up the same id to select
@@ -95,7 +97,7 @@ export default function InventoryPage({
           focusMediaSiteId={pendingFocusId}
           onFocusConsumed={() => setPendingFocusId(null)}
         />
-        <PropertyDetailPanel feature={selected} onBack={() => setSelected(null)} />
+        <PropertyDetailPanel feature={selected} cityId={cityId} onBack={() => setSelected(null)} onOpenCampaign={onOpenCampaign} />
       </div>
     </div>
   );

@@ -106,6 +106,32 @@ export async function listCampaignsFull(): Promise<CampaignRecord[]> {
   });
 }
 
+/**
+ * Deletes a campaign and the search-history rows that pointed at it.
+ *
+ * Returns false when there was nothing to delete, so the route can answer
+ * 404 rather than reporting success for an id that never existed.
+ *
+ * The history rows go too because "Recent Searches" links straight to a
+ * campaign by id: leaving them behind would fill that page with entries
+ * that open an error. Saved areas and the "most shortlisted" aggregate need
+ * no cleanup — the latter is recomputed from whatever campaigns still
+ * exist, so it corrects itself.
+ */
+export async function deleteCampaign(id: string): Promise<boolean> {
+  const ref = campaignsCol.doc(id);
+  if (!(await ref.get()).exists) return false;
+  await ref.delete();
+
+  const orphaned = await searchHistoryCol.where("resultType", "==", "campaign").where("targetId", "==", id).get();
+  if (!orphaned.empty) {
+    const batch = db.batch();
+    for (const doc of orphaned.docs) batch.delete(doc.ref);
+    await batch.commit();
+  }
+  return true;
+}
+
 export type SearchHistoryEntry = {
   id: string;
   query: string;

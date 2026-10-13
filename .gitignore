@@ -36,3 +36,6 @@ video/shots/
 # too large to track.
 video/.rec/
 video/narration/_line.txt
+
+# Audit screenshots (video/audit.mjs) — regenerable, review-only.
+video/audit/

@@ -451,6 +451,79 @@ try {
   });
 
 
+  // Verification shot for the delete confirmation dialog.
+  await scene("delete-dialog", async () => {
+    await send("Page.navigate", { url: APP });
+    await once("Page.loadEventFired");
+    await waitFor(`document.querySelector('.dash-shell')`, { label: "shell" });
+    await click(".dash-nav-item", "reports", "reports nav");
+    await waitFor(`document.querySelector('.reports-table')`, { label: "reports table", timeout: 60000 });
+    await sleep(1200);
+    await evaluate(`document.querySelector('.reports-delete-btn').click()`);
+    await waitFor(`document.querySelector('.rdl-card')`, { label: "confirm dialog" });
+    await sleep(900);
+    await shot("delete-dialog");
+  });
+
+
+  await scene("clients-delete", async () => {
+    await send("Page.navigate", { url: APP });
+    await once("Page.loadEventFired");
+    await waitFor(`document.querySelector('.dash-shell')`, { label: "shell" });
+    await click(".dash-nav-item", "clients", "clients nav");
+    await waitFor(`document.querySelector('.clients-card')`, { label: "clients", timeout: 60000 });
+    await sleep(1500);
+    await evaluate(`document.querySelector('.clients-delete-btn').click()`);
+    await waitFor(`document.querySelector('.rdl-card')`, { label: "confirm dialog" });
+    await sleep(900);
+    await shot("clients-delete");
+  });
+
+
+  await scene("update-sheet", async () => {
+    await send("Page.navigate", { url: APP });
+    await once("Page.loadEventFired");
+    await waitFor(`document.querySelector('.dash-shell')`, { label: "shell" });
+    await waitFor(`document.querySelector('.dash-home-campaign-list button')`, { label: "recent campaigns", timeout: 60000 });
+    await click(".dash-home-campaign-list button", "open", "open campaign");
+    await waitFor(`document.querySelector('.cpg-map-frame')`, { label: "campaign map" });
+    await sleep(3000);
+    await click(".cpg-copy-link-btn", "update sheet", "update sheet");
+    await waitFor(`document.querySelector('.usm-card')`, { label: "update sheet modal" });
+    await sleep(900);
+    await shot("update-sheet");
+  });
+
+
+  // Verification: inventory map search -> property panel -> nearby clients
+  // tab -> add-to-campaign picker.
+  await scene("panel-features", async () => {
+    await send("Page.navigate", { url: APP });
+    await once("Page.loadEventFired");
+    await waitFor(`document.querySelector('.dash-shell')`, { label: "shell" });
+    await click(".dash-nav-item", "inventory", "inventory nav");
+    await waitFor(`document.querySelector('.dm-search input')`, { label: "map search" });
+    await waitForStableFrame({ minWait: 5000, maxWait: 25000, label: "inventory map" });
+    await evaluate(`(() => {
+      const el = document.querySelector('.dm-search input');
+      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      el.focus(); set.call(el, 'Hills'); el.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+    await waitFor(`document.querySelector('.dm-search-result')`, { label: "map search results" });
+    await sleep(500);
+    await shot("map-search");
+    await evaluate(`document.querySelector('.dm-search-result').click()`);
+    await waitFor(`document.querySelector('.pdp-panel:not(.pdp-empty)')`, { label: "property panel" });
+    await evaluate(`[...document.querySelectorAll('.pdp-tabs button')].find(b => b.textContent.includes('Nearby')).click()`);
+    await waitFor(`document.querySelector('.pdp-nearby-list, .pdp-nearby-empty:not(:empty)')`, { label: "nearby" });
+    await sleep(4000);
+    await evaluate(`document.querySelector('.pdp-add-btn').click()`);
+    await waitFor(`document.querySelector('.pdp-picker-item')`, { label: "picker" });
+    await sleep(700);
+    await shot("panel-features");
+  });
+
+
   log("\ncapture complete.");
 } finally {
   try {

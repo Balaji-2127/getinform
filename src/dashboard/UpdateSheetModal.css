@@ -1,0 +1,328 @@
+.usm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 24, 39, 0.45);
+  backdrop-filter: blur(3px);
+  animation: usm-overlay-in var(--t-overlay) var(--ease-out);
+}
+
+@keyframes usm-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.usm-card {
+  width: min(520px, 100%);
+  max-height: 86vh;
+  overflow-y: auto;
+  background: var(--c-surface);
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh-xl);
+  padding: 22px;
+  /* Centre origin: a modal isn't anchored to the control that opened it. */
+  animation: usm-card-in var(--t-overlay) var(--ease-out);
+}
+
+@keyframes usm-card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.usm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.usm-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.018em;
+  color: var(--c-text);
+}
+
+.usm-close {
+  --press: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border: none;
+  background: var(--c-surface-hover);
+  color: var(--c-text-3);
+  border-radius: var(--r-pill);
+  cursor: pointer;
+}
+
+.usm-close:hover {
+  background: var(--c-border);
+  color: var(--c-text);
+}
+
+.usm-current {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--c-text-3);
+}
+
+.usm-file {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.usm-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+}
+
+/* Dashed, like the upload page's own file field — it says "drop a file
+   here" in a way a solid border doesn't. */
+.usm-file input[type="file"] {
+  padding: 9px 12px;
+  border: 1px dashed var(--c-border-strong);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+  font-size: 12.5px;
+  color: var(--c-text-3);
+  cursor: pointer;
+}
+
+.usm-file input[type="file"]:hover {
+  border-color: var(--c-brand-accent);
+  background: var(--c-brand-soft);
+}
+
+.usm-file input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xs);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.usm-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+/* The whole card is the hit target, not just the radio dot — the difference
+   between these two options matters (one of them discards properties), so it
+   should be easy to read and hard to pick by accident. */
+.usm-mode {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 13px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition:
+    border-color var(--t-hover) ease,
+    background-color var(--t-hover) ease;
+}
+
+.usm-mode:hover {
+  border-color: var(--c-border-strong);
+}
+
+.usm-mode.is-on {
+  border-color: var(--c-brand-accent);
+  background: var(--c-brand-soft);
+}
+
+.usm-mode input {
+  margin-top: 2px;
+  accent-color: var(--c-brand);
+  flex-shrink: 0;
+}
+
+.usm-mode span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.usm-mode strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.usm-mode small {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--c-text-3);
+}
+
+.usm-error {
+  margin-bottom: 14px;
+  padding: 11px 13px;
+  border: 1px solid var(--c-danger-border);
+  border-radius: var(--r-sm);
+  background: #fef2f2;
+}
+
+.usm-error p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--c-danger-text);
+}
+
+.usm-error ul {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--c-warn-text);
+}
+
+.usm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.usm-cancel,
+.usm-submit {
+  --press: 0.96;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.usm-cancel {
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+}
+
+.usm-cancel:hover:not(:disabled) {
+  background: var(--c-surface-hover);
+}
+
+.usm-submit {
+  border: none;
+  background: var(--c-brand);
+  color: #ffffff;
+  box-shadow: var(--sh-sm);
+}
+
+.usm-submit:hover:not(:disabled) {
+  background: var(--c-brand-hover);
+  box-shadow: var(--sh-md);
+}
+
+.usm-cancel:disabled,
+.usm-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ---- result ---- */
+.usm-result-headline {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.usm-result-cities {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  color: var(--c-brand);
+  font-weight: 600;
+}
+
+.usm-breakdown {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.usm-breakdown li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 13px;
+  font-size: 12.5px;
+  color: var(--c-text-2);
+}
+
+.usm-breakdown li:nth-child(even) {
+  background: var(--c-surface-2);
+}
+
+.usm-count {
+  color: var(--c-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.usm-count strong {
+  color: var(--c-text);
+}
+
+.usm-arrow {
+  color: var(--c-text-4);
+  padding: 0 2px;
+}
+
+.usm-note {
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--c-text-4);
+}
+
+.usm-warnings {
+  margin: 0 0 14px;
+  padding-left: 16px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--c-warn-text);
+}

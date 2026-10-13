@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { cityLabel, fetchCampaigns, groupByClient, type CampaignListItem } from "./campaignHistory";
 import StatCard from "./StatCard";
-import { ArrowRightIcon, BuildingIcon, CampaignsIcon, ClientsIcon, ExportIcon } from "./icons";
+import { ArrowRightIcon, BuildingIcon, CampaignsIcon, ClientsIcon, ExportIcon, TrashIcon } from "./icons";
+import DeleteCampaignDialog, { type DeletableCampaign } from "./DeleteCampaignDialog";
 import "./CampaignsPage.css";
 import "./ReportsPage.css";
 
@@ -13,10 +14,20 @@ type SortKey = "date" | "properties" | "client";
 // view. No invented revenue/performance numbers (this app has no ad-spend
 // or delivery tracking) — only what's actually known: who, what, when,
 // where, and how many properties.
-export default function ReportsPage({ onOpenCampaign }: { onOpenCampaign: (campaignId: string) => void }) {
+export default function ReportsPage({
+  onOpenCampaign,
+  onCampaignDeleted,
+}: {
+  onOpenCampaign: (campaignId: string) => void;
+  // Lets the shell forget a campaign it was holding open. Without this,
+  // deleting the campaign currently loaded on the Campaigns tab leaves that
+  // tab showing "Campaign not found" the next time you switch to it.
+  onCampaignDeleted?: (campaignId: string) => void;
+}) {
   const [campaigns, setCampaigns] = useState<CampaignListItem[] | null>(null);
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [pendingDelete, setPendingDelete] = useState<DeletableCampaign | null>(null);
 
   useEffect(() => {
     fetchCampaigns().then(setCampaigns);
@@ -142,9 +153,12 @@ export default function ReportsPage({ onOpenCampaign }: { onOpenCampaign: (campa
                   <tr>
                     <th>Client</th>
                     <th>Campaign</th>
-                    <th>Date</th>
-                    <th>Cities</th>
-                    <th>Properties</th>
+                    <th className="reports-col-date">Date</th>
+                    <th className="reports-col-cities">Cities</th>
+                    <th>
+                      <span className="reports-label-full">Properties</span>
+                      <span className="reports-label-short">Props</span>
+                    </th>
                     <th aria-hidden="true" />
                   </tr>
                 </thead>
@@ -153,13 +167,29 @@ export default function ReportsPage({ onOpenCampaign }: { onOpenCampaign: (campa
                     <tr key={r.id}>
                       <td className="reports-cell-strong">{r.clientName}</td>
                       <td>{r.campaignName}</td>
-                      <td className="reports-cell-muted">{new Date(r.createdAt).toLocaleDateString()}</td>
-                      <td className="reports-cell-muted">{r.cities.join(", ") || "—"}</td>
+                      <td className="reports-cell-muted reports-col-date">{new Date(r.createdAt).toLocaleDateString()}</td>
+                      <td className="reports-cell-muted reports-col-cities">{r.cities.join(", ") || "—"}</td>
                       <td className="reports-cell-num">{r.properties.toLocaleString()}</td>
                       <td>
-                        <button type="button" className="reports-open-btn" onClick={() => onOpenCampaign(r.id)}>
-                          Open <ArrowRightIcon size={13} />
-                        </button>
+                        <div className="reports-row-actions">
+                          <button
+                            type="button"
+                            className="reports-open-btn"
+                            onClick={() => onOpenCampaign(r.id)}
+                            aria-label={`Open ${r.clientName} — ${r.campaignName}`}
+                          >
+                            <span className="reports-label-full">Open</span> <ArrowRightIcon size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            className="reports-delete-btn"
+                            title={`Delete "${r.clientName} — ${r.campaignName}"`}
+                            aria-label={`Delete campaign ${r.clientName} — ${r.campaignName}`}
+                            onClick={() => setPendingDelete({ id: r.id, clientName: r.clientName, campaignName: r.campaignName, properties: r.properties })}
+                          >
+                            <TrashIcon size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -168,6 +198,18 @@ export default function ReportsPage({ onOpenCampaign }: { onOpenCampaign: (campa
             )}
           </div>
         </>
+      )}
+
+      {pendingDelete && (
+        <DeleteCampaignDialog
+          campaign={pendingDelete}
+          onCancel={() => setPendingDelete(null)}
+          onDeleted={(id) => {
+            setCampaigns((prev) => prev?.filter((c) => c.id !== id) ?? null);
+            onCampaignDeleted?.(id);
+            setPendingDelete(null);
+          }}
+        />
       )}
     </div>
   );

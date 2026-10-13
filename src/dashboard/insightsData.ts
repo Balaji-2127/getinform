@@ -53,8 +53,22 @@ export async function computeInsights(): Promise<Insights> {
           const existing = localityTotals.get(key);
           localityTotals.set(key, { cityId: city.id, locality: p.locality, value: (existing?.value ?? 0) + (p.screens ?? 0) });
         }
-        if (p.screenSize) {
-          sizeTotals.set(p.screenSize, (sizeTotals.get(p.screenSize) ?? 0) + (p.screens ?? 0));
+        // screenSize is a comma-separated list when a property runs more
+        // than one size ("24 inch LED TV, 32 inch LED TV"). Keying the raw
+        // string made every such combination its own bar, so the chart
+        // listed things like "32 inch LED TV, 43 inch LED TV" as if that
+        // were a size anyone could buy. Split it, and divide the property's
+        // screens across its sizes the same way the inspector panel already
+        // does — the source data gives a total count per property, never a
+        // per-size breakdown, so an even split is the closest honest answer.
+        const sizes = (p.screenSize ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+        if (sizes.length > 0) {
+          const total = p.screens ?? 0;
+          const base = Math.floor(total / sizes.length);
+          const remainder = total % sizes.length;
+          sizes.forEach((size, i) => {
+            sizeTotals.set(size, (sizeTotals.get(size) ?? 0) + base + (i < remainder ? 1 : 0));
+          });
         }
       }
 
@@ -87,7 +101,7 @@ export async function computeInsights(): Promise<Insights> {
   const screenSizes: RankedRow[] = [...sizeTotals.entries()]
     .map(([label, value]) => ({ label, value }))
     .sort((a, b) => b.value - a.value)
-    .slice(0, 6);
+    .slice(0, 8);
 
   return {
     cities: perCity.map((c) => c.totals),

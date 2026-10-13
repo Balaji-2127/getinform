@@ -1,13 +1,23 @@
 import { useEffect, useState } from "react";
 import ClientLogo from "./ClientLogo";
-import { ArrowRightIcon } from "./icons";
+import { ArrowRightIcon, TrashIcon } from "./icons";
+import DeleteCampaignDialog, { type DeletableCampaign } from "./DeleteCampaignDialog";
 import { cityLabel, fetchCampaigns, groupByClient, type CampaignListItem } from "./campaignHistory";
 import "./CampaignsPage.css";
 import "./ClientsPage.css";
 
-export default function ClientsPage({ onOpenCampaign }: { onOpenCampaign: (campaignId: string) => void }) {
+export default function ClientsPage({
+  onOpenCampaign,
+  onCampaignDeleted,
+}: {
+  onOpenCampaign: (campaignId: string) => void;
+  // Same reason Reports has it: if the deleted campaign is the one the
+  // Campaigns tab is holding open, the shell has to let go of it.
+  onCampaignDeleted?: (campaignId: string) => void;
+}) {
   const [campaigns, setCampaigns] = useState<CampaignListItem[] | null>(null);
   const [query, setQuery] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<DeletableCampaign | null>(null);
 
   useEffect(() => {
     fetchCampaigns().then(setCampaigns);
@@ -80,9 +90,27 @@ export default function ClientsPage({ onOpenCampaign }: { onOpenCampaign: (campa
                           <span className="clients-campaign-name">{c.campaignName}</span>
                           <span className="clients-campaign-date">{new Date(c.createdAt).toLocaleDateString()}</span>
                         </div>
-                        <button type="button" onClick={() => onOpenCampaign(c.id)}>
-                          Open <ArrowRightIcon size={13} />
-                        </button>
+                        <div className="clients-campaign-actions">
+                          <button type="button" onClick={() => onOpenCampaign(c.id)}>
+                            Open <ArrowRightIcon size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            className="clients-delete-btn"
+                            title={`Delete "${g.clientName} — ${c.campaignName}"`}
+                            aria-label={`Delete campaign ${g.clientName} — ${c.campaignName}`}
+                            onClick={() =>
+                              setPendingDelete({
+                                id: c.id,
+                                clientName: g.clientName,
+                                campaignName: c.campaignName,
+                                properties: Object.values(c.counts).reduce((n, v) => n + v, 0),
+                              })
+                            }
+                          >
+                            <TrashIcon size={14} />
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -91,6 +119,20 @@ export default function ClientsPage({ onOpenCampaign }: { onOpenCampaign: (campa
             </div>
           )}
         </>
+      )}
+
+      {pendingDelete && (
+        <DeleteCampaignDialog
+          campaign={pendingDelete}
+          onCancel={() => setPendingDelete(null)}
+          onDeleted={(id) => {
+            // Dropping the campaign re-derives the groups, so a client whose
+            // last campaign just went disappears from this page by itself.
+            setCampaigns((prev) => prev?.filter((c) => c.id !== id) ?? null);
+            onCampaignDeleted?.(id);
+            setPendingDelete(null);
+          }}
+        />
       )}
     </div>
   );

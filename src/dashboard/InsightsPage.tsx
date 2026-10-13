@@ -67,6 +67,11 @@ export default function InsightsPage() {
   const maxCityScreens = data ? Math.max(...data.cities.map((c) => c.screens), 1) : 1;
   const maxLocality = data ? Math.max(...data.topLocalities.map((r) => r.value), 1) : 1;
   const maxSize = data ? Math.max(...data.screenSizes.map((r) => r.value), 1) : 1;
+  // A bar's length only says "bigger than that one". The share of the whole
+  // estate is what actually answers "is this city worth pitching?", so every
+  // row carries it.
+  const totalScreens = data?.totals.screens ?? 0;
+  const rankedCities = data ? [...data.cities].sort((a, b) => b.screens - a.screens) : [];
 
   return (
     <div className="cpg-page">
@@ -102,39 +107,62 @@ export default function InsightsPage() {
       {data && (
         <>
           <div className="insights-grid">
-            <Panel title="Screens by city">
-              {data.cities
-                .slice()
-                .sort((a, b) => b.screens - a.screens)
-                .map((c) => (
-                  <BarRow key={c.cityId} label={c.label} value={c.screens} max={maxCityScreens} sub={`${c.properties.toLocaleString()} properties`} />
-                ))}
+            <Panel
+              title="Screens by city"
+              note={`${rankedCities.length} cities, ranked by screens`}
+              className="insights-panel-cities"
+            >
+              {rankedCities.map((c, i) => (
+                <BarRow
+                  key={c.cityId}
+                  rank={i + 1}
+                  label={c.label}
+                  value={c.screens}
+                  max={maxCityScreens}
+                  share={totalScreens > 0 ? c.screens / totalScreens : 0}
+                  sub={`${c.properties.toLocaleString()} properties · ${
+                    c.properties > 0 ? (c.screens / c.properties).toFixed(1) : "0"
+                  } screens each`}
+                />
+              ))}
             </Panel>
 
-            <Panel title="Top localities by screen count">
-              {data.topLocalities.length === 0 ? (
-                <p className="insights-empty">No locality data available.</p>
-              ) : (
-                data.topLocalities.map((r) => (
-                  <BarRow
-                    key={r.label}
-                    label={r.label}
-                    value={r.value}
-                    max={maxLocality}
-                    starred={saved?.has(`${r.cityId}::${r.locality}`) ?? false}
-                    onToggleStar={() => toggleSaved(r.cityId, r.locality)}
-                  />
-                ))
-              )}
-            </Panel>
+            <div className="insights-side">
+              <Panel title="Top localities by screen count" note="Star one to track it in My Areas">
+                {data.topLocalities.length === 0 ? (
+                  <p className="insights-empty">No locality data available.</p>
+                ) : (
+                  data.topLocalities.map((r) => (
+                    <BarRow
+                      key={r.label}
+                      label={r.label}
+                      value={r.value}
+                      max={maxLocality}
+                      share={totalScreens > 0 ? r.value / totalScreens : 0}
+                      starred={saved?.has(`${r.cityId}::${r.locality}`) ?? false}
+                      onToggleStar={() => toggleSaved(r.cityId, r.locality)}
+                    />
+                  ))
+                )}
+              </Panel>
 
-            <Panel title="Screen size mix">
-              {data.screenSizes.length === 0 ? (
-                <p className="insights-empty">No screen size data available.</p>
-              ) : (
-                data.screenSizes.map((r) => <BarRow key={r.label} label={r.label} value={r.value} max={maxSize} color="orange" />)
-              )}
-            </Panel>
+              <Panel title="Screen size mix" note="Share of all screens by size">
+                {data.screenSizes.length === 0 ? (
+                  <p className="insights-empty">No screen size data available.</p>
+                ) : (
+                  data.screenSizes.map((r) => (
+                    <BarRow
+                      key={r.label}
+                      label={r.label}
+                      value={r.value}
+                      max={maxSize}
+                      share={totalScreens > 0 ? r.value / totalScreens : 0}
+                      color="orange"
+                    />
+                  ))
+                )}
+              </Panel>
+            </div>
           </div>
         </>
       )}
@@ -158,10 +186,26 @@ function BarSkeleton({ rows }: { rows: number }) {
   );
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+function Panel({
+  title,
+  note,
+  className,
+  children,
+}: {
+  title: string;
+  // One line saying what the panel actually measures. Without it the reader
+  // has to infer it from the bars, and "screens" vs "properties" are easy to
+  // confuse at a glance.
+  note?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="insights-panel">
-      <h2>{title}</h2>
+    <div className={"insights-panel" + (className ? ` ${className}` : "")}>
+      <div className="insights-panel-head">
+        <h2>{title}</h2>
+        {note && <span className="insights-panel-note">{note}</span>}
+      </div>
       <div className="insights-bars">{children}</div>
     </div>
   );
@@ -172,6 +216,8 @@ function BarRow({
   value,
   max,
   sub,
+  share,
+  rank,
   color = "indigo",
   starred,
   onToggleStar,
@@ -180,17 +226,24 @@ function BarRow({
   value: number;
   max: number;
   sub?: string;
+  // Fraction of all screens this row represents, rendered as a percentage.
+  share?: number;
+  rank?: number;
   color?: "indigo" | "orange";
-  // Only the locality panel passes these — "My Areas" starring. Omitted
-  // entirely for the city/screen-size panels, which aren't locality rows.
+  // Only the locality panel passes these - "My Areas" starring.
   starred?: boolean;
   onToggleStar?: () => void;
 }) {
-  const pct = Math.max(4, Math.round((value / max) * 100));
+  // Floored so the smallest cities still render a visible sliver rather than
+  // a bar that reads as zero when they genuinely have inventory.
+  const pct = Math.max(2, Math.round((value / max) * 100));
+  const sharePct = share !== undefined ? share * 100 : null;
+
   return (
     <div className="insights-bar-row">
       <div className="insights-bar-label">
         <span className="insights-bar-label-text">
+          {rank !== undefined && <span className="insights-rank">{rank}</span>}
           {onToggleStar && (
             <button
               type="button"
@@ -202,16 +255,19 @@ function BarRow({
               <StarIcon size={15} filled={starred} />
             </button>
           )}
-          <span>{label}</span>
+          <span className="insights-bar-name">{label}</span>
         </span>
         <span className="insights-bar-value">
           {value.toLocaleString()}
-          {sub ? <span className="insights-bar-sub"> · {sub}</span> : null}
+          {sharePct !== null && (
+            <span className="insights-bar-share">{sharePct < 0.1 ? "<0.1%" : `${sharePct.toFixed(1)}%`}</span>
+          )}
         </span>
       </div>
       <div className="insights-bar-track">
         <div className={`insights-bar-fill insights-bar-${color}`} style={{ width: `${pct}%` }} />
       </div>
+      {sub && <span className="insights-bar-sub">{sub}</span>}
     </div>
   );
 }

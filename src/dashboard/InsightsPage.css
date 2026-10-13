@@ -1,8 +1,19 @@
+/* The city list is 21 rows; the other two are 8 and 8. Three equal columns
+   left the right-hand two-thirds of the page empty below them, which is what
+   made this screen feel unfinished. The tall panel now gets its own column
+   and the two short ones stack beside it, so the page fills out. */
 .insights-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
   gap: 14px;
   align-items: start;
+}
+
+.insights-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
 }
 
 .insights-panel {
@@ -13,8 +24,25 @@
   box-shadow: var(--sh-sm);
 }
 
+.insights-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.insights-panel-note {
+  font-size: 11px;
+  color: var(--c-text-4);
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 500;
+}
+
 .insights-panel h2 {
-  margin: 0 0 14px;
+  margin: 0;
   font-size: 12px;
   font-weight: 700;
   color: var(--c-text-3);
@@ -148,4 +176,56 @@
 .insights-bar-skel-track {
   height: 8px;
   border-radius: var(--r-pill);
+}
+
+/* ---- row internals ---------------------------------------------------- */
+
+/* Position in the ranking, so the list reads as a league table rather than
+   an arbitrary order. Tabular so the numbers line up as they reach 2 digits. */
+.insights-rank {
+  flex-shrink: 0;
+  width: 18px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--c-text-4);
+  font-variant-numeric: tabular-nums;
+}
+
+.insights-bar-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.insights-bar-value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Share of the whole estate. A bar only says "bigger than that one"; this is
+   what makes a row mean something on its own. */
+.insights-bar-share {
+  min-width: 42px;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-text-4);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Was inline inside the value line, which crowded it. On its own line under
+   the bar it reads as the caption it is. */
+.insights-bar-sub {
+  display: block;
+  margin-top: 4px;
+  font-size: 10.5px;
+  color: var(--c-text-4);
+}
+
+@media (max-width: 1100px) {
+  .insights-grid {
+    grid-template-columns: 1fr;
+  }
 }

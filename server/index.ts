@@ -18,6 +18,19 @@ if (isProduction && !process.env.SESSION_SECRET) {
   throw new Error("SESSION_SECRET must be set in production — refusing to start with the dev-only default.");
 }
 
+// Same reasoning, and a worse failure mode without it. .env.local is not
+// committed, so a deployed instance only has this if it was set in the
+// host's own environment. When it is missing the login route compares
+// against an empty string and answers "Incorrect password" to every attempt
+// — a misconfigured deploy is then indistinguishable from a typo, and the
+// only symptom is that nobody can get in and nothing says why.
+if (isProduction && !process.env.SALES_LOGIN_PASSWORD) {
+  throw new Error(
+    "SALES_LOGIN_PASSWORD must be set in production — without it every login is rejected as incorrect. " +
+      "Set it in the host's environment variables (it is not read from .env.local, which is never deployed).",
+  );
+}
+
 const app = express();
 app.set("trust proxy", isProduction);
 app.use(express.json());

@@ -3,7 +3,7 @@ import { CITIES, loadCityScreens, type CityId, type ScreenFeatureCollection } fr
 import { loadMaps3d } from "../google/loadGoogleMaps";
 import { type ProjectFeature } from "../google/clustering";
 import { bboxOfPoints, rangeForBbox, type Bbox } from "../google/cameraMath";
-import { ExpandIcon, FilterIcon, SearchIcon } from "./icons";
+import { ExpandIcon, SearchIcon } from "./icons";
 import "./DashboardMap.css";
 
 // A second, simpler map component for the new dashboard shell — not a
@@ -88,8 +88,39 @@ export default function DashboardMap({
   const [mapReady, setMapReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"ROADMAP" | "HYBRID">("ROADMAP");
+  // In-map search. This was a styled div reading "Search this area" that did
+  // nothing at all — a control that looks interactive and isn't is worse
+  // than no control. It searches the city already loaded, which is data the
+  // component is holding anyway, and selecting a result flies to it exactly
+  // as clicking its pin would.
+  const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const cityLabel = CITIES.find((c) => c.id === cityId)?.label ?? cityId;
+
+  // Capped: this renders under a map and is meant for finding one property,
+  // not for browsing the whole city.
+  const searchResults = (() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    const out: ProjectFeature[] = [];
+    for (const f of cityDataRef.current?.features ?? []) {
+      const p = f.properties;
+      if (`${p.name ?? ""} ${p.locality ?? ""} ${p.zone ?? ""}`.toLowerCase().includes(q)) {
+        out.push(f);
+        if (out.length >= 8) break;
+      }
+    }
+    return out;
+  })();
+
+  const pickSearchResult = (feature: ProjectFeature) => {
+    const key = feature.properties.mediaSiteId ?? `${feature.geometry.coordinates[0]},${feature.geometry.coordinates[1]}`;
+    const entry = projectMarkersRef.current.get(key);
+    if (entry) selectFeature(entry);
+    setSearch("");
+    setSearchOpen(false);
+  };
 
   // ---- one-time map bootstrap ------------------------------------------
   useEffect(() => {
@@ -283,12 +314,50 @@ export default function DashboardMap({
         </select>
         <div className="dm-search">
           <SearchIcon size={14} />
-          <span>Search this area</span>
+          <input
+            type="text"
+            value={search}
+            placeholder={`Search ${cityLabel}…`}
+            aria-label={`Search properties in ${cityLabel}`}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setSearchOpen(true);
+            }}
+            onFocus={() => setSearchOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setSearch("");
+                setSearchOpen(false);
+              }
+              // Enter picks the top match, so the whole thing works without
+              // the mouse ever leaving the keyboard.
+              if (e.key === "Enter" && searchResults[0]) pickSearchResult(searchResults[0]);
+            }}
+            // Blur is delayed because clicking a result blurs the input
+            // first, which would unmount the list before the click lands.
+            onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+          />
+          {searchOpen && search.trim() && (
+            <div className="dm-search-results">
+              {searchResults.length === 0 ? (
+                <p className="dm-search-empty">No property in {cityLabel} matches that.</p>
+              ) : (
+                searchResults.map((f) => (
+                  <button
+                    key={f.properties.mediaSiteId ?? `${f.geometry.coordinates[0]},${f.geometry.coordinates[1]}`}
+                    type="button"
+                    className="dm-search-result"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => pickSearchResult(f)}
+                  >
+                    <span className="dm-search-name">{f.properties.name ?? "Untitled property"}</span>
+                    <span className="dm-search-sub">{[f.properties.locality, f.properties.zone].filter(Boolean).join(" · ")}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
-        <button type="button" className="dm-icon-btn" disabled title="Not yet implemented">
-          <FilterIcon />
-          Filters
-        </button>
         <button type="button" className="dm-icon-btn dm-expand-btn" onClick={onToggleExpanded} title={expanded ? "Collapse" : "Expand"}>
           <ExpandIcon />
         </button>

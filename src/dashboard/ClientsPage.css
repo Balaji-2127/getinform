@@ -144,3 +144,38 @@
 .clients-stat-value {
   font-variant-numeric: tabular-nums;
 }
+
+/* Scoped through the li rather than styled on its own, because
+   `.clients-campaign-list li > div` above sets flex-direction: column for
+   the name/date block — and this row of buttons is also a direct div child,
+   so it inherited the stacking and put Delete underneath Open. */
+.clients-campaign-list li > .clients-campaign-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* Matches the Reports table's delete affordance: grey until you reach for
+   it, so a destructive control sitting beside every campaign doesn't pull
+   attention away from "Open". */
+.clients-delete-btn {
+  --press: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  border-radius: var(--r-xs);
+  color: var(--c-text-4);
+  cursor: pointer;
+}
+
+.clients-delete-btn:hover {
+  background: #fef2f2;
+  color: var(--c-danger);
+}

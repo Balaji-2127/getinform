@@ -176,3 +176,70 @@
   z-index: 1;
   background: var(--c-surface);
 }
+
+.reports-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+/* Deliberately quiet until you reach for it. A destructive control sitting
+   in every row of a dense table shouldn't compete with the primary action
+   next to it — it turns red on hover, not before. */
+.reports-delete-btn {
+  --press: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  border-radius: var(--r-xs);
+  color: var(--c-text-4);
+  cursor: pointer;
+}
+
+.reports-delete-btn:hover {
+  background: #fef2f2;
+  color: var(--c-danger);
+}
+
+/* At phone width the six columns overflowed, so Open and Delete — the only
+   things in the row you can act on — ended up off-screen behind a sideways
+   scroll. Cities is the least essential column and also the widest, so it
+   goes first; the campaign itself still lists them. */
+@media (max-width: 640px) {
+  /* Date goes too: even collapsed, the sidebar leaves ~340px for the table,
+     and with it still there Open and Delete sat just off the right edge.
+     The Clients page shows each campaign's date anyway. */
+  .reports-col-cities,
+  .reports-col-date {
+    display: none;
+  }
+
+  .reports-table th,
+  .reports-table td {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  /* The uppercase, letter-spaced "PROPERTIES" header and the "Open" label
+     were together what still pushed Open and Delete off the right edge.
+     Open keeps its arrow and its aria-label, so it stays understandable. */
+  .reports-label-full {
+    display: none;
+  }
+
+  /* Scoped through the table so it outranks the base rule below, which
+     comes later in the file and would otherwise hide this at every width. */
+  .reports-table .reports-label-short {
+    display: inline;
+  }
+}
+
+.reports-label-short {
+  display: none;
+}
