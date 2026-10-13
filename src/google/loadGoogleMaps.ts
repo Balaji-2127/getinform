@@ -6,7 +6,12 @@
 type ImportLibraryFn = (name: string, ...args: unknown[]) => Promise<unknown>;
 
 function bootstrap(apiKey: string): void {
-  const g = { key: apiKey, v: "alpha" };
+  // "beta", not "alpha": the alpha channel makes Google show an "alpha
+  // channel … development purposes only" banner across the top of the app
+  // on every load. Not "weekly" (stable) either — the 3D map's flat
+  // ROADMAP mode, our default "Map" view, doesn't render there yet and the
+  // map just spins. Beta has everything we use and no banner.
+  const g = { key: apiKey, v: "beta" };
   let loadPromise: Promise<void> | undefined;
   const doc = document;
   const win = window as unknown as { google?: { maps?: Record<string, unknown> } };
