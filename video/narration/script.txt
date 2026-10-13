@@ -1,0 +1,35 @@
+[01]  01-intro.wav
+This is Adonmo. It turns a client's shortlist into a map they can actually explore. Here's the whole thing, start to finish.
+
+[02]  02-login.wav
+Sign in with the team's shared password.
+
+[03]  03-upload.wav
+To build a campaign, click Upload campaign sheet. Enter the client's name and a campaign name, then attach your inventory sheet with the rows you aren't pitching deleted. One tab per city.
+
+[04]  04-submit.wav
+Upload it. Every row is matched against your live inventory, so only properties you genuinely have come through.
+
+[05]  05-map.wav
+And there's the campaign. Their properties in blue, on a real three-dimensional map. Everything else you have sits behind in green, for context. Screens, households and monthly budget are totalled along the top.
+
+[06]  06-tour.wav
+Press Tour the shortlist, and it flies from property to property on its own, stopping on each one with its numbers. Start it on a client call and just talk.
+
+[07]  07-edit.wav
+Clients change their minds, and you don't need a new sheet for that. Edit shortlist lets you drop properties, or search and add new ones from any city.
+
+[08]  08-save.wav
+Save, and the map redraws around the change straight away.
+
+[09]  09-share.wav
+When it's ready, copy the client link. That's one URL — no login, nothing for them to install.
+
+[10]  10-client.wav
+This is what your client opens. Full screen, their own logo on it, and the same guided tour so they can walk it again after the call.
+
+[11]  11-inventory.wav
+Outside of any campaign, browse your whole portfolio across twenty-one cities. Market Insights shows where your reach actually is, and Reports exports every campaign to CSV or PDF.
+
+[12]  12-close.wav
+That's it. Upload the sheet you already have, and send your client a map they'll remember. It's all under Help and FAQs whenever you need it again.

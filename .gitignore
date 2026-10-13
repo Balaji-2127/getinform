@@ -26,3 +26,13 @@ server/data/
 *.njsproj
 *.sln
 *.sw?
+
+# Video build intermediates (video/README.md). The finished demo.mp4, its
+# poster and the generated chapter list are tracked; the raw captures are
+# not — they are ~8 MB of PNGs that capture.mjs regenerates on demand.
+video/shots/
+# The raw screen recording plus its step marks. Kept locally so narration can
+# be swapped and re-muxed without re-recording (see video/README.md), but far
+# too large to track.
+video/.rec/
+video/narration/_line.txt

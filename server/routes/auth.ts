@@ -1,5 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import crypto from "node:crypto";
+import { refreshEnvIfChanged } from "../env.js";
 
 const router = Router();
 
@@ -30,6 +31,9 @@ function isRateLimited(ip: string): boolean {
 }
 
 router.post("/login", (req: Request, res: Response) => {
+  // Picks up an edited .env.local without needing the server restarted — see
+  // refreshEnvIfChanged. No-op in production.
+  refreshEnvIfChanged();
   if (isRateLimited(req.ip ?? "unknown")) {
     res.status(429).json({ error: "Too many attempts — try again later" });
     return;

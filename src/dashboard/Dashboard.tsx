@@ -10,6 +10,7 @@ import MyAreasPage from "./MyAreasPage";
 import ShortlistsPage from "./ShortlistsPage";
 import RecentSearchesPage from "./RecentSearchesPage";
 import ComingSoon from "./ComingSoon";
+import HelpPage from "./HelpPage";
 import GlobalSearch from "./GlobalSearch";
 import { ToastProvider } from "./Toast";
 import type { CityId } from "../data/cities";
@@ -25,12 +26,25 @@ import {
   PlusIcon,
   RecentIcon,
   ReportsIcon,
+  HelpIcon,
   ShortlistIcon,
   SidebarCollapseIcon,
 } from "./icons";
 import "./Dashboard.css";
 
-type Section = "dashboard" | "campaigns" | "inventory" | "clients" | "insights" | "ai" | "reports" | "areas" | "shortlists" | "recent" | "upload";
+type Section =
+  | "dashboard"
+  | "campaigns"
+  | "inventory"
+  | "clients"
+  | "insights"
+  | "ai"
+  | "reports"
+  | "help"
+  | "areas"
+  | "shortlists"
+  | "recent"
+  | "upload";
 
 const NAV_ITEMS: { id: Section; label: string; icon: (props: { size?: number }) => React.ReactElement }[] = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
@@ -40,6 +54,7 @@ const NAV_ITEMS: { id: Section; label: string; icon: (props: { size?: number }) 
   { id: "insights", label: "Market Insights", icon: InsightsIcon },
   { id: "ai", label: "AI Assistant", icon: AiIcon },
   { id: "reports", label: "Reports", icon: ReportsIcon },
+  { id: "help", label: "Help & FAQs", icon: HelpIcon },
 ];
 
 const SAVED_ITEMS: { id: Section; label: string; icon: (props: { size?: number }) => React.ReactElement }[] = [
@@ -56,6 +71,7 @@ const SECTION_TITLES: Record<Section, string> = {
   insights: "Market Insights",
   ai: "AI Assistant",
   reports: "Reports",
+  help: "Help & FAQs",
   areas: "My Areas",
   shortlists: "Shortlists",
   recent: "Recent Searches",
@@ -224,6 +240,7 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
           {section === "clients" && <ClientsPage onOpenCampaign={handleCampaignCreated} />}
           {section === "insights" && <InsightsPage />}
           {section === "reports" && <ReportsPage onOpenCampaign={handleCampaignCreated} />}
+          {section === "help" && <HelpPage />}
           {section === "areas" && <MyAreasPage />}
           {section === "shortlists" && <ShortlistsPage onOpenProperty={handleOpenProperty} />}
           {section === "recent" && <RecentSearchesPage onOpenCampaign={handleCampaignCreated} onOpenProperty={handleOpenProperty} />}
@@ -234,6 +251,7 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
             section !== "clients" &&
             section !== "insights" &&
             section !== "reports" &&
+            section !== "help" &&
             section !== "areas" &&
             section !== "shortlists" &&
             section !== "recent" &&
