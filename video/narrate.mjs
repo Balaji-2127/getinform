@@ -11,6 +11,14 @@
 // had Gemini rate it, calibrated first against Zira (which scored 3-4).
 // Achird on gemini-3.8-flash-tts scored highest and most consistently.
 //
+// Accent: the audience is Indian sales reps, and Achird's default read came
+// across as American. The notes now ask for a South Indian English accent
+// and the request sets languageCode en-IN. Every male voice was re-auditioned
+// with that direction and rated by Gemini for accent; Umbriel was the most
+// consistently Indian (9/10, ~1/10 American traits) and the one most often
+// placed as South Indian, while still rating as a real person. Pushing the
+// accent harder in the notes starts to sound put-on, so it stays natural.
+//
 // Why every clip is transcribed back: style direction is sent in the same
 // text as the line, and if the model misreads the structure it *speaks the
 // direction aloud* — the first test did exactly that. A more expressive
@@ -38,7 +46,8 @@ const KEY = (env.match(/^GEMINI_API_KEY=(.*)$/m) || [])[1]?.trim();
 if (!KEY) throw new Error("GEMINI_API_KEY missing from .env.local — it's needed for the voice-over");
 
 const MODEL = process.env.NARRATION_MODEL || "gemini-3.8-flash-tts";
-const VOICE = process.env.NARRATION_VOICE || "Achird";
+const VOICE = process.env.NARRATION_VOICE || "Umbriel";
+const LANGUAGE = process.env.NARRATION_LANGUAGE || "en-IN";
 const CHECK_MODEL = "gemini-2.5-flash";
 const ONLY = (process.env.ONLY || "").split(",").map((s) => s.trim()).filter(Boolean);
 // Rebuild the paced clips from the stored takes without calling the API.
@@ -53,17 +62,18 @@ mkdirSync(takesDir, { recursive: true });
 // 12%: beyond that the stretch itself starts to become audible.
 const TARGET_WPM = 172;
 const MAX_STRETCH = 0.88;
-const MAX_TRIES = 4;
+const MAX_TRIES = 6;
 
 // Google's documented "director's notes" structure: the model performs the
 // TRANSCRIPT section and treats everything above it as direction. Kept
 // deliberately plain — a more emotive version of these notes caused the
 // ad-libbing described above, without sounding any more human.
-const direct = (line) => `# AUDIO PROFILE: Product specialist
-## THE SCENE: Sitting beside a new sales colleague, walking them through the tool on a laptop.
+const direct = (line) => `# AUDIO PROFILE: Product specialist from Hyderabad, originally from Chennai
+## THE SCENE: Sitting beside a new sales colleague in the Hyderabad office, walking them through the tool on a laptop.
 ### DIRECTOR'S NOTES
-Style: warm, relaxed, confident, genuinely conversational. Not a narrator, not an advert.
-Pacing: calm and unhurried, around 150 words a minute, with small natural breaths between sentences.
+Accent: a genuine South Indian English accent, like a Tamil or Telugu professional speaking English at work. Syllable-timed rhythm with even stress, retroflex t and d, clearly pronounced r, crisp consonants, and the gentle rising-falling South Indian intonation. Natural and authentic, never exaggerated or comic.
+Style: warm, friendly, confident, genuinely conversational. Not a narrator, not an advert.
+Pacing: slow and deliberate, like explaining something to a new colleague for the first time — about 135 words a minute. Pause briefly at every comma and full stop, and say button names clearly. "Tour" rhymes with "poor" — never "two".
 #### TRANSCRIPT
 ${line}`;
 
@@ -71,11 +81,21 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function api(model, body) {
   for (let attempt = 1; ; attempt++) {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    let res;
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      // Dropped connections (ECONNRESET and the like) are retried too.
+      if (attempt < 5) {
+        await sleep(2000 * attempt);
+        continue;
+      }
+      throw err;
+    }
     const data = await res.json().catch(() => ({}));
     if (res.ok) return data;
     // Rate limits and transient 5xx are retried with backoff; anything else
@@ -93,7 +113,7 @@ async function synthesize(line, wavPath) {
     contents: [{ parts: [{ text: direct(line) }] }],
     generationConfig: {
       responseModalities: ["AUDIO"],
-      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } } },
+      speechConfig: { languageCode: LANGUAGE, voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } } },
     },
   });
   const inline = data.candidates?.[0]?.content?.parts?.find((p) => p.inlineData)?.inlineData;
@@ -129,7 +149,7 @@ async function transcribe(wavPath) {
 // Word-level overlap between script and transcript, both ways: low recall
 // means words were dropped, low precision means words were *added* — the
 // spoken-instruction and ad-lib failures both show up as poor precision.
-const words = (s) => s.toLowerCase().replace(/[^a-z0-9' ]+/g, " ").split(/\s+/).filter(Boolean);
+const words = (s) => s.toLowerCase().replace(/short list/g, "shortlist").replace(/[^a-z0-9' ]+/g, " ").split(/\s+/).filter(Boolean);
 function lcs(a, b) {
   const dp = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
   for (let i = 1; i <= a.length; i++)
@@ -154,7 +174,7 @@ function settlePace(take, out, script) {
 
 const probe = (f) => Number(execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f], { encoding: "utf8" }).trim());
 
-console.log(`voice: ${VOICE} (${MODEL})\n`);
+console.log(`voice: ${VOICE} (${MODEL}, ${LANGUAGE})\n`);
 let total = 0;
 for (const step of steps) {
   if (ONLY.length && !ONLY.includes(step.id)) continue;
@@ -168,26 +188,44 @@ for (const step of steps) {
     continue;
   }
   let accepted = false;
+  let slowestClean = null; // { secs, path } — fallback if every clean take is rushed
   for (let attempt = 1; attempt <= MAX_TRIES && !accepted; attempt++) {
     await synthesize(step.say, take);
     const heard = await transcribe(take);
     const { recall, precision } = score(step.say, heard);
     // Names like "Adonmo" get transcribed inconsistently, so this allows a
     // couple of mismatched words rather than demanding a perfect match.
-    accepted = recall >= 0.92 && precision >= 0.92;
     const secs = probe(take);
     const wpm = (words(step.say).length / secs) * 60;
+    // Umbriel sometimes rattles a line off at 220+ wpm. Past what pacing can
+    // gently slow (TARGET_WPM / MAX_STRETCH) a rushed take is re-asked for
+    // rather than stretched further, which would start to sound processed.
+    // The last try is kept regardless so a run can't fail on speed alone.
+    const tooFast = wpm > TARGET_WPM / MAX_STRETCH && attempt < MAX_TRIES;
+    accepted = recall >= 0.92 && precision >= 0.92 && !tooFast;
     console.log(
       `  ${step.id.padEnd(14)} try ${attempt}  ${secs.toFixed(1).padStart(5)}s  ${wpm.toFixed(0).padStart(3)} wpm  ` +
-        `recall ${(recall * 100).toFixed(0)}% precision ${(precision * 100).toFixed(0)}%  ${accepted ? "ok" : "REJECTED"}`,
+        `recall ${(recall * 100).toFixed(0)}% precision ${(precision * 100).toFixed(0)}%  ${accepted ? "ok" : tooFast && recall >= 0.92 && precision >= 0.92 ? "TOO FAST" : "REJECTED"}`,
     );
-    if (!accepted) console.log(`      heard: ${heard}`);
+    if (!accepted && !tooFast) console.log(`      heard: ${heard}`);
+    if (tooFast && recall >= 0.92 && precision >= 0.92 && (!slowestClean || secs > slowestClean.secs)) {
+      slowestClean = { secs, path: take + ".best.wav" };
+      writeFileSync(slowestClean.path, readFileSync(take));
+    }
     if (accepted) {
       const p = settlePace(take, wav, step.say);
       if (p.tempo < 1) console.log(`      paced ${p.wpm.toFixed(0)} -> ${p.finalWpm.toFixed(0)} wpm`);
       total += probe(wav);
     }
   }
+  if (!accepted && slowestClean) {
+    writeFileSync(take, readFileSync(slowestClean.path));
+    const p = settlePace(take, wav, step.say);
+    console.log(`      kept the slowest clean take: ${p.wpm.toFixed(0)} -> ${p.finalWpm.toFixed(0)} wpm`);
+    total += probe(wav);
+    accepted = true;
+  }
+  if (slowestClean) rmSync(slowestClean.path, { force: true });
   if (!accepted) throw new Error(`${step.id}: no clean take after ${MAX_TRIES} tries — check the line, then rerun with ONLY=${step.id}`);
 }
 

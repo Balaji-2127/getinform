@@ -11,5 +11,12 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:4000',
     },
+    // video/ is the walkthrough tooling, not app code. Recording writes
+    // thousands of frame images into video/.rec/ — watching them kept Vite
+    // busy enough to starve the browser being recorded (capture fell from
+    // ~11 fps to 1-2 fps).
+    watch: {
+      ignored: ['**/video/**'],
+    },
   },
 })

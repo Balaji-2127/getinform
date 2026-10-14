@@ -2,57 +2,57 @@
 // Regenerate with: node video/mux.mjs
 export type DemoChapter = { id: string; at: number; label: string };
 
-export const DEMO_DURATION = 159.69;
+export const DEMO_DURATION = 159.96;
 
 export const DEMO_CHAPTERS: DemoChapter[] = [
   {
     "id": "02-dashboard",
-    "at": 10.42,
+    "at": 10.41,
     "label": "Your dashboard"
   },
   {
     "id": "03-upload",
-    "at": 23.28,
+    "at": 23.27,
     "label": "Create a campaign"
   },
   {
     "id": "05-map",
-    "at": 47.71,
+    "at": 48.08,
     "label": "Your client's map"
   },
   {
     "id": "06-tour",
-    "at": 64.45,
+    "at": 65.15,
     "label": "Present it on a call"
   },
   {
     "id": "07-edit",
-    "at": 75.6,
+    "at": 76.53,
     "label": "Make changes"
   },
   {
     "id": "08-update",
-    "at": 88.59,
+    "at": 90.22,
     "label": "Add more cities"
   },
   {
     "id": "09-share",
-    "at": 104.12,
+    "at": 105.59,
     "label": "Send it to your client"
   },
   {
     "id": "10-inventory",
-    "at": 115.93,
+    "at": 117.29,
     "label": "Explore your inventory"
   },
   {
     "id": "11-reports",
-    "at": 134.32,
+    "at": 134.57,
     "label": "Keep track of campaigns"
   },
   {
     "id": "12-close",
-    "at": 144.39,
+    "at": 144.66,
     "label": "Help whenever you need it"
   }
 ];

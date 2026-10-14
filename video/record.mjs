@@ -64,7 +64,7 @@ const chrome = spawn(
     "--disable-extensions",
     "--disable-infobars",
     "--hide-crash-restore-bubble",
-    "--disable-features=Translate,InfobarsShown",
+    "--disable-features=Translate,InfobarsShown,CalculateNativeWinOcclusion",
     "--autoplay-policy=no-user-gesture-required",
     // Keeps the renderer at full speed even if the window loses focus
     // or gets covered while the recording runs.
@@ -491,9 +491,21 @@ const runStartedAt = Date.now();
 try {
   await send("Page.enable");
   await send("Runtime.enable");
-  // Google's "alpha channel… development only" strip appears a moment after
-  // each map mounts — often between our dismiss calls, so it got captured.
-  // Dismiss it from inside the page the instant it shows up.
+  await send("DOM.enable");
+
+  // The app loads Google Maps from the beta channel. Recorded on beta, screen
+  // capture collapses to 1-2 fps (measured; alpha gives ~12 fps on the same
+  // run, and nothing else in the app or the machine changes it), so the
+  // recording browser — only this one — is quietly switched to the alpha
+  // channel. The map renders the same on both.
+  const toAlpha = (url) => url.replace(/([?&]v=)beta/, "$1alpha");
+  handlers.set("Fetch.requestPaused", [(p) => {
+    const url = toAlpha(p.request.url);
+    send("Fetch.continueRequest", url === p.request.url ? { requestId: p.requestId } : { requestId: p.requestId, url }).catch(() => {});
+  }]);
+  await send("Fetch.enable", { patterns: [{ urlPattern: "*maps.googleapis.com/maps/api/js*", requestStage: "Request" }] });
+  // Alpha shows a "for development purposes only" strip a moment after each
+  // map mounts; dismiss it from inside the page the instant it appears.
   await send("Page.addScriptToEvaluateOnNewDocument", { source: `
     new MutationObserver(() => {
       for (const el of document.querySelectorAll('a,button')) {
@@ -501,7 +513,6 @@ try {
       }
     }).observe(document, { childList: true, subtree: true });
   ` });
-  await send("DOM.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: 1, mobile: false });
 
   log("opening app…");
