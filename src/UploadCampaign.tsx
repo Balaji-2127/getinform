@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CITIES } from "./data/cities";
 import { copyToClipboard } from "./copyToClipboard";
+import { MAX_SHEET_BYTES, SHEET_TOO_LARGE } from "./uploadLimit";
 import { ArrowRightIcon } from "./dashboard/icons";
 import { useToast } from "./dashboard/Toast";
 import "./UploadCampaign.css";
@@ -59,6 +60,10 @@ export default function UploadCampaign({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) return;
+    if (file.size > MAX_SHEET_BYTES) {
+      setError(SHEET_TOO_LARGE);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     setErrorDetails([]);

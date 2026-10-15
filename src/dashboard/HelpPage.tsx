@@ -35,7 +35,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "What file should I upload?",
-    a: "The master inventory workbook, with the property rows you don't want deleted. One sheet per city, named like \"Property List - Hyderabad\", and each sheet needs its \"Media Site Id\" column. Only .xlsx is accepted, up to 10 MB.",
+    a: "The master inventory workbook, with the property rows you don't want deleted. One sheet per city, named like \"Property List - Hyderabad\", and each sheet needs its \"Media Site Id\" column. Only .xlsx is accepted, up to 4 MB.",
     img: "/faq/which-file.jpg",
     alt: "The shortlisted properties field, which accepts a .xlsx file",
   },

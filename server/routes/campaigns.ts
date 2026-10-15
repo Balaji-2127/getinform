@@ -9,7 +9,9 @@ import { SUPPORTED_CITIES } from "../inventoryLookup.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  // 4 MB: Vercel caps a request body at 4.5 MB, so anything larger would be
+  // cut off before reaching this handler. Mirrors src/uploadLimit.ts.
+  limits: { fileSize: 4 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (file.originalname.toLowerCase().endsWith(".xlsx")) {
       cb(null, true);

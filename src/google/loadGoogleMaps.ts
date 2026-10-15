@@ -6,12 +6,14 @@
 type ImportLibraryFn = (name: string, ...args: unknown[]) => Promise<unknown>;
 
 function bootstrap(apiKey: string): void {
-  // "beta", not "alpha": the alpha channel makes Google show an "alpha
-  // channel … development purposes only" banner across the top of the app
-  // on every load. Not "weekly" (stable) either — the 3D map's flat
-  // ROADMAP mode, our default "Map" view, doesn't render there yet and the
-  // map just spins. Beta has everything we use and no banner.
-  const g = { key: apiKey, v: "beta" };
+  // "alpha" — the only channel where the 3D map's flat ROADMAP mode (our
+  // light "Map" view, used by the inventory map and every client link)
+  // renders. Beta 3.66.8b briefly supported it, then 3.66.9d stopped:
+  // the map just spins, as it does on "weekly". Satellite works everywhere
+  // but breaks the 3D buildings (see GoogleInventoryMap). Alpha's one cost
+  // is Google's "development purposes only" banner, which
+  // dismissGoogleAlphaBanner() below clicks away as soon as it appears.
+  const g = { key: apiKey, v: "alpha" };
   let loadPromise: Promise<void> | undefined;
   const doc = document;
   const win = window as unknown as { google?: { maps?: Record<string, unknown> } };
@@ -46,6 +48,27 @@ function bootstrap(apiKey: string): void {
   }) as unknown as Record<string, unknown>["importLibrary"];
 }
 
+// Google adds an "Using the alpha channel … for development purposes only"
+// strip above the page whenever a map mounts on the alpha channel. It is
+// meant for developers, overlaps the app's own header, and has its own
+// Dismiss button — so the app presses it the moment the strip appears,
+// and users never see it. Matched by aria-label because Google's class
+// names are internal and change (MapExperience matches it the same way).
+let bannerWatcherStarted = false;
+function dismissGoogleAlphaBanner(): void {
+  if (bannerWatcherStarted || typeof MutationObserver === "undefined") return;
+  bannerWatcherStarted = true;
+  const dismiss = () => {
+    const banner = document.querySelector<HTMLElement>('[aria-label*="alpha channel"]');
+    if (!banner) return;
+    const button = [...banner.querySelectorAll<HTMLElement>("button, a, [role=button]")].find((el) => /dismiss/i.test(el.textContent ?? ""));
+    if (button) button.click();
+    else banner.style.display = "none";
+  };
+  new MutationObserver(dismiss).observe(document.body, { childList: true, subtree: true });
+  dismiss();
+}
+
 export function loadGoogleMapsBootstrap(): void {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
   if (!apiKey) {
@@ -54,6 +77,7 @@ export function loadGoogleMapsBootstrap(): void {
     );
   }
   bootstrap(apiKey);
+  dismissGoogleAlphaBanner();
 }
 
 let maps3dPromise: Promise<google.maps.Maps3DLibrary> | null = null;

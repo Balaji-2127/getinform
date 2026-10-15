@@ -43,3 +43,9 @@ video/.tmp-graphics/
 
 # Audit screenshots (video/audit.mjs) — regenerable, review-only.
 video/audit/
+
+# Vercel CLI project link (created by `vercel link` / `vercel deploy`).
+.vercel
+
+.vercel
+.env*.local

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CITIES } from "../data/cities";
+import { MAX_SHEET_BYTES, SHEET_TOO_LARGE } from "../uploadLimit";
 import { useToast } from "./Toast";
 import { CloseIcon, UploadIcon } from "./icons";
 import "./UpdateSheetModal.css";
@@ -52,6 +53,10 @@ export default function UpdateSheetModal({
 
   const submit = async () => {
     if (!file) return;
+    if (file.size > MAX_SHEET_BYTES) {
+      setError(SHEET_TOO_LARGE);
+      return;
+    }
     setBusy(true);
     setError(null);
     setErrorDetails([]);
