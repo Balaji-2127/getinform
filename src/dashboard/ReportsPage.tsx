@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { cityLabel, fetchCampaigns, groupByClient, type CampaignListItem } from "./campaignHistory";
+import { cityLabel, fetchCampaigns, formatViewTime, groupByClient, type CampaignListItem } from "./campaignHistory";
 import StatCard from "./StatCard";
 import { ArrowRightIcon, BuildingIcon, CampaignsIcon, ClientsIcon, ExportIcon, TrashIcon } from "./icons";
 import DeleteCampaignDialog, { type DeletableCampaign } from "./DeleteCampaignDialog";
@@ -68,9 +68,17 @@ export default function ReportsPage({
     : 0;
 
   const exportCsv = () => {
-    const header = ["Client", "Campaign", "Date", "Cities", "Properties shortlisted"];
+    const header = ["Client", "Campaign", "Date", "Cities", "Properties shortlisted", "Client opens", "Client time on map"];
     const lines = rows.map((r) =>
-      [r.clientName, r.campaignName, new Date(r.createdAt).toLocaleDateString(), r.cities.join(" / "), String(r.properties)]
+      [
+        r.clientName,
+        r.campaignName,
+        new Date(r.createdAt).toLocaleDateString(),
+        r.cities.join(" / "),
+        String(r.properties),
+        String(r.views),
+        r.viewSeconds > 0 ? formatViewTime(r.viewSeconds) : "",
+      ]
         .map((cell) => `"${cell.replace(/"/g, '""')}"`)
         .join(","),
     );
@@ -159,6 +167,9 @@ export default function ReportsPage({
                       <span className="reports-label-full">Properties</span>
                       <span className="reports-label-short">Props</span>
                     </th>
+                    <th className="reports-col-views" title="How many times the client opened the share link, and how long it was on their screen in total. Your team's own visits aren't counted.">
+                      Client views
+                    </th>
                     <th aria-hidden="true" />
                   </tr>
                 </thead>
@@ -170,6 +181,18 @@ export default function ReportsPage({
                       <td className="reports-cell-muted reports-col-date">{new Date(r.createdAt).toLocaleDateString()}</td>
                       <td className="reports-cell-muted reports-col-cities">{r.cities.join(", ") || "—"}</td>
                       <td className="reports-cell-num">{r.properties.toLocaleString()}</td>
+                      <td className="reports-col-views">
+                        {r.views > 0 ? (
+                          <>
+                            <span className="reports-views-count">
+                              {r.views.toLocaleString()} {r.views === 1 ? "open" : "opens"}
+                            </span>
+                            <span className="reports-cell-muted"> · {formatViewTime(r.viewSeconds)} on map</span>
+                          </>
+                        ) : (
+                          <span className="reports-cell-muted">Not opened yet</span>
+                        )}
+                      </td>
                       <td>
                         <div className="reports-row-actions">
                           <button

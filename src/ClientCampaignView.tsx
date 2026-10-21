@@ -54,6 +54,50 @@ export default function ClientCampaignView({ campaignId }: { campaignId: string 
     };
   }, [campaignId]);
 
+  // How long the client actually has the campaign on screen. Only time the
+  // tab is visible counts — a link left open in a background tab overnight
+  // isn't time spent looking at it. Reported in slices (every 30 seconds,
+  // and whenever the tab is hidden or closed) rather than once at the end,
+  // because a closing page on a phone often never gets to send anything.
+  // The server ignores these from a sales login, same as the open count.
+  const ready = state.status === "ready";
+  useEffect(() => {
+    if (!ready) return;
+    const url = `/api/campaigns/${campaignId}/view-time`;
+    let visibleSince: number | null = document.visibilityState === "visible" ? Date.now() : null;
+
+    const flush = () => {
+      if (visibleSince === null) return;
+      const now = Date.now();
+      const seconds = Math.floor((now - visibleSince) / 1000);
+      // Carry the leftover fraction of a second into the next slice so
+      // rounding doesn't quietly lose time across many slices.
+      visibleSince = document.visibilityState === "visible" ? now - ((now - visibleSince) % 1000) : null;
+      if (seconds < 1) return;
+      const body = JSON.stringify({ seconds });
+      // sendBeacon survives the page being closed; fetch is the fallback.
+      const sent = navigator.sendBeacon?.(url, new Blob([body], { type: "application/json" }));
+      if (!sent) {
+        fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") visibleSince ??= Date.now();
+      else flush();
+    };
+
+    const timer = window.setInterval(flush, 30_000);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      flush();
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [ready, campaignId]);
+
   if (state.status === "loading") {
     return <div className="campaign-view-status">Loading campaign…</div>;
   }

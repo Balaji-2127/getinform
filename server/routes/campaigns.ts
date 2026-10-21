@@ -4,7 +4,16 @@ import ExcelJS from "exceljs";
 import { requireAuth } from "./auth.js";
 import { getKnownMediaSiteIds, type CityId } from "../inventoryLookup.js";
 import { SHEET_NAME_TO_CITY } from "../sheetMapping.js";
-import { insertCampaign, getCampaign, listCampaigns, updateCampaignSelections, deleteCampaign, type CampaignSelections } from "../db.js";
+import {
+  insertCampaign,
+  getCampaign,
+  listCampaigns,
+  updateCampaignSelections,
+  deleteCampaign,
+  recordCampaignView,
+  addCampaignViewTime,
+  type CampaignSelections,
+} from "../db.js";
 import { SUPPORTED_CITIES } from "../inventoryLookup.js";
 
 const upload = multer({
@@ -257,7 +266,26 @@ router.get<{ id: string }>("/:id", async (req, res) => {
     res.status(404).json({ error: "Campaign not found" });
     return;
   }
+  // Counts as the client opening their link only without a sales login:
+  // the Campaigns tab loads campaigns through this same route, and a rep
+  // checking their own link shouldn't look like the client did. Link
+  // previews (WhatsApp, email) never get here — they fetch the page, not
+  // this API, which only runs once the app itself is loaded in a browser.
+  if (!req.session?.loggedIn) await recordCampaignView(record.id);
   res.json({ clientName: record.clientName, campaignName: record.campaignName, selections: record.selections });
+});
+
+// Time the client link spent on screen, reported by the page in small
+// slices (see ClientCampaignView). Each slice is capped so one bad or
+// tampered request can't add hours; a real slice is at most ~30 seconds.
+const MAX_VIEW_SLICE_SECONDS = 60;
+
+router.post<{ id: string }>("/:id/view-time", async (req, res) => {
+  const seconds = Number(req.body?.seconds);
+  if (!req.session?.loggedIn && Number.isFinite(seconds) && seconds > 0) {
+    await addCampaignViewTime(req.params.id, Math.min(Math.round(seconds), MAX_VIEW_SLICE_SECONDS));
+  }
+  res.status(204).end();
 });
 
 // Replaces a campaign's shortlist wholesale (the "edit shortlist" flow —

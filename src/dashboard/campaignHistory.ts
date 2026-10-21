@@ -6,7 +6,19 @@ export type CampaignListItem = {
   campaignName: string;
   createdAt: string;
   counts: Record<string, number>;
+  // Times the client opened the share link, and total seconds it was on
+  // their screen. Sales logins don't count toward either.
+  views: number;
+  viewSeconds: number;
 };
+
+// "45s", "4m 12s", "1h 05m".
+export function formatViewTime(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  if (m < 60) return `${m}m ${String(seconds % 60).padStart(2, "0")}s`;
+  return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m`;
+}
 
 export type ClientGroup = {
   clientName: string;

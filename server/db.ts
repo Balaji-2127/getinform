@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { initializeApp, cert, getApps, type ServiceAccount } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
 // Firestore instead of a local SQLite file: this server runs on hosts
 // (Render's free tier, etc.) whose filesystem is ephemeral — a container
@@ -40,6 +40,12 @@ export type CampaignRecord = {
   campaignName: string;
   selections: CampaignSelections;
   createdAt: string;
+  // How often the client link was opened, and how long it was on screen in
+  // total. Only visits without a sales login count (see the campaigns
+  // route), so these are the client's numbers, not the rep's. Missing on
+  // campaigns nobody has opened yet.
+  views?: number;
+  viewSeconds?: number;
 };
 
 type CampaignFields = Omit<CampaignRecord, "id">;
@@ -78,6 +84,17 @@ export async function updateCampaignSelections(id: string, selections: CampaignS
   return { id: ref.id, ...(snap.data() as CampaignFields), selections };
 }
 
+// Both bump a counter in place with FieldValue.increment, so two people
+// with the link open at once can't overwrite each other's numbers. A
+// missing campaign (deleted while the link was open) is just ignored.
+export async function recordCampaignView(id: string): Promise<void> {
+  await campaignsCol.doc(id).update({ views: FieldValue.increment(1) }).catch(() => {});
+}
+
+export async function addCampaignViewTime(id: string, seconds: number): Promise<void> {
+  await campaignsCol.doc(id).update({ viewSeconds: FieldValue.increment(seconds) }).catch(() => {});
+}
+
 export async function listCampaigns(): Promise<(Omit<CampaignRecord, "selections"> & { counts: Record<string, number> })[]> {
   const snap = await campaignsCol.orderBy("createdAt", "desc").get();
   return snap.docs.map((doc) => {
@@ -88,7 +105,15 @@ export async function listCampaigns(): Promise<(Omit<CampaignRecord, "selections
     const counts = Object.fromEntries(
       Object.entries(data.selections ?? {}).map(([city, ids]) => [city, Array.isArray(ids) ? ids.length : 0]),
     );
-    return { id: doc.id, clientName: data.clientName, campaignName: data.campaignName, createdAt: data.createdAt, counts };
+    return {
+      id: doc.id,
+      clientName: data.clientName,
+      campaignName: data.campaignName,
+      createdAt: data.createdAt,
+      counts,
+      views: data.views ?? 0,
+      viewSeconds: data.viewSeconds ?? 0,
+    };
   });
 }
 

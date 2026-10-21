@@ -216,7 +216,8 @@
      and with it still there Open and Delete sat just off the right edge.
      The Clients page shows each campaign's date anyway. */
   .reports-col-cities,
-  .reports-col-date {
+  .reports-col-date,
+  .reports-col-views {
     display: none;
   }
 
@@ -242,4 +243,13 @@
 
 .reports-label-short {
   display: none;
+}
+
+.reports-col-views {
+  white-space: nowrap;
+}
+
+.reports-views-count {
+  font-weight: 600;
+  color: var(--c-text);
 }
