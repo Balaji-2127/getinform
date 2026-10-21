@@ -97,8 +97,9 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 180px;
+  max-height: 220px;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -143,6 +144,56 @@
 .cfb-tag.is-added {
   background: #ede9fe;
   color: #6d28d9;
+}
+
+.cfb-tag.is-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.cfb-tag.is-declined {
+  background: var(--c-surface-hover);
+  color: var(--c-text-3);
+}
+
+.cfb-row.is-pending {
+  background: #fffbeb;
+  margin: 0 -14px;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.cfb-row-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.cfb-btn.is-accept,
+.cfb-btn.is-decline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  font-size: 12px;
+}
+
+.cfb-btn.is-accept {
+  border-color: #16a34a;
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.cfb-btn.is-accept:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.cfb-btn.is-decline:hover:not(:disabled) {
+  border-color: #fecdd3;
+  background: #fff1f2;
+  color: #be123c;
 }
 
 .cfb-row-comment {

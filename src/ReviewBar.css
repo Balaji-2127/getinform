@@ -76,6 +76,11 @@
   color: var(--c-text-4);
 }
 
+.review-bar-save.is-live {
+  color: var(--c-brand);
+  font-weight: 600;
+}
+
 .review-bar-save.is-error {
   color: var(--c-danger-text);
 }

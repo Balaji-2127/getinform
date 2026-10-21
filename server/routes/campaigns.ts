@@ -375,7 +375,9 @@ router.get<{ id: string }>("/:id", async (req, res) => {
   // checking their own link shouldn't look like the client did. Link
   // previews (WhatsApp, email) never get here — they fetch the page, not
   // this API, which only runs once the app itself is loaded in a browser.
-  if (!req.session?.loggedIn) await recordCampaignView(record.id);
+  // The client's page re-reads the campaign every few seconds to pick up
+  // the team's decisions (?poll=1); those reads aren't fresh opens.
+  if (!req.session?.loggedIn && req.query.poll !== "1") await recordCampaignView(record.id);
   res.json({ clientName: record.clientName, campaignName: record.campaignName, selections: record.selections, review: record.review ?? null });
 });
 
@@ -437,8 +439,60 @@ router.put<{ id: string }>("/:id/review", async (req, res) => {
     note: text(req.body?.note, MAX_COMMENT_CHARS) || null,
     updatedAt: now,
   };
+  // The team's earlier answers are theirs, not the client's to resend:
+  // kept for requests the client still makes, dropped for ones withdrawn.
+  const stillAsked = new Set([...removed, ...Object.values(added).flat()]);
+  const resolved = Object.fromEntries(Object.entries(campaign.review?.resolved ?? {}).filter(([id]) => stillAsked.has(id)));
+  if (Object.keys(resolved).length > 0) review.resolved = resolved;
   await saveCampaignReview(campaign.id, review);
   res.json({ review });
+});
+
+// The sales team answering the client's requests. Accepted removals leave
+// the shortlist and accepted additions join it; declined ones are only
+// recorded. Either way the request stops counting as pending.
+router.put<{ id: string }>("/:id/review/decisions", requireAuth, async (req, res) => {
+  const campaign = await getCampaign(req.params.id);
+  if (!campaign?.review) {
+    res.status(404).json({ error: "No client review on this campaign" });
+    return;
+  }
+  const ids = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+  const accept = new Set(ids(req.body?.accept));
+  const decline = new Set(ids(req.body?.decline));
+  const review = { ...campaign.review, resolved: { ...(campaign.review.resolved ?? {}) } };
+  const selections: CampaignSelections = Object.fromEntries(Object.entries(campaign.selections ?? {}).map(([c, v]) => [c, [...v]]));
+  const removedSet = new Set(review.removed);
+  let changed = false;
+
+  for (const id of accept) {
+    if (removedSet.has(id)) {
+      for (const city of Object.keys(selections)) {
+        const kept = selections[city].filter((x) => x !== id);
+        if (kept.length !== selections[city].length) changed = true;
+        if (kept.length > 0) selections[city] = kept;
+        else delete selections[city];
+      }
+      review.resolved[id] = "accepted";
+      continue;
+    }
+    const city = Object.entries(review.added ?? {}).find(([, list]) => list.includes(id))?.[0];
+    if (city && !selections[city]?.includes(id) && getKnownMediaSiteIds(city as CityId).has(id)) {
+      selections[city] = [...(selections[city] ?? []), id];
+      review.resolved[id] = "accepted";
+      changed = true;
+    }
+  }
+  for (const id of decline) {
+    if (removedSet.has(id) || Object.values(review.added ?? {}).flat().includes(id)) review.resolved[id] = "declined";
+  }
+  if (Object.keys(selections).length === 0) {
+    res.status(400).json({ error: "That would leave the shortlist empty — edit it instead" });
+    return;
+  }
+  if (changed) await updateCampaignSelections(campaign.id, selections);
+  await saveCampaignReview(campaign.id, review);
+  res.json({ selections, review });
 });
 
 // Time the client link spent on screen, reported by the page in small

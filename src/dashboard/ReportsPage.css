@@ -274,8 +274,17 @@
 }
 
 .reports-review-badge.is-changes {
+  border: none;
   background: #ede9fe;
   color: #6d28d9;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reports-review-badge.is-changes:hover {
+  background: #ddd6fe;
 }
 
 .reports-views-count {

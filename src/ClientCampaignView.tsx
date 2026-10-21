@@ -191,6 +191,44 @@ export default function ClientCampaignView({ campaignId }: { campaignId: string 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId]);
 
+  // ---- live updates from the sales team ---------------------------------
+  // The same link keeps working after the team accepts or declines a
+  // request or edits the shortlist: this re-reads the campaign every few
+  // seconds while the tab is visible and applies any change in place (the
+  // map restyles its pins rather than reloading). The client's own unsaved
+  // clicks always win — nothing is overwritten while a save is pending.
+  const [liveNote, setLiveNote] = useState<string | null>(null);
+  const selectionsKey = state.status === "ready" ? JSON.stringify(state.data.selections) : "";
+  useEffect(() => {
+    if (!ready) return;
+    let stopped = false;
+    const poll = async () => {
+      if (document.visibilityState !== "visible" || pendingRef.current || timerRef.current != null) return;
+      try {
+        const res = await fetch(`/api/campaigns/${campaignId}?poll=1`);
+        if (!res.ok || stopped) return;
+        const data = (await res.json()) as CampaignResponse;
+        if (stopped || pendingRef.current) return;
+        const selectionsChanged = JSON.stringify(data.selections) !== selectionsKey;
+        const reviewChanged = JSON.stringify(data.review ?? EMPTY_REVIEW) !== JSON.stringify(reviewRef.current);
+        if (selectionsChanged) {
+          setState({ status: "ready", data });
+          setLiveNote("Adonmo updated your shortlist");
+          window.setTimeout(() => setLiveNote(null), 8000);
+        }
+        if (reviewChanged) setReview(data.review ?? EMPTY_REVIEW);
+      } catch {
+        // Offline for a moment: the next tick tries again.
+      }
+    };
+    const timer = window.setInterval(poll, 10_000);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, campaignId, selectionsKey]);
+
   const approve = async (approvedBy: string, note: string): Promise<boolean> => {
     if (timerRef.current != null) window.clearTimeout(timerRef.current);
     pendingRef.current = null;
@@ -266,6 +304,7 @@ export default function ClientCampaignView({ campaignId }: { campaignId: string 
         selections={state.data.selections}
         review={review}
         saveState={saveState}
+        liveNote={liveNote}
         onApprove={approve}
         onReopen={reopen}
       />

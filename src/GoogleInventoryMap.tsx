@@ -767,7 +767,15 @@ export default function GoogleInventoryMap({
     if (!map || !maps3d) return;
     clearLevelMarkers();
 
-    for (const item of items) renderProjectPin(item.feature);
+    // A few properties appear more than once in the inventory files under
+    // the same id; one pin each, or a shortlist of three shows four pins.
+    const drawn = new Set<string>();
+    for (const item of items) {
+      const key = projectKey(item.feature);
+      if (drawn.has(key)) continue;
+      drawn.add(key);
+      renderProjectPin(item.feature);
+    }
   };
 
   const toPointItem = (f: ProjectFeature): RenderItem => ({

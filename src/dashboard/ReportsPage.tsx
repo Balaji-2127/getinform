@@ -214,9 +214,14 @@ export default function ReportsPage({
                             the campaign. */}
                         {r.review?.status === "approved" && <span className="reports-review-badge is-approved">Approved</span>}
                         {reviewChanges(r.review) && (
-                          <span className="reports-review-badge is-changes" title="Open the campaign to see and apply the client's changes">
-                            {reviewChanges(r.review)}
-                          </span>
+                          <button
+                            type="button"
+                            className="reports-review-badge is-changes"
+                            title="See which properties the client wants added or removed, and accept or decline each"
+                            onClick={() => onOpenCampaign(r.id)}
+                          >
+                            {reviewChanges(r.review)} · review
+                          </button>
                         )}
                         {!r.review?.status || (r.review.status !== "approved" && !reviewChanges(r.review)) ? (
                           <span className="reports-cell-muted">—</span>

@@ -67,6 +67,10 @@ export type CampaignReview = {
   approvedBy: string | null;
   note: string | null;
   updatedAt: string;
+  // The sales team's answer to each removal/addition request, by
+  // mediaSiteId. Accepting changes the shortlist; declining only records
+  // the answer so the request stops counting as pending.
+  resolved?: Record<string, "accepted" | "declined">;
 };
 
 // Just the numbers, for list views — removals and comments counted only for
@@ -84,12 +88,14 @@ export type CampaignReviewSummary = {
 export function summarizeReview(review: CampaignReview | undefined, selections: CampaignSelections | undefined): CampaignReviewSummary | null {
   if (!review) return null;
   const onShortlist = new Set(Object.values(selections ?? {}).flatMap((ids) => (Array.isArray(ids) ? ids : [])));
+  const resolved = review.resolved ?? {};
   const added = Object.values(review.added ?? {}).flat().filter((id) => !onShortlist.has(id));
   const inPlay = new Set([...onShortlist, ...added]);
+  // Only requests still waiting for the team's answer are counted.
   return {
     status: review.status,
-    removedCount: review.removed.filter((id) => onShortlist.has(id)).length,
-    addedCount: added.length,
+    removedCount: review.removed.filter((id) => onShortlist.has(id) && !resolved[id]).length,
+    addedCount: added.filter((id) => !resolved[id]).length,
     commentCount: Object.keys(review.comments).filter((id) => inPlay.has(id)).length,
     approvedAt: review.approvedAt,
     approvedBy: review.approvedBy,

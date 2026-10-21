@@ -14,6 +14,8 @@ export type CampaignReview = {
   // An overall note left when approving.
   note: string | null;
   updatedAt: string;
+  // The sales team's answer to each removal/addition request.
+  resolved?: Record<string, "accepted" | "declined">;
 };
 
 // Counts only, as GET /api/campaigns lists them.

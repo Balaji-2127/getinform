@@ -94,6 +94,18 @@ export default function CampaignsPage({
   const [reloadCount, setReloadCount] = useState(0);
   const loadedIdRef = useRef<string | null>(null);
 
+  // The client may be editing their link right now: re-read the campaign
+  // every half minute while this tab is in view, so their requests show
+  // up here without anyone pressing Refresh. Only changed data re-renders
+  // anything, so the map isn't disturbed.
+  useEffect(() => {
+    if (!activeCampaignId) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") setReloadCount((n) => n + 1);
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [activeCampaignId]);
+
   useEffect(() => {
     if (!activeCampaignId) {
       setState({ status: "idle" });
@@ -114,7 +126,8 @@ export default function CampaignsPage({
       .then((data) => {
         if (cancelled) return;
         loadedIdRef.current = activeCampaignId;
-        setState({ status: "ready", data });
+        // Same data as before: keep the old object so nothing re-renders.
+        setState((prev) => (prev.status === "ready" && JSON.stringify(prev.data) === JSON.stringify(data) ? prev : { status: "ready", data }));
       })
       .catch((e: Error) => {
         if (!cancelled) setState({ status: "error", message: e.message });
@@ -231,7 +244,7 @@ export default function CampaignsPage({
           campaignId={activeCampaignId}
           selections={state.data.selections}
           review={state.data.review}
-          onApplied={(selections) => setState({ status: "ready", data: { ...state.data, selections } })}
+          onApplied={({ selections, review }) => setState({ status: "ready", data: { ...state.data, selections, review } })}
           onRefresh={() => setReloadCount((n) => n + 1)}
         />
       )}

@@ -12,12 +12,15 @@ export default function ReviewBar({
   selections,
   review,
   saveState,
+  liveNote,
   onApprove,
   onReopen,
 }: {
   selections: Record<string, string[]>;
   review: CampaignReview;
   saveState: SaveState;
+  // Briefly shown after the sales team changed the shortlist underneath.
+  liveNote?: string | null;
   onApprove: (approvedBy: string, note: string) => Promise<boolean>;
   onReopen: () => void;
 }) {
@@ -69,6 +72,7 @@ export default function ReviewBar({
                   .filter(Boolean)
                   .join(" · ")
               : "Tap Properties at the top, or any pin, to remove or add properties"}
+            {liveNote && <em className="review-bar-save is-live"> · {liveNote}</em>}
             {saveState === "saving" && <em className="review-bar-save"> · Saving…</em>}
             {saveState === "saved" && <em className="review-bar-save"> · Saved</em>}
             {saveState === "error" && <em className="review-bar-save is-error"> · Couldn't save — check your connection</em>}
