@@ -55,4 +55,40 @@ router.get("/client-logo", async (req: Request, res: Response) => {
   res.json({ logoUrl: domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128` : null });
 });
 
+// The same logo as image bytes from this server, for the campaign PDF: the
+// PDF is drawn in the browser, which can't read another site's image pixels
+// (Google's favicon service sends no CORS header), so it's fetched here
+// instead. 404 when there's no logo — the PDF then draws the client's
+// initials. Google answers unknown domains with a 404 and a generic globe,
+// which is deliberately not passed on.
+router.get("/client-logo-image", async (req: Request, res: Response) => {
+  const clientName = typeof req.query.name === "string" ? req.query.name.trim() : "";
+  if (!clientName) {
+    res.status(400).json({ error: "Missing name" });
+    return;
+  }
+  const key = clientName.toLowerCase();
+  if (!domainCache.has(key)) {
+    domainCache.set(key, await resolveDomainViaGemini(clientName));
+  }
+  const domain = domainCache.get(key) ?? null;
+  if (!domain) {
+    res.status(404).json({ error: "No logo found" });
+    return;
+  }
+  try {
+    const logo = await fetch(`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`);
+    const type = logo.headers.get("content-type") ?? "";
+    if (!logo.ok || !type.startsWith("image/")) {
+      res.status(404).json({ error: "No logo found" });
+      return;
+    }
+    res.set("Content-Type", type);
+    res.set("Cache-Control", "private, max-age=86400");
+    res.send(Buffer.from(await logo.arrayBuffer()));
+  } catch {
+    res.status(404).json({ error: "No logo found" });
+  }
+});
+
 export default router;

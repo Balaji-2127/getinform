@@ -1,4 +1,5 @@
 import { CITIES } from "../data/cities";
+import type { CampaignReviewSummary } from "../review";
 
 export type CampaignListItem = {
   id: string;
@@ -10,7 +11,31 @@ export type CampaignListItem = {
   // their screen. Sales logins don't count toward either.
   views: number;
   viewSeconds: number;
+  // The client's review on their link, or null if they haven't started one.
+  review: CampaignReviewSummary | null;
 };
+
+// What the client changed that's still waiting to be applied: "1 removed ·
+// 2 added · 3 comments", or "" if nothing. Counts only what still differs
+// from the shortlist, so it empties once the team applies the changes.
+export function reviewChanges(review: CampaignReviewSummary | null): string {
+  if (!review) return "";
+  const parts = [
+    review.removedCount > 0 && `${review.removedCount} removed`,
+    review.addedCount > 0 && `${review.addedCount} added`,
+    review.commentCount > 0 && `${review.commentCount} ${review.commentCount === 1 ? "comment" : "comments"}`,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "";
+}
+
+// One line for a campaign's review status, for exports: "Approved · 1 added",
+// "8 removed · 3 comments", or "" when the client hasn't touched it.
+export function reviewLabel(review: CampaignReviewSummary | null): string {
+  if (!review) return "";
+  const changes = reviewChanges(review);
+  if (review.status === "approved") return changes ? `Approved · ${changes}` : "Approved";
+  return changes;
+}
 
 // "45s", "4m 12s", "1h 05m".
 export function formatViewTime(seconds: number): string {

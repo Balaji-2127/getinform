@@ -14,6 +14,7 @@ import propertyImagesRouter from "./routes/propertyImages.js";
 import searchRouter from "./routes/search.js";
 import savedAreasRouter from "./routes/savedAreas.js";
 import shortlistsRouter from "./routes/shortlists.js";
+import assistantRouter from "./routes/assistant.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === "production";
@@ -56,6 +57,7 @@ app.use("/api", propertyImagesRouter);
 app.use("/api", searchRouter);
 app.use("/api", savedAreasRouter);
 app.use("/api", shortlistsRouter);
+app.use("/api", assistantRouter);
 
 // Unknown /api paths have to 404 as JSON. Without this they fall through to
 // the SPA catch-all below and resolve with index.html at HTTP 200, so a

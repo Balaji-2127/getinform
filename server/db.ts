@@ -46,7 +46,55 @@ export type CampaignRecord = {
   // campaigns nobody has opened yet.
   views?: number;
   viewSeconds?: number;
+  // The client's own verdict on the shortlist, made on the share link.
+  // Missing until the client first touches anything.
+  review?: CampaignReview;
 };
+
+// What the client said about their shortlist: which properties they'd drop,
+// which others from the inventory they'd add, a note on any property, and
+// whether they've signed the whole thing off. `removed` and `comments` are
+// keyed by mediaSiteId; `added` is { cityId: mediaSiteId[] }, since adding a
+// property to the shortlist needs its city. Ids that later stop applying (a
+// rep edits the shortlist) are simply ignored wherever this is read.
+export type CampaignReview = {
+  removed: string[];
+  // Missing on reviews saved before clients could add properties.
+  added?: Record<string, string[]>;
+  comments: Record<string, string>;
+  status: "in_review" | "approved";
+  approvedAt: string | null;
+  approvedBy: string | null;
+  note: string | null;
+  updatedAt: string;
+};
+
+// Just the numbers, for list views — removals and comments counted only for
+// properties still on the shortlist, so applying the client's removals (or
+// any other edit) brings these back in line with what's actually there.
+export type CampaignReviewSummary = {
+  status: CampaignReview["status"];
+  removedCount: number;
+  addedCount: number;
+  commentCount: number;
+  approvedAt: string | null;
+  approvedBy: string | null;
+};
+
+export function summarizeReview(review: CampaignReview | undefined, selections: CampaignSelections | undefined): CampaignReviewSummary | null {
+  if (!review) return null;
+  const onShortlist = new Set(Object.values(selections ?? {}).flatMap((ids) => (Array.isArray(ids) ? ids : [])));
+  const added = Object.values(review.added ?? {}).flat().filter((id) => !onShortlist.has(id));
+  const inPlay = new Set([...onShortlist, ...added]);
+  return {
+    status: review.status,
+    removedCount: review.removed.filter((id) => onShortlist.has(id)).length,
+    addedCount: added.length,
+    commentCount: Object.keys(review.comments).filter((id) => inPlay.has(id)).length,
+    approvedAt: review.approvedAt,
+    approvedBy: review.approvedBy,
+  };
+}
 
 type CampaignFields = Omit<CampaignRecord, "id">;
 
@@ -95,7 +143,16 @@ export async function addCampaignViewTime(id: string, seconds: number): Promise<
   await campaignsCol.doc(id).update({ viewSeconds: FieldValue.increment(seconds) }).catch(() => {});
 }
 
-export async function listCampaigns(): Promise<(Omit<CampaignRecord, "selections"> & { counts: Record<string, number> })[]> {
+export async function saveCampaignReview(id: string, review: CampaignReview): Promise<boolean> {
+  const ref = campaignsCol.doc(id);
+  if (!(await ref.get()).exists) return false;
+  await ref.update({ review });
+  return true;
+}
+
+export async function listCampaigns(): Promise<
+  (Omit<CampaignRecord, "selections" | "review"> & { counts: Record<string, number>; review: CampaignReviewSummary | null })[]
+> {
   const snap = await campaignsCol.orderBy("createdAt", "desc").get();
   return snap.docs.map((doc) => {
     const data = doc.data() as CampaignFields;
@@ -113,6 +170,7 @@ export async function listCampaigns(): Promise<(Omit<CampaignRecord, "selections
       counts,
       views: data.views ?? 0,
       viewSeconds: data.viewSeconds ?? 0,
+      review: summarizeReview(data.review, data.selections),
     };
   });
 }

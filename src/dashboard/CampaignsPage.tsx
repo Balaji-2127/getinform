@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import MapExperience from "../MapExperience";
 import ClientLogo from "./ClientLogo";
 import { CheckIcon, CloseIcon, ExpandIcon, ExportIcon, LinkIcon, PencilIcon, UploadIcon } from "./icons";
@@ -7,9 +7,16 @@ import EditShortlistModal from "./EditShortlistModal";
 import UpdateSheetModal from "./UpdateSheetModal";
 import { copyToClipboard } from "../copyToClipboard";
 import { useToast } from "./Toast";
+import ClientFeedback from "./ClientFeedback";
+import type { CampaignReview, MapReview } from "../review";
 import "./CampaignsPage.css";
 
-type CampaignResponse = { clientName: string; campaignName: string; selections: Record<string, string[]> };
+type CampaignResponse = {
+  clientName: string;
+  campaignName: string;
+  selections: Record<string, string[]>;
+  review: CampaignReview | null;
+};
 
 function firstCityWithSelection(selections: Record<string, string[]>): CityId {
   const match = CITIES.find((c) => (selections[c.id]?.length ?? 0) > 0);
@@ -82,13 +89,20 @@ export default function CampaignsPage({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [fullscreen]);
 
+  // Bumped by the client-feedback panel's Refresh, to pick up anything the
+  // client has done on their link since this page loaded.
+  const [reloadCount, setReloadCount] = useState(0);
+  const loadedIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!activeCampaignId) {
       setState({ status: "idle" });
       return;
     }
     let cancelled = false;
-    setState({ status: "loading" });
+    // A refresh keeps the map on screen; only a different campaign shows
+    // the loading state.
+    if (loadedIdRef.current !== activeCampaignId) setState({ status: "loading" });
     fetch(`/api/campaigns/${activeCampaignId}`)
       .then(async (res) => {
         if (!res.ok) {
@@ -98,7 +112,9 @@ export default function CampaignsPage({
         return res.json() as Promise<CampaignResponse>;
       })
       .then((data) => {
-        if (!cancelled) setState({ status: "ready", data });
+        if (cancelled) return;
+        loadedIdRef.current = activeCampaignId;
+        setState({ status: "ready", data });
       })
       .catch((e: Error) => {
         if (!cancelled) setState({ status: "error", message: e.message });
@@ -106,7 +122,19 @@ export default function CampaignsPage({
     return () => {
       cancelled = true;
     };
-  }, [activeCampaignId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCampaignId, reloadCount]);
+
+  // The client's choices drawn on the team's map too — removed properties
+  // in red, and their comment in the property panel — read-only here.
+  const review = state.status === "ready" ? state.data.review : null;
+  const mapReview: MapReview | undefined = useMemo(
+    () =>
+      review
+        ? { removed: new Set(review.removed), added: new Set(Object.values(review.added ?? {}).flat()), comments: review.comments, audience: "team" }
+        : undefined,
+    [review],
+  );
 
   return (
     <div className="cpg-page">
@@ -141,7 +169,7 @@ export default function CampaignsPage({
                   // only when someone actually clicks this button keeps it
                   // out of the main bundle every other page pays for.
                   const { downloadCampaignPdf } = await import("./campaignPdf");
-                  await downloadCampaignPdf(state.data.clientName, state.data.campaignName, state.data.selections);
+                  await downloadCampaignPdf(state.data.clientName, state.data.campaignName, state.data.selections, shareLink, activeCampaignId);
                   showToast("PDF downloaded");
                 } catch {
                   showToast("Could not generate PDF — try again", "error");
@@ -198,6 +226,16 @@ export default function CampaignsPage({
         </div>
       )}
 
+      {state.status === "ready" && activeCampaignId && (
+        <ClientFeedback
+          campaignId={activeCampaignId}
+          selections={state.data.selections}
+          review={state.data.review}
+          onApplied={(selections) => setState({ status: "ready", data: { ...state.data, selections } })}
+          onRefresh={() => setReloadCount((n) => n + 1)}
+        />
+      )}
+
       {state.status === "idle" && (
         <div className="cpg-empty">
           <p>No campaign loaded yet.</p>
@@ -251,6 +289,7 @@ export default function CampaignsPage({
             hideBrand
             bannerPortalTarget={bannerSlot}
             citySwitcherPortalTarget={citySwitcherSlot}
+            review={mapReview}
           />
         </div>
       )}

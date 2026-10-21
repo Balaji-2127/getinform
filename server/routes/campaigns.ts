@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from "express";
 import multer from "multer";
 import ExcelJS from "exceljs";
 import { requireAuth } from "./auth.js";
-import { getKnownMediaSiteIds, type CityId } from "../inventoryLookup.js";
+import { getKnownMediaSiteIds, getCityFeatures, type CityId } from "../inventoryLookup.js";
 import { SHEET_NAME_TO_CITY } from "../sheetMapping.js";
 import {
   insertCampaign,
@@ -12,7 +12,9 @@ import {
   deleteCampaign,
   recordCampaignView,
   addCampaignViewTime,
+  saveCampaignReview,
   type CampaignSelections,
+  type CampaignReview,
 } from "../db.js";
 import { SUPPORTED_CITIES } from "../inventoryLookup.js";
 
@@ -98,6 +100,43 @@ async function parseWorkbook(
 
 router.get("/", requireAuth, async (_req: Request, res: Response) => {
   res.json(await listCampaigns());
+});
+
+// A request body's { cityId: mediaSiteId[] } reduced to real inventory:
+// unknown cities and ids dropped, duplicates removed, empty cities left out.
+function cleanSelections(body: unknown): CampaignSelections {
+  const cleaned: CampaignSelections = {};
+  if (!body || typeof body !== "object") return cleaned;
+  for (const cityId of SUPPORTED_CITIES) {
+    const ids = (body as Record<string, unknown>)[cityId];
+    if (!Array.isArray(ids)) continue;
+    const known = getKnownMediaSiteIds(cityId);
+    // Deduped as well as filtered — a repeated id would otherwise be stored
+    // twice, inflating this city's count everywhere it's displayed (the
+    // campaign list, Reports, the map banner) and double-counting the same
+    // property in the "most shortlisted" aggregate.
+    const kept = [...new Set(ids.filter((id): id is string => typeof id === "string" && known.has(id)))];
+    if (kept.length > 0) cleaned[cityId] = kept;
+  }
+  return cleaned;
+}
+
+// A campaign from a shortlist that already exists as data rather than a
+// sheet — what the AI Assistant's "Create campaign" button sends.
+router.post("/", requireAuth, async (req: Request, res: Response) => {
+  const clientName = typeof req.body?.clientName === "string" ? req.body.clientName.trim() : "";
+  const campaignName = typeof req.body?.campaignName === "string" ? req.body.campaignName.trim() : "";
+  if (!clientName || !campaignName) {
+    res.status(400).json({ error: "Client name and campaign name are required" });
+    return;
+  }
+  const selections = cleanSelections(req.body?.selections);
+  if (Object.keys(selections).length === 0) {
+    res.status(400).json({ error: "No known properties in this shortlist" });
+    return;
+  }
+  const record = await insertCampaign({ clientName, campaignName, selections });
+  res.json({ campaignId: record.id, shareUrl: `/campaign/${record.id}` });
 });
 
 router.post("/upload", requireAuth, upload.single("file"), async (req: Request, res: Response) => {
@@ -260,6 +299,71 @@ router.post<{ id: string }>("/:id/properties", requireAuth, async (req, res) => 
   res.json({ added: !alreadyIn, newCity: !alreadyIn && ids.length === 0, selections: record?.selections ?? selections });
 });
 
+// A map picture of one city's shortlist for the campaign PDF: Google's
+// Static Maps image with a blue pin on every shortlisted property, framed
+// to fit them all. Fetched here rather than in the browser because the PDF
+// needs the image bytes, and Google doesn't allow cross-origin reads of
+// them. Needs the Maps Static API enabled on the key's Google Cloud project
+// — until it is, this answers 502 and the PDF simply leaves the map out.
+const STATIC_MAP_MAX_MARKERS = 600; // keeps the URL well inside Google's 16 KB limit
+
+router.get<{ id: string }>("/:id/map-snapshot.png", requireAuth, async (req, res) => {
+  const cityId = req.query.city as string;
+  if (!(SUPPORTED_CITIES as readonly string[]).includes(cityId)) {
+    res.status(400).json({ error: "Unknown city" });
+    return;
+  }
+  const campaign = await getCampaign(req.params.id);
+  if (!campaign) {
+    res.status(404).json({ error: "Campaign not found" });
+    return;
+  }
+  const key = process.env.VITE_GOOGLE_MAPS_API_KEY;
+  if (!key) {
+    res.status(502).json({ error: "Maps key not configured" });
+    return;
+  }
+  const wanted = new Set(campaign.selections?.[cityId] ?? []);
+  const seen = new Set<string>();
+  const points: string[] = [];
+  for (const f of getCityFeatures(cityId as CityId)) {
+    const id = f.properties.mediaSiteId;
+    if (!id || !wanted.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    const [lng, lat] = f.geometry.coordinates;
+    points.push(`${lat.toFixed(5)},${lng.toFixed(5)}`);
+    if (points.length >= STATIC_MAP_MAX_MARKERS) break;
+  }
+  if (points.length === 0) {
+    res.status(404).json({ error: "No properties in this city" });
+    return;
+  }
+  // Pins get smaller as the shortlist grows, so a 100-property map stays
+  // readable instead of becoming one blue blob.
+  const size = points.length > 80 ? "tiny" : points.length > 30 ? "small" : "mid";
+  const params = new URLSearchParams({ size: "640x400", scale: "2", maptype: "roadmap", key });
+  params.append("markers", `color:0x2563eb|size:${size}|${points.join("|")}`);
+  // Hide Google's own business pins so only the shortlist stands out.
+  params.append("style", "feature:poi|visibility:off");
+  try {
+    const upstream = await fetch(`https://maps.googleapis.com/maps/api/staticmap?${params}`, {
+      headers: { Referer: `${req.protocol}://${req.get("host")}/` },
+    });
+    const type = upstream.headers.get("content-type") ?? "";
+    if (!upstream.ok || !type.startsWith("image/")) {
+      const detail = (await upstream.text()).slice(0, 200);
+      console.error(`[map-snapshot] Static Maps ${upstream.status}: ${detail}`);
+      res.status(502).json({ error: "Map image unavailable", detail });
+      return;
+    }
+    res.set("Content-Type", type);
+    res.set("Cache-Control", "private, max-age=300");
+    res.send(Buffer.from(await upstream.arrayBuffer()));
+  } catch {
+    res.status(502).json({ error: "Map image unavailable" });
+  }
+});
+
 router.get<{ id: string }>("/:id", async (req, res) => {
   const record = await getCampaign(req.params.id);
   if (!record) {
@@ -272,7 +376,69 @@ router.get<{ id: string }>("/:id", async (req, res) => {
   // previews (WhatsApp, email) never get here — they fetch the page, not
   // this API, which only runs once the app itself is loaded in a browser.
   if (!req.session?.loggedIn) await recordCampaignView(record.id);
-  res.json({ clientName: record.clientName, campaignName: record.campaignName, selections: record.selections });
+  res.json({ clientName: record.clientName, campaignName: record.campaignName, selections: record.selections, review: record.review ?? null });
+});
+
+// The client's review, saved from the share link — public, like the link
+// itself. The page sends the whole review every time (it autosaves as the
+// client clicks), so this replaces rather than merges. Only ids actually on
+// the shortlist are kept, and every text field is length-capped, since
+// anyone holding the link can call this.
+const MAX_COMMENT_CHARS = 1000;
+const MAX_NAME_CHARS = 80;
+
+router.put<{ id: string }>("/:id/review", async (req, res) => {
+  const campaign = await getCampaign(req.params.id);
+  if (!campaign) {
+    res.status(404).json({ error: "Campaign not found" });
+    return;
+  }
+  const onShortlist = new Set(Object.values(campaign.selections ?? {}).flat());
+  const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+
+  const removedIn: unknown = req.body?.removed;
+  const removed = Array.isArray(removedIn)
+    ? [...new Set(removedIn.filter((id): id is string => typeof id === "string" && onShortlist.has(id)))]
+    : [];
+  // Additions: real inventory in one of the campaign's own cities (the only
+  // cities the client's map shows), and not already on the shortlist.
+  const added: Record<string, string[]> = {};
+  const addedIn: unknown = req.body?.added;
+  if (addedIn && typeof addedIn === "object") {
+    for (const cityId of SUPPORTED_CITIES) {
+      const ids = (addedIn as Record<string, unknown>)[cityId];
+      if (!Array.isArray(ids) || !campaign.selections?.[cityId]?.length) continue;
+      const known = getKnownMediaSiteIds(cityId);
+      const kept = [...new Set(ids.filter((id): id is string => typeof id === "string" && known.has(id) && !onShortlist.has(id)))];
+      if (kept.length > 0) added[cityId] = kept;
+    }
+  }
+  const commentable = new Set([...onShortlist, ...Object.values(added).flat()]);
+  const comments: Record<string, string> = {};
+  const commentsIn: unknown = req.body?.comments;
+  if (commentsIn && typeof commentsIn === "object") {
+    for (const [id, value] of Object.entries(commentsIn as Record<string, unknown>)) {
+      const comment = text(value, MAX_COMMENT_CHARS);
+      if (commentable.has(id) && comment) comments[id] = comment;
+    }
+  }
+
+  const approving = req.body?.status === "approved";
+  const now = new Date().toISOString();
+  const review: CampaignReview = {
+    removed,
+    added,
+    comments,
+    status: approving ? "approved" : "in_review",
+    // Re-sending an already-approved review (the page saving again with
+    // nothing changed) keeps the original sign-off time.
+    approvedAt: approving ? (campaign.review?.status === "approved" ? campaign.review.approvedAt : now) : null,
+    approvedBy: approving ? text(req.body?.approvedBy, MAX_NAME_CHARS) || null : null,
+    note: text(req.body?.note, MAX_COMMENT_CHARS) || null,
+    updatedAt: now,
+  };
+  await saveCampaignReview(campaign.id, review);
+  res.json({ review });
 });
 
 // Time the client link spent on screen, reported by the page in small
@@ -304,18 +470,7 @@ router.put<{ id: string }>("/:id/selections", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Missing selections" });
     return;
   }
-  const cleaned: CampaignSelections = {};
-  for (const cityId of SUPPORTED_CITIES) {
-    const ids = body[cityId];
-    if (!Array.isArray(ids)) continue;
-    const known = getKnownMediaSiteIds(cityId);
-    // Deduped as well as filtered — a repeated id would otherwise be stored
-    // twice, inflating this city's count everywhere it's displayed (the
-    // campaign list, Reports, the map banner) and double-counting the same
-    // property in the "most shortlisted" aggregate.
-    const kept = [...new Set(ids.filter((id): id is string => typeof id === "string" && known.has(id)))];
-    if (kept.length > 0) cleaned[cityId] = kept;
-  }
+  const cleaned = cleanSelections(body);
   const record = await updateCampaignSelections(req.params.id, cleaned);
   if (!record) {
     res.status(404).json({ error: "Campaign not found" });

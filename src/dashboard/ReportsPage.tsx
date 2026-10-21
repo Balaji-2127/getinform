@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { cityLabel, fetchCampaigns, formatViewTime, groupByClient, type CampaignListItem } from "./campaignHistory";
+import { cityLabel, fetchCampaigns, formatViewTime, groupByClient, reviewChanges, reviewLabel, type CampaignListItem } from "./campaignHistory";
 import StatCard from "./StatCard";
 import { ArrowRightIcon, BuildingIcon, CampaignsIcon, ClientsIcon, ExportIcon, TrashIcon } from "./icons";
 import DeleteCampaignDialog, { type DeletableCampaign } from "./DeleteCampaignDialog";
@@ -31,6 +31,13 @@ export default function ReportsPage({
 
   useEffect(() => {
     fetchCampaigns().then(setCampaigns);
+    // Clients open, edit and approve their links at any time; checking
+    // again every half minute (only while this tab is in view) shows that
+    // here without anyone having to leave the page and come back.
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") fetchCampaigns().then(setCampaigns);
+    }, 30_000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const rows = useMemo(() => {
@@ -68,7 +75,7 @@ export default function ReportsPage({
     : 0;
 
   const exportCsv = () => {
-    const header = ["Client", "Campaign", "Date", "Cities", "Properties shortlisted", "Client opens", "Client time on map"];
+    const header = ["Client", "Campaign", "Date", "Cities", "Properties shortlisted", "Client opens", "Client time on map", "Client review"];
     const lines = rows.map((r) =>
       [
         r.clientName,
@@ -78,6 +85,7 @@ export default function ReportsPage({
         String(r.properties),
         String(r.views),
         r.viewSeconds > 0 ? formatViewTime(r.viewSeconds) : "",
+        reviewLabel(r.review),
       ]
         .map((cell) => `"${cell.replace(/"/g, '""')}"`)
         .join(","),
@@ -170,6 +178,12 @@ export default function ReportsPage({
                     <th className="reports-col-views" title="How many times the client opened the share link, and how long it was on their screen in total. Your team's own visits aren't counted.">
                       Client views
                     </th>
+                    <th
+                      className="reports-col-review"
+                      title="What the client did on their link: approved the shortlist, or removed / commented on properties. Open the campaign to see the details."
+                    >
+                      Client review
+                    </th>
                     <th aria-hidden="true" />
                   </tr>
                 </thead>
@@ -192,6 +206,21 @@ export default function ReportsPage({
                         ) : (
                           <span className="reports-cell-muted">Not opened yet</span>
                         )}
+                      </td>
+                      <td className="reports-col-review">
+                        {/* Approval and the changes behind it, side by side: an
+                            "Approved" on its own hid that the client had also
+                            added or removed properties until someone opened
+                            the campaign. */}
+                        {r.review?.status === "approved" && <span className="reports-review-badge is-approved">Approved</span>}
+                        {reviewChanges(r.review) && (
+                          <span className="reports-review-badge is-changes" title="Open the campaign to see and apply the client's changes">
+                            {reviewChanges(r.review)}
+                          </span>
+                        )}
+                        {!r.review?.status || (r.review.status !== "approved" && !reviewChanges(r.review)) ? (
+                          <span className="reports-cell-muted">—</span>
+                        ) : null}
                       </td>
                       <td>
                         <div className="reports-row-actions">

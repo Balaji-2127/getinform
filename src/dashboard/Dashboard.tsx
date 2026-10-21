@@ -10,6 +10,7 @@ import MyAreasPage from "./MyAreasPage";
 import ShortlistsPage from "./ShortlistsPage";
 import RecentSearchesPage from "./RecentSearchesPage";
 import ComingSoon from "./ComingSoon";
+import AssistantPage from "./AssistantPage";
 import HelpPage from "./HelpPage";
 import GlobalSearch from "./GlobalSearch";
 import { ToastProvider } from "./Toast";
@@ -95,9 +96,9 @@ const SECTION_TITLES: Record<Section, string> = {
 // (server/routes/shortlists.ts), Recent Searches is an actual log of
 // search results clicked from GlobalSearch (server/routes/search.ts's
 // /search-history). No fabricated CRM, analytics, or industry data
-// anywhere in any of them. Only AI Assistant remains an explicit
-// "coming soon" placeholder — making it real means deciding what it
-// actually does first, not something to fake.
+// anywhere in any of them. AI Assistant turns a written brief into a
+// shortlist, but Gemini only writes the filter — the properties themselves
+// are picked from the real inventory (server/routes/assistant.ts).
 export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
   const [section, setSection] = useState<Section>("dashboard");
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
@@ -258,6 +259,7 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
           )}
           {section === "clients" && <ClientsPage onOpenCampaign={handleCampaignCreated} onCampaignDeleted={handleCampaignDeleted} />}
           {section === "insights" && <InsightsPage />}
+          {section === "ai" && <AssistantPage onOpenCampaign={handleCampaignCreated} />}
           {section === "reports" && <ReportsPage onOpenCampaign={handleCampaignCreated} onCampaignDeleted={handleCampaignDeleted} />}
           {section === "help" && <HelpPage />}
           {section === "areas" && <MyAreasPage />}
@@ -269,6 +271,7 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
             section !== "inventory" &&
             section !== "clients" &&
             section !== "insights" &&
+            section !== "ai" &&
             section !== "reports" &&
             section !== "help" &&
             section !== "areas" &&

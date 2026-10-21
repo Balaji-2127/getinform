@@ -1,0 +1,200 @@
+/* Sits in the free stretch of the left edge between the city box (top)
+   and the legend (bottom), styled as one more of the map's floating
+   cards. Nudged a little below centre because the city box above it is
+   taller than the legend below. */
+.screen-scene {
+  position: absolute;
+  left: 16px;
+  top: calc(50% + 12px);
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 272px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.18),
+    0 12px 32px rgba(16, 24, 40, 0.28);
+  font-family: var(--font-sans);
+  animation: screen-scene-in var(--t-overlay) var(--ease-out);
+}
+
+@keyframes screen-scene-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-50% + 6px));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%);
+  }
+}
+
+.screen-scene-photo {
+  position: relative;
+  line-height: 0;
+}
+
+.screen-scene-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The screen in the photo: positioned by the fractions in the component,
+   contents clipped to it. Slides are stacked and fade over one another. */
+.screen-scene-screen {
+  position: absolute;
+  overflow: hidden;
+  line-height: 1.15;
+  /* A thin dark ring sits the overlay into the bezel and hides the last of
+     the photo's edge fringe. */
+  border-radius: 1px;
+  box-shadow:
+    0 0 0 1px #15151a,
+    inset 0 0 0 0.5px rgba(0, 0, 0, 0.35);
+}
+
+.screen-scene-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 3px 5px;
+  box-sizing: border-box;
+  text-align: center;
+  opacity: 0;
+  animation: screen-scene-slide 9s linear infinite;
+}
+
+.screen-scene-slide:nth-of-type(2) {
+  animation-delay: 3s;
+}
+
+.screen-scene-slide:nth-of-type(3) {
+  animation-delay: 6s;
+}
+
+.screen-scene-slide.is-brand {
+  background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%);
+  color: #ffffff;
+}
+
+.screen-scene-slide.is-light {
+  background: linear-gradient(180deg, #ffffff 0%, #eef2ff 100%);
+  color: #312e81;
+}
+
+.screen-scene-slide.is-dark {
+  gap: 1px;
+  background: #111827;
+  color: #ffffff;
+}
+
+.screen-scene-hero {
+  display: block;
+  max-width: 100%;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.screen-scene-kicker {
+  font-size: 6px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.screen-scene-line {
+  font-size: 6.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0.9;
+}
+
+.screen-scene-line.is-tiny {
+  font-size: 5.5px;
+}
+
+.screen-scene-cta {
+  margin-top: 1px;
+  padding: 1.5px 6px;
+  border-radius: var(--r-pill);
+  background: #4338ca;
+  color: #ffffff;
+  font-size: 5.5px;
+  font-weight: 700;
+}
+
+/* Three finder squares in the corners are what make a QR code
+   recognisable at this size; the rest is a fine dot texture. */
+.screen-scene-qr {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  background:
+    linear-gradient(#fff, #fff) 0 0 / 4px 4px no-repeat,
+    linear-gradient(#fff, #fff) 100% 0 / 4px 4px no-repeat,
+    linear-gradient(#fff, #fff) 0 100% / 4px 4px no-repeat,
+    radial-gradient(#fff 35%, transparent 40%) 0 0 / 2px 2px;
+  outline: 1.5px solid #111827;
+  outline-offset: -1.5px;
+  border: 1px solid #fff;
+  box-sizing: border-box;
+}
+
+/* A soft top-left reflection and a faint vignette, so the flat overlay
+   reads as a lit panel behind glass like the rest of the photo. */
+.screen-scene-glass {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.04) 38%, transparent 60%),
+    radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.22) 100%);
+}
+
+@keyframes screen-scene-slide {
+  0% {
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  33.3% {
+    opacity: 1;
+  }
+  38.3% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* index.css collapses every animation to a single near-instant run under
+   reduced motion, which would leave all three slides at their final
+   opacity of 0 — a blank screen. Pin the first slide on instead. */
+@media (prefers-reduced-motion: reduce) {
+  .screen-scene-slide {
+    animation: none;
+  }
+
+  .screen-scene-slide:nth-of-type(1) {
+    opacity: 1;
+  }
+}
+
+/* No room on phones, or on short viewports where it would collide with the
+   city box or the legend. */
+@media (max-width: 900px), (max-height: 719px) {
+  .screen-scene {
+    display: none;
+  }
+}

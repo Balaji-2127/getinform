@@ -4,7 +4,8 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 15;
-  width: min(560px, calc(100% - 460px));
+  /* Five stats now (impressions joined the row), hence the wider cap. */
+  width: min(660px, calc(100% - 460px));
   min-width: 280px;
   background: var(--c-surface);
   border: 1px solid #bfdbfe;
@@ -44,7 +45,7 @@
 
 .campaign-banner-inline .campaign-banner-stat {
   flex: initial;
-  min-width: 96px;
+  min-width: 88px;
 }
 
 .campaign-banner-heading {
@@ -127,6 +128,49 @@
   border: 1px solid #bfdbfe;
   border-radius: 8px;
   min-width: 0;
+}
+
+.campaign-banner-stat-button {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--t-hover) ease,
+    border-color var(--t-hover) ease,
+    transform var(--t-press) var(--ease-out);
+}
+
+.campaign-banner-stat-button:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.campaign-banner-stat-button:active {
+  transform: scale(var(--press));
+}
+
+.campaign-banner-stat-button .campaign-banner-stat-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.campaign-banner-stat-button svg {
+  transition: transform var(--t-pop) var(--ease-out);
+}
+
+.campaign-banner-stat-button.is-open {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.campaign-banner-stat-button.is-open .campaign-banner-stat-value,
+.campaign-banner-stat-button.is-open .campaign-banner-stat-label {
+  color: #ffffff;
+}
+
+.campaign-banner-stat-button.is-open svg {
+  transform: rotate(180deg);
 }
 
 .campaign-banner-stat-value {

@@ -1,0 +1,251 @@
+.client-campaign {
+  position: absolute;
+  inset: 0;
+}
+
+.review-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 18;
+  width: min(560px, calc(100% - 560px));
+  min-width: 340px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 16px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.18),
+    0 12px 32px rgba(16, 24, 40, 0.28);
+  font-family: var(--font-sans);
+  animation: review-bar-in var(--t-overlay) var(--ease-out);
+}
+
+@keyframes review-bar-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.review-bar.is-approved {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.review-bar-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-pill);
+  background: var(--c-success);
+  color: #ffffff;
+}
+
+.review-bar-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.review-bar-text strong {
+  font-size: 13.5px;
+  color: var(--c-text);
+}
+
+.review-bar-text span {
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+
+.review-bar-save {
+  font-style: normal;
+  color: var(--c-text-4);
+}
+
+.review-bar-save.is-error {
+  color: var(--c-danger-text);
+}
+
+.review-bar-primary,
+.review-bar-secondary {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--t-hover) ease,
+    transform var(--t-press) var(--ease-out);
+}
+
+.review-bar-primary {
+  border: none;
+  background: var(--c-success);
+  color: #ffffff;
+}
+
+.review-bar-primary:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.review-bar-secondary {
+  border: 1px solid var(--c-border-strong);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+}
+
+.review-bar-secondary:hover:not(:disabled) {
+  background: var(--c-surface-hover);
+}
+
+.review-bar-primary:active:not(:disabled),
+.review-bar-secondary:active:not(:disabled) {
+  transform: scale(var(--press));
+}
+
+.review-bar-primary:disabled,
+.review-bar-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.review-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(17, 24, 39, 0.45);
+  font-family: var(--font-sans);
+}
+
+.review-dialog {
+  width: min(420px, 100%);
+  box-sizing: border-box;
+  background: var(--c-surface);
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh-xl);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: review-dialog-in var(--t-overlay) var(--ease-out);
+}
+
+@keyframes review-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.review-dialog h2 {
+  margin: 0;
+  font-size: 17px;
+  color: var(--c-text);
+}
+
+.review-dialog-summary {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--c-text-2);
+}
+
+.review-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--c-text-2);
+}
+
+.review-dialog-field span {
+  font-weight: 400;
+  color: var(--c-text-4);
+}
+
+.review-dialog-field input,
+.review-dialog-field textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--c-text);
+  resize: vertical;
+}
+
+.review-dialog-field input:focus-visible,
+.review-dialog-field textarea:focus-visible {
+  outline: 2px solid var(--c-brand-accent);
+  outline-offset: 1px;
+}
+
+.review-dialog-error {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--c-danger-text);
+}
+
+.review-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Narrow screens: the bar spans the bottom edge, and the legend (which
+   sits in the bottom-left corner) moves up above it. */
+@media (max-width: 900px) {
+  .review-bar {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: auto;
+    min-width: 0;
+    transform: none;
+    animation: none;
+  }
+
+  .client-campaign .map-legend {
+    bottom: 106px;
+  }
+}
+
+@media (max-width: 480px) {
+  .review-bar {
+    flex-wrap: wrap;
+  }
+
+  .review-bar-primary,
+  .review-bar-secondary {
+    flex: 1;
+    justify-content: center;
+  }
+}

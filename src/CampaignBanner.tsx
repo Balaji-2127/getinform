@@ -1,5 +1,6 @@
 import ClientLogo from "./dashboard/ClientLogo";
-import { PlayIcon, RestartIcon, StopIcon } from "./dashboard/icons";
+import type { ReactNode } from "react";
+import { ChevronDownIcon, PlayIcon, RestartIcon, StopIcon } from "./dashboard/icons";
 import "./CampaignBanner.css";
 
 export type CampaignSummary = {
@@ -34,6 +35,9 @@ export default function CampaignBanner({
   onStopTour,
   inline,
   clientName,
+  listOpen,
+  onToggleList,
+  list,
 }: {
   summary: CampaignSummary | null;
   touring: boolean;
@@ -54,6 +58,11 @@ export default function CampaignBanner({
   // already shows it separately in its own page header; passing it there
   // is harmless either way.
   clientName?: string;
+  // The shortlist dropdown (see ShortlistList): when given, the Properties
+  // figure becomes the button that opens it, and it unfolds below the stats.
+  listOpen?: boolean;
+  onToggleList?: () => void;
+  list?: ReactNode;
 }) {
   if (!summary) return null;
 
@@ -80,9 +89,26 @@ export default function CampaignBanner({
 
   const stats = (
     <div className="campaign-banner-stats">
-      <Stat label="Properties" value={summary.pointCount.toLocaleString()} />
+      {onToggleList ? (
+        <button
+          type="button"
+          className={"campaign-banner-stat campaign-banner-stat-button" + (listOpen ? " is-open" : "")}
+          onClick={onToggleList}
+          aria-expanded={listOpen}
+          title={listOpen ? "Hide the property list" : "See and edit every property in this shortlist"}
+        >
+          <span className="campaign-banner-stat-value">
+            {summary.pointCount.toLocaleString()}
+            <ChevronDownIcon size={13} />
+          </span>
+          <span className="campaign-banner-stat-label">Properties</span>
+        </button>
+      ) : (
+        <Stat label="Properties" value={summary.pointCount.toLocaleString()} />
+      )}
       <Stat label="Screens" value={summary.totalScreens.toLocaleString()} />
       <Stat label="Households" value={summary.totalHouseholds.toLocaleString()} />
+      <Stat label="Impressions/mo" value={`~${summary.totalImpressions.toLocaleString()}`} />
       <Stat label="Ad budget/mo" value={`₹${summary.totalAdBudget.toLocaleString()}`} />
     </div>
   );
@@ -104,6 +130,7 @@ export default function CampaignBanner({
         {tourControl}
       </div>
       {stats}
+      {listOpen && list}
     </div>
   );
 }
