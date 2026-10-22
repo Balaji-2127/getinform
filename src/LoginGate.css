@@ -4,27 +4,46 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Was flat #000. A very dark indigo wash picks up the brand colour and
-     gives the black some depth, so the card reads as sitting in a space
-     rather than cut out of a void. */
+  padding: 24px;
+  /* A dark indigo wash with a faint grid — the grid gives the void some
+     structure, so the card reads as sitting on a surface rather than
+     floating in black. The grid fades toward the edges on purpose. */
   background:
-    radial-gradient(120% 90% at 50% 0%, #1e1b4b 0%, rgba(30, 27, 75, 0) 60%),
-    #07070c;
+    radial-gradient(60% 50% at 50% 0%, rgba(99, 102, 241, 0.28) 0%, rgba(99, 102, 241, 0) 100%),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    #09090f;
+  background-size:
+    100% 100%,
+    40px 40px,
+    40px 40px,
+    100% 100%;
   font-family: var(--font-sans);
 }
 
+.login-gate::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(70% 60% at 50% 50%, transparent 30%, #09090f 100%);
+}
+
 .login-card {
-  width: 296px;
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 380px;
   background: var(--c-surface);
-  border: 1px solid var(--c-border);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: var(--r-xl);
   box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.5),
+    0 32px 80px rgba(0, 0, 0, 0.55),
     0 2px 8px rgba(0, 0, 0, 0.3);
-  padding: 26px;
+  padding: 32px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   animation: login-in 420ms var(--ease-out);
 }
 
@@ -42,76 +61,77 @@
 .login-brand {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 12px;
 }
 
 .login-logo {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   border: 1px solid var(--c-border);
   object-fit: cover;
-  box-shadow: var(--sh-xs);
+  box-shadow: var(--sh-sm);
 }
 
 .login-card h1 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--fs-xl);
   font-weight: 700;
   color: var(--c-text);
   letter-spacing: 0.06em;
+  line-height: 1.1;
 }
 
 .login-sub {
-  margin: -6px 0 4px;
-  font-size: 12px;
+  margin: 0 0 8px;
+  font-size: var(--fs-md);
+  color: var(--c-text-3);
+  line-height: 1.5;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-text-2);
+}
+
+.login-field-wrap {
+  height: var(--h-control-lg);
+}
+
+.login-field-wrap > svg {
   color: var(--c-text-4);
-  line-height: 1.4;
-}
-
-.login-card input {
-  padding: 10px 12px;
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  font-size: 13px;
-  color: var(--c-text);
-}
-
-.login-card input:focus {
-  outline: none;
-  border-color: var(--c-brand-accent);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.16);
 }
 
 .login-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
-  font-size: 12px;
-  color: #991b1b;
-}
-
-.login-card button {
   padding: 10px 12px;
-  border: none;
-  border-radius: 8px;
-  background: var(--c-brand);
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
+  border: 1px solid var(--c-danger-border);
+  border-radius: var(--r-sm);
+  background: var(--c-danger-soft);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-danger-text);
 }
 
-.login-card button {
-  margin-top: 2px;
-  box-shadow: var(--sh-sm);
+.login-error svg {
+  flex-shrink: 0;
 }
 
-.login-card button:hover:not(:disabled) {
-  background: var(--c-brand-hover);
-  box-shadow: var(--sh-md);
+.login-card button[type="submit"] {
+  margin-top: 4px;
 }
 
-.login-card button:disabled {
-  background: var(--c-brand-disabled);
-  cursor: default;
+.login-foot {
+  margin: 4px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--c-text-4);
+  text-align: center;
 }

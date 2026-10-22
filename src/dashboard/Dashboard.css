@@ -7,59 +7,101 @@
   color: var(--c-text);
 }
 
+/* ---- Sidebar ------------------------------------------------------------ */
+
 .dash-sidebar {
-  width: 220px;
+  width: 240px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  /* A hair off-white rather than pure white: the content area's cards are
+     white, and a white rail beside white cards flattens into one plane. */
+  background: var(--c-sidebar);
   border-right: 1px solid var(--c-border);
-  padding: 18px 14px;
-  transition: width var(--t-overlay) var(--ease-in-out);
-  /* Was `overflow: hidden` (both axes) — only ever needed to clip the nav
-     labels horizontally during the collapse/expand width transition, but
-     it also silently blocked vertical scrolling. On a shorter window,
-     content below the fold (the "Upload campaign sheet" button, the
-     bottom of "Saved") became genuinely unreachable — no scrollbar, no
-     scroll, nothing. */
+  padding: 14px 12px 12px;
+  transition:
+    width var(--t-overlay) var(--ease-in-out),
+    padding var(--t-overlay) var(--ease-in-out);
+  /* Only the nav labels need clipping horizontally during the collapse
+     transition; vertical scrolling has to stay available on short windows
+     so the upload button at the bottom is always reachable. */
   overflow-x: hidden;
   overflow-y: auto;
 }
 
 .dash-sidebar.is-collapsed {
   width: 64px;
-  padding: 18px 10px;
+  padding: 14px 10px 12px;
 }
 
 .dash-brand {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 6px 18px;
+  padding: 2px 2px 14px 4px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--c-border-soft);
 }
 
 .dash-sidebar.is-collapsed .dash-brand {
-  padding: 0 0 18px;
-  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 0 12px;
+}
+
+.dash-brand-logo {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-border);
+  object-fit: cover;
+  background: #ffffff;
+  box-shadow: var(--sh-xs);
+}
+
+.dash-brand div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.dash-brand-name {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  color: var(--c-text);
+}
+
+.dash-brand-sub {
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  color: var(--c-text-4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dash-collapse-btn {
   flex-shrink: 0;
   margin-left: auto;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--c-border);
-  background: var(--c-surface);
-  color: var(--c-text-3);
-  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--c-text-4);
+  border-radius: var(--r-xs);
   cursor: pointer;
 }
 
 .dash-collapse-btn:hover {
   background: var(--c-surface-hover);
+  border-color: var(--c-border);
   color: var(--c-text-2);
 }
 
@@ -78,37 +120,32 @@
   transform: scaleX(-1);
 }
 
-.dash-brand-logo {
-  width: 26px;
-  height: 26px;
-  flex-shrink: 0;
-  border-radius: var(--r-xs);
-  border: 1px solid var(--c-border);
-  object-fit: cover;
-  box-shadow: var(--sh-xs);
-}
-
-.dash-brand div {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.dash-brand-name {
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
-.dash-brand-sub {
-  font-size: 9.5px;
-  color: var(--c-text-4);
-}
-
 .dash-nav {
   display: flex;
   flex-direction: column;
+  gap: 14px;
+}
+
+.dash-nav-group {
+  display: flex;
+  flex-direction: column;
   gap: 2px;
+}
+
+.dash-nav-group-title {
+  padding: 6px 10px 4px;
+  font-size: 10.5px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-text-4);
+  white-space: nowrap;
+}
+
+/* Collapsed, the group title is gone, so a hairline stands in for it. */
+.dash-sidebar.is-collapsed .dash-nav-group + .dash-nav-group {
+  padding-top: 10px;
+  border-top: 1px solid var(--c-border-soft);
 }
 
 .dash-nav-item {
@@ -120,44 +157,73 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  height: 36px;
   border: none;
   background: none;
-  padding: 9px 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #4b5563;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  color: var(--c-text-2);
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
 }
 
+.dash-nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--c-text-3);
+  transition: color var(--t-hover) ease;
+}
+
+.dash-nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .dash-sidebar.is-collapsed .dash-nav-item {
   justify-content: center;
-  padding: 9px;
+  padding: 0;
+  width: 44px;
+  margin: 0 auto;
 }
 
 .dash-nav-item:hover {
   background: var(--c-surface-hover);
+  color: var(--c-text);
+}
+
+.dash-nav-item:hover .dash-nav-icon {
+  color: var(--c-text-2);
 }
 
 .dash-nav-item.is-active {
   background: var(--c-brand-soft);
   color: var(--c-brand);
+  font-weight: var(--fw-semibold);
+  box-shadow: inset 0 0 0 1px var(--c-brand-soft-border);
 }
 
-/* A short accent bar on the active row. The tinted pill alone identified
-   the current section, but at a glance the sidebar read as a flat list of
-   equal rows — this gives the eye something to land on immediately. */
+.dash-nav-item.is-active .dash-nav-icon {
+  color: var(--c-brand);
+}
+
+/* A short accent bar on the active row, tucked into the rail's padding so
+   it reads as part of the sidebar edge rather than part of the pill. */
 .dash-nav-item.is-active::before {
   content: "";
   position: absolute;
-  left: -14px;
+  left: -12px;
   top: 50%;
   width: 3px;
-  height: 18px;
+  height: 20px;
   transform: translateY(-50%);
-  border-radius: 0 2px 2px 0;
+  border-radius: 0 3px 3px 0;
   background: var(--c-brand);
 }
 
@@ -165,46 +231,27 @@
   left: -10px;
 }
 
-.dash-saved {
-  margin-top: 20px;
+.dash-sidebar-foot {
+  margin-top: auto;
   padding-top: 14px;
-  border-top: 1px solid var(--c-border-soft);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.dash-saved-title {
-  padding: 0 10px 6px;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--c-text-4);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .dash-upload-btn {
-  margin-top: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: none;
-  background: var(--c-brand);
-  color: #ffffff;
-  border-radius: 8px;
-  padding: 10px;
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: var(--sh-sm);
+  width: 100%;
+  height: 38px;
+  gap: 8px;
+  font-size: var(--fs-md);
+  border-radius: var(--r-md);
 }
 
-.dash-upload-btn:hover {
-  background: var(--c-brand-hover);
-  box-shadow: var(--sh-md);
+.dash-sidebar.is-collapsed .dash-upload-btn {
+  width: 44px;
+  height: 40px;
+  padding: 0;
+  margin: 0 auto;
 }
+
+/* ---- Main column --------------------------------------------------------- */
 
 .dash-main {
   flex: 1;
@@ -217,31 +264,33 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 12px 20px;
+  height: 56px;
+  padding: 0 20px;
   background: var(--c-surface);
   border-bottom: 1px solid var(--c-border);
   flex-shrink: 0;
-  /* Lifts the bar off the scrolling content beneath it, so the page reads
-     as sliding under a fixed header rather than the two sharing a plane. */
-  box-shadow: var(--sh-xs);
   z-index: 10;
 }
 
 .dash-toptabs {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 2px;
   flex: 1;
   overflow-x: auto;
+  padding: 3px;
+  border-radius: var(--r-md);
 }
 
 .dash-toptab {
   --press: 0.96;
+  height: 32px;
   border: none;
   background: none;
-  padding: 7px 12px;
-  border-radius: 999px;
-  font-size: 12.5px;
-  font-weight: 600;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
   color: var(--c-text-3);
   cursor: pointer;
   white-space: nowrap;
@@ -249,47 +298,46 @@
 
 .dash-toptab:hover:not(.is-active) {
   background: var(--c-surface-hover);
-  color: var(--c-text-2);
+  color: var(--c-text);
 }
 
 .dash-toptab.is-active {
   background: var(--c-brand-soft);
   color: var(--c-brand);
+  font-weight: var(--fw-semibold);
 }
 
-.dash-bell {
-  flex-shrink: 0;
-  border: 1px solid var(--c-border);
-  background: #ffffff;
-  color: var(--c-text-3);
-  border-radius: 8px;
-  width: 34px;
-  height: 34px;
+.dash-topbar-right {
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: not-allowed;
-  opacity: 0.6;
+  gap: 10px;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 16px;
+  border-left: 1px solid var(--c-border-soft);
 }
 
 .dash-avatar {
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--r-pill);
   border: none;
-  background: var(--c-brand);
+  background: linear-gradient(135deg, var(--c-brand-accent), var(--c-brand));
   color: #ffffff;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
-  box-shadow: var(--sh-sm);
+  box-shadow:
+    0 0 0 2px var(--c-surface),
+    0 0 0 3px var(--c-border);
 }
 
 .dash-avatar:hover {
-  background: var(--c-brand-hover);
-  box-shadow: var(--sh-md);
+  box-shadow:
+    0 0 0 2px var(--c-surface),
+    0 0 0 3px var(--c-brand-accent);
 }
 
 .dash-content {
@@ -302,13 +350,18 @@
 @media (max-width: 640px) {
   /* The nav pill row just repeats the (now auto-collapsed) sidebar's own
      icons — redundant at this width, and the first thing to overflow a
-     phone-width topbar alongside search + bell + avatar. */
+     phone-width topbar alongside search + avatar. */
   .dash-toptabs {
     display: none;
   }
 
   .dash-topbar {
-    padding: 10px 12px;
+    padding: 0 12px;
     gap: 8px;
+  }
+
+  .dash-topbar-right {
+    padding-left: 8px;
+    border-left: none;
   }
 }

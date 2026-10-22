@@ -13,13 +13,15 @@
 :root {
   --font-sans: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  /* Neutrals */
-  --c-bg: #f6f7f9;
+  /* Neutrals. The page background sits a touch cooler than before so white
+     surfaces lift off it without needing heavier shadows. */
+  --c-bg: #f5f6f8;
+  --c-sidebar: #fafafb;
   --c-surface: #ffffff;
   --c-surface-2: #f9fafb;
   --c-surface-hover: #f3f4f6;
   --c-border: #e5e7eb;
-  --c-border-soft: #f3f4f6;
+  --c-border-soft: #f0f1f3;
   --c-border-strong: #d1d5db;
   --c-text: #111827;
   --c-text-2: #374151;
@@ -33,13 +35,45 @@
   --c-brand-soft: #eef2ff;
   --c-brand-soft-border: #e0e7ff;
   --c-brand-disabled: #c7d2fe;
+  /* The focus ring every input, select and search bar shares. */
+  --ring: 0 0 0 3px rgba(99, 102, 241, 0.18);
 
-  /* Semantic */
+  /* Semantic, each with a tinted "soft" pair for badges and alerts so no
+     component has to invent its own pastel. */
   --c-success: #16a34a;
+  --c-success-text: #047857;
+  --c-success-soft: #ecfdf5;
+  --c-success-soft-border: #a7f3d0;
   --c-danger: #dc2626;
+  --c-danger-hover: #b91c1c;
   --c-danger-text: #b91c1c;
   --c-danger-border: #fca5a5;
+  --c-danger-soft: #fef2f2;
   --c-warn-text: #b45309;
+  --c-warn-soft: #fffbeb;
+  --c-info-text: #1d4ed8;
+  --c-info-soft: #eff6ff;
+
+  /* Control heights. One rhythm for every button, input and select so a
+     toolbar's search box, sort menu and export button line up by
+     construction instead of by per-page tuning. */
+  --h-control: 36px;
+  --h-control-sm: 32px;
+  --h-control-xs: 28px;
+  --h-control-lg: 40px;
+
+  /* Type scale. Inter Variable is loaded, so the in-between weights (550,
+     650) are real — they read as "confident" where 700 reads as shouting. */
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-base: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 24px;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 650;
 
   /* Radii */
   --r-xs: 6px;
@@ -56,6 +90,10 @@
   --sh-md: 0 4px 12px rgba(16, 24, 40, 0.07), 0 2px 4px rgba(16, 24, 40, 0.04);
   --sh-lg: 0 12px 28px rgba(16, 24, 40, 0.1), 0 4px 8px rgba(16, 24, 40, 0.05);
   --sh-xl: 0 24px 48px rgba(16, 24, 40, 0.14), 0 8px 16px rgba(16, 24, 40, 0.06);
+  /* A filled button gets a hairline highlight along its top edge, which is
+     what makes a flat colour read as a raised surface. */
+  --sh-btn: 0 1px 2px rgba(16, 24, 40, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --sh-btn-hover: 0 2px 6px rgba(16, 24, 40, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.14);
 
   /* Motion. The built-in CSS easings are too weak to read as deliberate;
      these are the stronger custom variants. ease-in is deliberately absent
@@ -248,5 +286,414 @@ textarea {
 
   .skel::after {
     display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Scrollbars. The Windows default is a 17px grey gutter with arrow buttons,
+   which reads as a leftover from another era next to the rest of the UI.
+   Thin and rounded — it still scrolls identically.
+--------------------------------------------------------------------------- */
+/* Chrome discards every ::-webkit-scrollbar rule the moment scrollbar-width
+   is set, so the standard properties are scoped to engines that lack the
+   pseudo-elements (Firefox) rather than applied everywhere. */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent;
+  }
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+  background-clip: padding-box;
+}
+
+/* ---------------------------------------------------------------------------
+   Buttons. One system — primary / secondary / ghost / danger — at one
+   height, so every page's actions share a silhouette. Components keep
+   their own class for layout and for the selectors other code relies on;
+   they add one of these for the look.
+--------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--h-control);
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  font-family: inherit;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.btn svg {
+  flex-shrink: 0;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+.btn-primary {
+  background: var(--c-brand);
+  border-color: var(--c-brand);
+  color: #ffffff;
+  box-shadow: var(--sh-btn);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--c-brand-hover);
+  border-color: var(--c-brand-hover);
+  box-shadow: var(--sh-btn-hover);
+}
+
+.btn-secondary {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-text-2);
+  box-shadow: var(--sh-xs);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--c-surface-2);
+  border-color: var(--c-border-strong);
+  color: var(--c-text);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--c-text-3);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--c-surface-hover);
+  color: var(--c-text);
+}
+
+/* A ghost button in brand colour: the "Open" rows and "View all" links. */
+.btn-link {
+  background: transparent;
+  color: var(--c-brand);
+  padding: 0 8px;
+}
+
+.btn-link:hover:not(:disabled) {
+  background: var(--c-brand-soft);
+  color: var(--c-brand-hover);
+}
+
+.btn-danger {
+  background: var(--c-danger);
+  border-color: var(--c-danger);
+  color: #ffffff;
+  box-shadow: var(--sh-btn);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--c-danger-hover);
+  border-color: var(--c-danger-hover);
+}
+
+.btn-sm {
+  height: var(--h-control-sm);
+  padding: 0 10px;
+  font-size: var(--fs-sm);
+  border-radius: var(--r-xs);
+}
+
+.btn-lg {
+  height: var(--h-control-lg);
+  padding: 0 18px;
+  font-size: var(--fs-base);
+}
+
+.btn-icon {
+  width: var(--h-control);
+  padding: 0;
+}
+
+.btn-icon.btn-sm {
+  width: var(--h-control-sm);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* ---------------------------------------------------------------------------
+   Fields. Text inputs and selects share a border, height, placeholder tone
+   and focus ring. The ring is a box-shadow rather than an outline so it
+   follows the corner radius.
+--------------------------------------------------------------------------- */
+.field {
+  height: var(--h-control);
+  padding: 0 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  font-family: inherit;
+  font-size: var(--fs-md);
+  color: var(--c-text);
+  box-shadow: var(--sh-xs);
+}
+
+.field::placeholder {
+  color: var(--c-text-4);
+}
+
+.field:hover:not(:focus):not(:disabled) {
+  border-color: var(--c-border-strong);
+}
+
+.field:focus,
+.field:focus-visible {
+  outline: none;
+  border-color: var(--c-brand-accent);
+  box-shadow: var(--ring);
+}
+
+.field:disabled {
+  background: var(--c-surface-2);
+  color: var(--c-text-4);
+  cursor: not-allowed;
+}
+
+/* Native selects draw their own arrow, which varies by OS and sits too
+   close to the text. A drawn chevron keeps it consistent. */
+select.field {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+
+/* An input with a leading icon: the wrapper carries the field styling and
+   the input inside is borderless. */
+.field-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--h-control);
+  padding: 0 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text-4);
+  box-shadow: var(--sh-xs);
+  transition:
+    border-color var(--t-hover) ease,
+    box-shadow var(--t-hover) ease,
+    background-color var(--t-hover) ease;
+}
+
+.field-wrap:hover {
+  border-color: var(--c-border-strong);
+}
+
+.field-wrap:focus-within {
+  border-color: var(--c-brand-accent);
+  box-shadow: var(--ring);
+}
+
+.field-wrap > svg {
+  flex-shrink: 0;
+}
+
+.field-wrap input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--fs-md);
+  color: var(--c-text);
+}
+
+.field-wrap input::placeholder {
+  color: var(--c-text-4);
+}
+
+.field-wrap input:focus-visible {
+  outline: none;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-text-2);
+}
+
+/* ---------------------------------------------------------------------------
+   Badges. Small tinted labels for status and categories.
+--------------------------------------------------------------------------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface-2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  line-height: 1;
+  color: var(--c-text-2);
+  white-space: nowrap;
+}
+
+.badge-success {
+  background: var(--c-success-soft);
+  border-color: var(--c-success-soft-border);
+  color: var(--c-success-text);
+}
+
+.badge-muted {
+  background: transparent;
+  border-color: var(--c-border);
+  color: var(--c-text-4);
+}
+
+.badge-brand {
+  background: var(--c-brand-soft);
+  border-color: var(--c-brand-soft-border);
+  color: var(--c-brand);
+}
+
+.badge-dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.8;
+}
+
+/* ---------------------------------------------------------------------------
+   Section headings and cards shared by the content pages.
+--------------------------------------------------------------------------- */
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-sm);
+}
+
+.section-title {
+  margin: 0;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.01em;
+  color: var(--c-text);
+}
+
+.section-sub {
+  margin: 2px 0 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-4);
+}
+
+/* ---------------------------------------------------------------------------
+   Empty states. An icon tile, a one-line title, a sentence of context, and
+   at most one action — the same shape everywhere so an empty page still
+   looks designed rather than unfinished.
+--------------------------------------------------------------------------- */
+.empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-lg);
+  background: var(--c-brand-soft);
+  color: var(--c-brand);
+  border: 1px solid var(--c-brand-soft-border);
+  box-shadow: var(--sh-xs);
+}
+
+.empty-icon.is-danger {
+  background: var(--c-danger-soft);
+  border-color: var(--c-danger-border);
+  color: var(--c-danger);
+}
+
+.empty-icon.is-muted {
+  background: var(--c-surface-2);
+  border-color: var(--c-border);
+  color: var(--c-text-4);
+}
+
+.empty-title {
+  margin: 0;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  color: var(--c-text);
+}
+
+.empty-sub {
+  margin: 0;
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  color: var(--c-text-3);
+  max-width: 40ch;
+}
+
+/* A plain indeterminate spinner for the few surfaces where a skeleton
+   would misrepresent the shape of what's coming (the 3D map). */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--c-border);
+  border-top-color: var(--c-brand);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }

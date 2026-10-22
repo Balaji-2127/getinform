@@ -1,3 +1,8 @@
+.client-campaign {
+  position: absolute;
+  inset: 0;
+}
+
 .campaign-view-status {
   position: absolute;
   inset: 0;

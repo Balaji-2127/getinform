@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import GoogleInventoryMap from "./GoogleInventoryMap";
 import CitySidebar from "./CitySidebar";
 import { CITIES, type City, type CityId } from "./data/cities";
-import type { MapReview } from "./review";
 
 // The dashboard's embedded view portals this in next to the campaign's
 // own stats row instead of floating a city-button list over the map
@@ -65,11 +64,8 @@ export default function MapExperience({
   hideBrand,
   bannerPortalTarget,
   citySwitcherPortalTarget,
-  review,
 }: {
   initialCity: CityId;
-  // The client's review of the shortlist — see GoogleInventoryMap.
-  review?: MapReview;
   campaign?: CampaignContext;
   // The dashboard embeds this component inside its own bounded panel,
   // which already has its own branding/navigation in the surrounding
@@ -112,7 +108,6 @@ export default function MapExperience({
         highlightLabel={campaign?.brand}
         clientName={campaign?.clientName}
         bannerPortalTarget={bannerPortalTarget}
-        review={review}
       />
 
       {citySwitcherPortalTarget

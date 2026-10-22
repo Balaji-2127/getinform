@@ -40,14 +40,6 @@
   background: #2563eb;
 }
 
-.map-legend-dot-removed {
-  background: #e11d48;
-}
-
-.map-legend-dot-added {
-  background: #7c3aed;
-}
-
 .map-legend-row-toggle {
   width: 100%;
   border: none;

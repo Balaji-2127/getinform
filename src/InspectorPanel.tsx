@@ -1,13 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import "./InspectorPanel.css";
 import type { SyntheticScreen } from "./syntheticScreens";
-import { ArrowLeftIcon, ArrowRightIcon, CheckIcon, CloseIcon, PlusIcon } from "./dashboard/icons";
-import type { MapReview } from "./review";
-
-// The review controls for the one property this panel is showing.
-// `inShortlist`: one the sales team shortlisted (Keep / Remove), as opposed
-// to the rest of the inventory (Add to my shortlist).
-type PropertyReview = MapReview & { mediaSiteId: string; cityId: string; inShortlist: boolean };
+import { ArrowLeftIcon, ArrowRightIcon } from "./dashboard/icons";
 
 // Despite the name, this isn't rendered as a UI "cluster" view anymore —
 // the map draws every property as its own pin now, never grouped behind a
@@ -54,14 +48,11 @@ export default function InspectorPanel({
   crumbs,
   onNavigate,
   onClose,
-  review,
 }: {
   content: Content | null;
   crumbs: Crumb[];
   onNavigate: (level: ViewLevel) => void;
   onClose: () => void;
-  // Only for a property on the campaign's shortlist.
-  review?: PropertyReview;
 }) {
   if (!content) return null;
 
@@ -91,9 +82,7 @@ export default function InspectorPanel({
         </nav>
       )}
 
-      {content.kind === "project" && (
-        <ProjectView project={content.project} review={review ? <ReviewBlock key={review.mediaSiteId} review={review} /> : null} />
-      )}
+      {content.kind === "project" && <ProjectView project={content.project} />}
       {content.kind === "screen" && (
         <ScreenView screen={content.screen} project={content.project} onNavigate={onNavigate} />
       )}
@@ -112,7 +101,7 @@ function screenSizeCounts(total: number, sizes: string[]): { size: string; count
   return sizes.map((size, i) => ({ size, count: base + (i < remainder ? 1 : 0) }));
 }
 
-function ProjectView({ project, review }: { project: ProjectPanelInfo; review: ReactNode }) {
+function ProjectView({ project }: { project: ProjectPanelInfo }) {
   return (
     <>
       <header className="inspector-header">
@@ -122,8 +111,6 @@ function ProjectView({ project, review }: { project: ProjectPanelInfo; review: R
           {project.zone ? ` · ${project.zone}` : ""}
         </p>
       </header>
-
-      {review}
 
       <PropertyImages project={project} />
 
@@ -160,131 +147,6 @@ function ProjectView({ project, review }: { project: ProjectPanelInfo; review: R
         )}
       </Section>
     </>
-  );
-}
-
-// How long typing has to pause before a comment is saved. Blurring the box
-// saves straight away, so nothing typed is lost by clicking elsewhere.
-const COMMENT_SAVE_DELAY_MS = 800;
-
-// Keep / Remove and a comment box on the client's link; on the sales team's
-// view, the client's choice and comment shown read-only.
-function ReviewBlock({ review }: { review: PropertyReview }) {
-  const { mediaSiteId } = review;
-  const removed = review.removed.has(mediaSiteId);
-  const added = review.added.has(mediaSiteId);
-  const saved = review.comments[mediaSiteId] ?? "";
-  const [draft, setDraft] = useState(saved);
-  const editable = review.audience === "client" && Boolean(review.onSetRemoved);
-
-  const commit = () => {
-    if (draft.trim() !== saved) review.onComment?.(mediaSiteId, draft);
-  };
-
-  useEffect(() => {
-    if (!editable || draft.trim() === saved) return;
-    const timer = window.setTimeout(() => review.onComment?.(mediaSiteId, draft), COMMENT_SAVE_DELAY_MS);
-    return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft]);
-
-  // The rest of Adonmo's inventory: the client can add it to their shortlist.
-  if (!review.inShortlist) {
-    if (!editable) {
-      if (!added) return null;
-      return (
-        <div className="inspector-review is-added">
-          <span className="inspector-review-title">Client's review</span>
-          <p className="inspector-review-verdict">Client added this property</p>
-          {saved && <blockquote className="inspector-review-comment">{saved}</blockquote>}
-        </div>
-      );
-    }
-    return (
-      <div className={"inspector-review" + (added ? " is-added" : " is-inventory")}>
-        <span className="inspector-review-title">{added ? "Added to your shortlist" : "Not in your shortlist"}</span>
-        {added ? (
-          <button
-            type="button"
-            className="inspector-review-btn"
-            disabled={review.locked}
-            onClick={() => review.onSetAdded?.(review.cityId, mediaSiteId, false)}
-          >
-            <CloseIcon size={13} /> Remove from my shortlist
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="inspector-review-btn is-add"
-            disabled={review.locked}
-            onClick={() => review.onSetAdded?.(review.cityId, mediaSiteId, true)}
-          >
-            <PlusIcon size={13} /> Add to my shortlist
-          </button>
-        )}
-        {added && (
-          <textarea
-            className="inspector-review-input"
-            placeholder="Add a comment for the Adonmo team (optional)"
-            value={draft}
-            maxLength={1000}
-            rows={2}
-            disabled={review.locked}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-          />
-        )}
-        {review.locked && <p className="inspector-review-hint">You've approved this shortlist. Choose "Make changes" below to edit it.</p>}
-      </div>
-    );
-  }
-
-  if (!editable) {
-    if (!removed && !saved) return null;
-    return (
-      <div className={"inspector-review" + (removed ? " is-removed" : "")}>
-        <span className="inspector-review-title">Client's review</span>
-        <p className="inspector-review-verdict">{removed ? "Client removed this property" : "Client kept this property"}</p>
-        {saved && <blockquote className="inspector-review-comment">{saved}</blockquote>}
-      </div>
-    );
-  }
-
-  return (
-    <div className={"inspector-review" + (removed ? " is-removed" : "")}>
-      <span className="inspector-review-title">Your decision</span>
-      <div className="inspector-review-choice" role="group" aria-label="Keep or remove this property">
-        <button
-          type="button"
-          className={"inspector-review-btn is-keep" + (!removed ? " is-on" : "")}
-          aria-pressed={!removed}
-          disabled={review.locked}
-          onClick={() => review.onSetRemoved?.(mediaSiteId, false)}
-        >
-          <CheckIcon size={13} /> Keep
-        </button>
-        <button
-          type="button"
-          className={"inspector-review-btn is-remove" + (removed ? " is-on" : "")}
-          aria-pressed={removed}
-          disabled={review.locked}
-          onClick={() => review.onSetRemoved?.(mediaSiteId, true)}
-        >
-          <CloseIcon size={13} /> Remove
-        </button>
-      </div>
-      <textarea
-        className="inspector-review-input"
-        placeholder="Add a comment for the Adonmo team (optional)"
-        value={draft}
-        maxLength={1000}
-        rows={2}
-        disabled={review.locked}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-      />
-      {review.locked && <p className="inspector-review-hint">You've approved this shortlist. Choose "Make changes" below to edit it.</p>}
-    </div>
   );
 }
 

@@ -17,25 +17,6 @@ function cityLabel(cityId: string): string {
 // accepts either modifier.
 const SHORTCUT_LABEL = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? "⌘ K" : "Ctrl K";
 
-// Fire-and-forget — logs a search result the rep actually opened (never
-// every keystroke) so "Recent Searches" in the sidebar is a real record
-// of what people looked for and found. A failure here never blocks the
-// actual navigation it's attached to.
-function logSearchHistory(entry: {
-  query: string;
-  resultType: "campaign" | "property";
-  resultLabel: string;
-  resultSub?: string;
-  cityId?: string;
-  targetId: string;
-}) {
-  fetch("/api/search-history", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(entry),
-  }).catch(() => {});
-}
-
 // The dashboard topbar's search box — previously static placeholder text
 // with no actual search behind it. Debounced against the server (which
 // searches campaigns/clients and every city's property data in one call —
@@ -140,13 +121,6 @@ export default function GlobalSearch({
                   type="button"
                   className="gs-result"
                   onClick={() => {
-                    logSearchHistory({
-                      query: query.trim(),
-                      resultType: "campaign",
-                      resultLabel: c.clientName,
-                      resultSub: c.campaignName,
-                      targetId: c.id,
-                    });
                     onOpenCampaign(c.id);
                     setOpen(false);
                     setQuery("");
@@ -167,14 +141,6 @@ export default function GlobalSearch({
                   type="button"
                   className="gs-result"
                   onClick={() => {
-                    logSearchHistory({
-                      query: query.trim(),
-                      resultType: "property",
-                      resultLabel: p.name,
-                      resultSub: [p.locality, p.zone].filter(Boolean).join(" · "),
-                      cityId: p.cityId,
-                      targetId: p.mediaSiteId,
-                    });
                     onOpenProperty(p.cityId as CityId, p.mediaSiteId);
                     setOpen(false);
                     setQuery("");

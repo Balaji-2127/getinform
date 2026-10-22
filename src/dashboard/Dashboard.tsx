@@ -4,101 +4,25 @@ import DashboardHome from "./DashboardHome";
 import CampaignsPage from "./CampaignsPage";
 import InventoryPage from "./InventoryPage";
 import ClientsPage from "./ClientsPage";
-import InsightsPage from "./InsightsPage";
 import ReportsPage from "./ReportsPage";
-import MyAreasPage from "./MyAreasPage";
-import ShortlistsPage from "./ShortlistsPage";
-import RecentSearchesPage from "./RecentSearchesPage";
-import ComingSoon from "./ComingSoon";
-import AssistantPage from "./AssistantPage";
 import HelpPage from "./HelpPage";
 import GlobalSearch from "./GlobalSearch";
 import { ToastProvider } from "./Toast";
 import type { CityId } from "../data/cities";
-import {
-  AiIcon,
-  AreasIcon,
-  CampaignsIcon,
-  ClientsIcon,
-  DashboardIcon,
-  InsightsIcon,
-  InventoryIcon,
-  PlusIcon,
-  RecentIcon,
-  ReportsIcon,
-  HelpIcon,
-  ShortlistIcon,
-  SidebarCollapseIcon,
-} from "./icons";
+import { CampaignsIcon, ClientsIcon, DashboardIcon, InventoryIcon, PlusIcon, ReportsIcon, HelpIcon, SidebarCollapseIcon } from "./icons";
 import "./Dashboard.css";
 
-type Section =
-  | "dashboard"
-  | "campaigns"
-  | "inventory"
-  | "clients"
-  | "insights"
-  | "ai"
-  | "reports"
-  | "help"
-  | "areas"
-  | "shortlists"
-  | "recent"
-  | "upload";
+type Section = "dashboard" | "campaigns" | "inventory" | "clients" | "reports" | "help" | "upload";
 
 const NAV_ITEMS: { id: Section; label: string; icon: (props: { size?: number }) => React.ReactElement }[] = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
   { id: "campaigns", label: "Campaigns", icon: CampaignsIcon },
   { id: "inventory", label: "Inventory", icon: InventoryIcon },
   { id: "clients", label: "Clients", icon: ClientsIcon },
-  { id: "insights", label: "Market Insights", icon: InsightsIcon },
-  { id: "ai", label: "AI Assistant", icon: AiIcon },
   { id: "reports", label: "Reports", icon: ReportsIcon },
   { id: "help", label: "Help & FAQs", icon: HelpIcon },
 ];
 
-const SAVED_ITEMS: { id: Section; label: string; icon: (props: { size?: number }) => React.ReactElement }[] = [
-  { id: "areas", label: "My Areas", icon: AreasIcon },
-  { id: "shortlists", label: "Shortlists", icon: ShortlistIcon },
-  { id: "recent", label: "Recent Searches", icon: RecentIcon },
-];
-
-const SECTION_TITLES: Record<Section, string> = {
-  dashboard: "Dashboard",
-  campaigns: "Campaigns",
-  inventory: "Inventory",
-  clients: "Clients",
-  insights: "Market Insights",
-  ai: "AI Assistant",
-  reports: "Reports",
-  help: "Help & FAQs",
-  areas: "My Areas",
-  shortlists: "Shortlists",
-  recent: "Recent Searches",
-  upload: "Upload campaign sheet",
-};
-
-// This dashboard is a new sales-facing screen. It does not replace the
-// existing Excel-upload flow (UploadCampaign, unchanged) — that stays
-// reachable via the "Upload campaign sheet" button, and successfully
-// uploading (or opening a past campaign) jumps straight to the Campaigns
-// page with that campaign's real, highlighted results embedded there
-// (same MapExperience the client-facing link uses). Inventory is a
-// separate, real, campaign-agnostic browse-everything view. Clients groups
-// real campaign history (GET /api/campaigns) by client name; Market
-// Insights is real aggregate stats computed from the same per-city
-// inventory files Inventory uses; Dashboard (the landing page) is a
-// summary built from that same campaign + inventory data; Reports is a
-// full sortable/exportable table of that same campaign history. The
-// Saved section is real too: My Areas is localities starred from Market
-// Insights (server/routes/savedAreas.ts), Shortlists is a real aggregate
-// of which properties repeat across different campaigns' selections
-// (server/routes/shortlists.ts), Recent Searches is an actual log of
-// search results clicked from GlobalSearch (server/routes/search.ts's
-// /search-history). No fabricated CRM, analytics, or industry data
-// anywhere in any of them. AI Assistant turns a written brief into a
-// shortlist, but Gemini only writes the filter — the properties themselves
-// are picked from the real inventory (server/routes/assistant.ts).
 export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
   const [section, setSection] = useState<Section>("dashboard");
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
@@ -185,68 +109,65 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
         </div>
 
         <nav className="dash-nav">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={"dash-nav-item" + (section === item.id ? " is-active" : "")}
-              onClick={() => setSection(item.id)}
-              title={collapsed ? item.label : undefined}
-              // Collapsed, these render as an icon with no text at all, so
-              // the accessible name has to come from somewhere else.
-              aria-label={item.label}
-              aria-current={section === item.id ? "page" : undefined}
-            >
-              <item.icon />
-              {!collapsed && item.label}
-            </button>
+          {/* Two groups rather than one flat list: the five working
+              sections, then help on its own — the label is the only thing
+              separating "where I work" from "where I go when stuck". */}
+          {[
+            { title: "Workspace", items: NAV_ITEMS.filter((i) => i.id !== "help") },
+            { title: "Support", items: NAV_ITEMS.filter((i) => i.id === "help") },
+          ].map((group) => (
+            <div key={group.title} className="dash-nav-group">
+              {!collapsed && <span className="dash-nav-group-title">{group.title}</span>}
+              {group.items.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={"dash-nav-item" + (section === item.id ? " is-active" : "")}
+                  onClick={() => setSection(item.id)}
+                  title={collapsed ? item.label : undefined}
+                  // Collapsed, these render as an icon with no text at all, so
+                  // the accessible name has to come from somewhere else.
+                  aria-label={item.label}
+                  aria-current={section === item.id ? "page" : undefined}
+                >
+                  <span className="dash-nav-icon">
+                    <item.icon size={18} />
+                  </span>
+                  {!collapsed && <span className="dash-nav-label">{item.label}</span>}
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
 
-        <div className="dash-saved">
-          {!collapsed && <span className="dash-saved-title">Saved</span>}
-          {SAVED_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={"dash-nav-item" + (section === item.id ? " is-active" : "")}
-              onClick={() => setSection(item.id)}
-              title={collapsed ? item.label : undefined}
-              // Collapsed, these render as an icon with no text at all, so
-              // the accessible name has to come from somewhere else.
-              aria-label={item.label}
-              aria-current={section === item.id ? "page" : undefined}
-            >
-              <item.icon />
-              {!collapsed && item.label}
-            </button>
-          ))}
+        <div className="dash-sidebar-foot">
+          <button
+            type="button"
+            className={"dash-upload-btn btn btn-primary" + (section === "upload" ? " is-active" : "")}
+            onClick={() => setSection("upload")}
+            title={collapsed ? "Upload campaign sheet" : undefined}
+            aria-label="Upload campaign sheet"
+          >
+            <PlusIcon size={15} /> {!collapsed && "Upload campaign sheet"}
+          </button>
         </div>
-
-        <button
-          type="button"
-          className="dash-upload-btn"
-          onClick={() => setSection("upload")}
-          title={collapsed ? "Upload campaign sheet" : undefined}
-          aria-label="Upload campaign sheet"
-        >
-          <PlusIcon size={14} /> {!collapsed && "Upload campaign sheet"}
-        </button>
       </aside>
 
       <div className="dash-main">
         <header className="dash-topbar">
           <GlobalSearch onOpenCampaign={handleCampaignCreated} onOpenProperty={handleOpenProperty} />
           <nav className="dash-toptabs">
-            {NAV_ITEMS.slice(0, 5).map((item) => (
+            {NAV_ITEMS.slice(0, 4).map((item) => (
               <button key={item.id} type="button" className={"dash-toptab" + (section === item.id ? " is-active" : "")} onClick={() => setSection(item.id)}>
                 {item.label}
               </button>
             ))}
           </nav>
-          <button type="button" className="dash-avatar" onClick={handleLogout} title="Log out">
-            BD
-          </button>
+          <div className="dash-topbar-right">
+            <button type="button" className="dash-avatar" onClick={handleLogout} title="Log out" aria-label="Log out">
+              BD
+            </button>
+          </div>
         </header>
 
         <div className="dash-content">
@@ -258,26 +179,9 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
             <InventoryPage focusProperty={focusProperty} onFocusHandled={() => setFocusProperty(null)} onOpenCampaign={handleCampaignCreated} />
           )}
           {section === "clients" && <ClientsPage onOpenCampaign={handleCampaignCreated} onCampaignDeleted={handleCampaignDeleted} />}
-          {section === "insights" && <InsightsPage />}
-          {section === "ai" && <AssistantPage onOpenCampaign={handleCampaignCreated} />}
           {section === "reports" && <ReportsPage onOpenCampaign={handleCampaignCreated} onCampaignDeleted={handleCampaignDeleted} />}
           {section === "help" && <HelpPage />}
-          {section === "areas" && <MyAreasPage />}
-          {section === "shortlists" && <ShortlistsPage onOpenProperty={handleOpenProperty} />}
-          {section === "recent" && <RecentSearchesPage onOpenCampaign={handleCampaignCreated} onOpenProperty={handleOpenProperty} />}
           {section === "upload" && <UploadCampaign onCampaignCreated={handleCampaignCreated} />}
-          {section !== "dashboard" &&
-            section !== "campaigns" &&
-            section !== "inventory" &&
-            section !== "clients" &&
-            section !== "insights" &&
-            section !== "ai" &&
-            section !== "reports" &&
-            section !== "help" &&
-            section !== "areas" &&
-            section !== "shortlists" &&
-            section !== "recent" &&
-            section !== "upload" && <ComingSoon title={SECTION_TITLES[section]} />}
         </div>
       </div>
     </div>

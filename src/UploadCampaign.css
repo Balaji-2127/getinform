@@ -1,11 +1,10 @@
 /* Matches the rest of the dashboard's content pages (CampaignsPage.css's
    .cpg-page/.cpg-header conventions) — this used to be a standalone
-   full-screen black page (its own route, before the dashboard shell
-   existed) but is now always embedded inside .dash-content, so it needs
-   to sit in that same light theme instead of punching a black rectangle
-   into it. */
+   full-screen black page but is now always embedded inside .dash-content,
+   so it sits in the same light theme. */
 .upload-page {
-  padding: 24px;
+  box-sizing: border-box;
+  padding: 28px 32px 32px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -13,27 +12,30 @@
 }
 
 .upload-eyebrow {
-  font-size: 11px;
-  font-weight: 700;
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   color: var(--c-brand-accent);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .upload-header h1 {
-  margin: 4px 0 4px;
-  font-size: 24px;
-  font-weight: 800;
+  margin: 0;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   color: var(--c-text);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.022em;
+  line-height: 1.2;
 }
 
 .upload-sub {
-  margin: 0;
-  font-size: 13px;
+  margin: 6px 0 0;
+  font-size: var(--fs-base);
   color: var(--c-text-3);
   line-height: 1.5;
-  max-width: 560px;
+  max-width: 64ch;
 }
 
 .upload-body {
@@ -44,62 +46,119 @@
 }
 
 .upload-card {
-  flex: 1 1 380px;
-  max-width: 460px;
-  background: #ffffff;
+  flex: 1 1 400px;
+  max-width: 480px;
+  background: var(--c-surface);
   border: 1px solid var(--c-border);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--sh-sm);
 }
 
 .upload-history {
   flex: 1 1 320px;
   max-width: none;
+  padding: 0;
+  overflow: hidden;
 }
+
+/* ---- Form ----------------------------------------------------------------- */
 
 .upload-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
+/* Sentence-case labels at body weight, like a form rather than a spec
+   sheet; the control itself carries the visual weight. */
 .upload-form label {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--c-text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  gap: 6px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-text-2);
 }
 
 .upload-form input[type="text"],
-.upload-form input:not([type]),
-/* The one control on this form that still read as a raw browser widget
-   sitting between two styled text fields. A dashed edge says "put a file
-   here" the way a solid one doesn't. */
-.upload-form input[type="file"] {
-  padding: 9px 12px;
-  border: 1px dashed var(--c-border-strong);
+.upload-form input:not([type]) {
+  height: var(--h-control-lg);
+  padding: 0 12px;
+  border: 1px solid var(--c-border);
   border-radius: var(--r-sm);
-  background: var(--c-surface-2);
-  font-size: 12.5px;
+  background: var(--c-surface);
+  font-size: var(--fs-md);
   font-weight: 400;
-  text-transform: none;
-  color: var(--c-text-3);
-  letter-spacing: normal;
-  cursor: pointer;
+  color: var(--c-text);
+  box-shadow: var(--sh-xs);
+}
+
+.upload-form input::placeholder {
+  color: var(--c-text-4);
+}
+
+.upload-form input:hover:not(:focus) {
+  border-color: var(--c-border-strong);
 }
 
 .upload-form input:focus {
   outline: none;
   border-color: var(--c-brand-accent);
+  box-shadow: var(--ring);
+}
+
+/* The one control on this form that would otherwise read as a raw browser
+   widget. A dashed edge and more room say "put a file here" the way a
+   one-line solid field doesn't. */
+.upload-form input[type="file"] {
+  padding: 14px;
+  border: 1px dashed var(--c-border-strong);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+  font-size: var(--fs-md);
+  font-weight: 400;
+  color: var(--c-text-3);
+  cursor: pointer;
+  transition:
+    border-color var(--t-hover) ease,
+    background-color var(--t-hover) ease;
+}
+
+.upload-form input[type="file"]:hover {
+  border-color: var(--c-brand-accent);
+  background: var(--c-brand-soft);
+}
+
+.upload-form input[type="file"]:focus-visible {
+  outline: none;
+  border-color: var(--c-brand-accent);
+  box-shadow: var(--ring);
+}
+
+.upload-form input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  height: var(--h-control-sm);
+  padding: 0 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xs);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+  box-shadow: var(--sh-xs);
 }
 
 .upload-error {
-  font-size: 12px;
-  color: #991b1b;
+  padding: 12px 14px;
+  border: 1px solid var(--c-danger-border);
+  border-radius: var(--r-sm);
+  background: var(--c-danger-soft);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--c-danger-text);
 }
 
 .upload-error p {
@@ -112,87 +171,86 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  font-size: 11.5px;
-  color: var(--c-danger-text);
+  font-size: var(--fs-xs);
 }
 
-.upload-form button,
-.upload-share-row button {
-  padding: 10px 12px;
-  border: none;
-  border-radius: 8px;
-  background: var(--c-brand);
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
+.upload-form button[type="submit"] {
+  margin-top: 4px;
 }
 
-.upload-form button:hover:not(:disabled),
-.upload-share-row button:hover {
-  background: var(--c-brand-hover);
-}
-
-.upload-form button:disabled {
-  background: var(--c-brand-disabled);
-  cursor: default;
-}
+/* ---- Result --------------------------------------------------------------- */
 
 .upload-result {
-  margin-top: 18px;
-  padding-top: 18px;
-  border-top: 1px solid var(--c-brand-soft);
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--c-border-soft);
 }
 
 .upload-result-title {
-  margin: 0 0 8px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #166534;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  color: var(--c-success-text);
 }
 
 .upload-share-row {
   display: flex;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .upload-share-row input {
   flex: 1;
-  padding: 8px 10px;
+  min-width: 0;
+  height: var(--h-control);
+  padding: 0 12px;
   border: 1px solid var(--c-border);
-  border-radius: 8px;
-  font-size: 12px;
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+  font-size: var(--fs-sm);
   color: var(--c-text-2);
+  font-family: inherit;
+}
+
+.upload-share-row input:focus {
+  outline: none;
+  border-color: var(--c-brand-accent);
+  box-shadow: var(--ring);
 }
 
 .upload-matched {
   list-style: none;
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  font-size: 12.5px;
+  gap: 4px;
+  font-size: var(--fs-md);
   color: var(--c-text);
 }
 
 .upload-skipped {
   margin: 0 0 10px;
-  font-size: 11.5px;
+  font-size: var(--fs-sm);
   color: var(--c-text-4);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .upload-warnings {
-  margin: 0 0 10px;
-  padding-left: 16px;
+  margin: 0 0 12px;
+  padding: 10px 12px 10px 28px;
+  border: 1px solid #fde68a;
+  border-radius: var(--r-sm);
+  background: var(--c-warn-soft);
   display: flex;
   flex-direction: column;
   gap: 3px;
-  font-size: 11.5px;
+  font-size: var(--fs-sm);
   color: var(--c-warn-text);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 /* Row holding "Open in Campaigns" next to the client-preview link — only
@@ -201,48 +259,47 @@
 .upload-result-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
-}
-
-.upload-open-btn {
-  padding: 7px 14px;
-  border: none;
-  border-radius: 7px;
-  background: var(--c-brand);
-  color: #ffffff;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.upload-open-btn:hover {
-  background: var(--c-brand-hover);
+  margin-top: 4px;
 }
 
 .upload-preview-link {
-  display: inline-block;
-  font-size: 12.5px;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   color: var(--c-brand);
+  text-decoration: none;
 }
 
+.upload-preview-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---- Past campaigns ------------------------------------------------------- */
+
 .upload-history h2 {
-  margin: 0 0 12px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--c-text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  height: 52px;
+  margin: 0;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--c-border-soft);
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.01em;
+  color: var(--c-text);
 }
 
 .upload-history ul {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 6px 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
 .upload-history li {
@@ -250,18 +307,28 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  font-size: 12.5px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--c-border-soft);
+  min-height: 44px;
+  padding: 4px 12px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-md);
+  transition: background-color var(--t-hover) ease;
 }
 
-.upload-history li:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+.upload-history li > div {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .upload-history li:hover {
+    background: var(--c-surface-2);
+  }
 }
 
 .upload-history-client {
-  font-weight: 700;
+  font-weight: var(--fw-semibold);
   color: var(--c-text);
 }
 
@@ -269,61 +336,8 @@
   color: var(--c-text-4);
 }
 
-.upload-history button {
-  border: none;
-  background: none;
-  padding: 0;
-  color: var(--c-brand);
-  font-weight: 600;
-  font-size: inherit;
-  font-family: inherit;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.upload-card {
-  box-shadow: var(--sh-sm);
-}
-
-.upload-form button[type="submit"],
-.upload-open-btn,
-.upload-share-row button {
-  --press: 0.97;
-}
-
-.upload-form button[type="submit"] {
-  box-shadow: var(--sh-sm);
-}
-
-.upload-form button[type="submit"]:hover:not(:disabled) {
-  box-shadow: var(--sh-md);
-}
-
-.upload-open-btn:hover {
-  box-shadow: var(--sh-md);
-}
-
-.upload-form input[type="file"]:hover {
-  border-color: var(--c-brand-accent);
-  background: var(--c-brand-soft);
-}
-
-.upload-form input[type="file"]::file-selector-button {
-  margin-right: 10px;
-  padding: 6px 12px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-xs);
-  background: var(--c-surface);
-  color: var(--c-text-2);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.upload-preview-link,
-.upload-open-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+@media (max-width: 900px) {
+  .upload-page {
+    padding: 20px;
+  }
 }

@@ -28,8 +28,6 @@ if (getApps().length === 0) {
 
 const db = getFirestore();
 const campaignsCol = db.collection("campaigns");
-const searchHistoryCol = db.collection("searchHistory");
-const savedAreasCol = db.collection("savedAreas");
 
 // { [cityId]: mediaSiteId[] } — only cities that had at least one matched row.
 export type CampaignSelections = Record<string, string[]>;
@@ -46,61 +44,7 @@ export type CampaignRecord = {
   // campaigns nobody has opened yet.
   views?: number;
   viewSeconds?: number;
-  // The client's own verdict on the shortlist, made on the share link.
-  // Missing until the client first touches anything.
-  review?: CampaignReview;
 };
-
-// What the client said about their shortlist: which properties they'd drop,
-// which others from the inventory they'd add, a note on any property, and
-// whether they've signed the whole thing off. `removed` and `comments` are
-// keyed by mediaSiteId; `added` is { cityId: mediaSiteId[] }, since adding a
-// property to the shortlist needs its city. Ids that later stop applying (a
-// rep edits the shortlist) are simply ignored wherever this is read.
-export type CampaignReview = {
-  removed: string[];
-  // Missing on reviews saved before clients could add properties.
-  added?: Record<string, string[]>;
-  comments: Record<string, string>;
-  status: "in_review" | "approved";
-  approvedAt: string | null;
-  approvedBy: string | null;
-  note: string | null;
-  updatedAt: string;
-  // The sales team's answer to each removal/addition request, by
-  // mediaSiteId. Accepting changes the shortlist; declining only records
-  // the answer so the request stops counting as pending.
-  resolved?: Record<string, "accepted" | "declined">;
-};
-
-// Just the numbers, for list views — removals and comments counted only for
-// properties still on the shortlist, so applying the client's removals (or
-// any other edit) brings these back in line with what's actually there.
-export type CampaignReviewSummary = {
-  status: CampaignReview["status"];
-  removedCount: number;
-  addedCount: number;
-  commentCount: number;
-  approvedAt: string | null;
-  approvedBy: string | null;
-};
-
-export function summarizeReview(review: CampaignReview | undefined, selections: CampaignSelections | undefined): CampaignReviewSummary | null {
-  if (!review) return null;
-  const onShortlist = new Set(Object.values(selections ?? {}).flatMap((ids) => (Array.isArray(ids) ? ids : [])));
-  const resolved = review.resolved ?? {};
-  const added = Object.values(review.added ?? {}).flat().filter((id) => !onShortlist.has(id));
-  const inPlay = new Set([...onShortlist, ...added]);
-  // Only requests still waiting for the team's answer are counted.
-  return {
-    status: review.status,
-    removedCount: review.removed.filter((id) => onShortlist.has(id) && !resolved[id]).length,
-    addedCount: added.filter((id) => !resolved[id]).length,
-    commentCount: Object.keys(review.comments).filter((id) => inPlay.has(id)).length,
-    approvedAt: review.approvedAt,
-    approvedBy: review.approvedBy,
-  };
-}
 
 type CampaignFields = Omit<CampaignRecord, "id">;
 
@@ -149,16 +93,7 @@ export async function addCampaignViewTime(id: string, seconds: number): Promise<
   await campaignsCol.doc(id).update({ viewSeconds: FieldValue.increment(seconds) }).catch(() => {});
 }
 
-export async function saveCampaignReview(id: string, review: CampaignReview): Promise<boolean> {
-  const ref = campaignsCol.doc(id);
-  if (!(await ref.get()).exists) return false;
-  await ref.update({ review });
-  return true;
-}
-
-export async function listCampaigns(): Promise<
-  (Omit<CampaignRecord, "selections" | "review"> & { counts: Record<string, number>; review: CampaignReviewSummary | null })[]
-> {
+export async function listCampaigns(): Promise<(Omit<CampaignRecord, "selections"> & { counts: Record<string, number> })[]> {
   const snap = await campaignsCol.orderBy("createdAt", "desc").get();
   return snap.docs.map((doc) => {
     const data = doc.data() as CampaignFields;
@@ -176,7 +111,6 @@ export async function listCampaigns(): Promise<
       counts,
       views: data.views ?? 0,
       viewSeconds: data.viewSeconds ?? 0,
-      review: summarizeReview(data.review, data.selections),
     };
   });
 }
@@ -196,109 +130,14 @@ export async function listCampaignsFull(): Promise<CampaignRecord[]> {
 }
 
 /**
- * Deletes a campaign and the search-history rows that pointed at it.
+ * Deletes a campaign.
  *
  * Returns false when there was nothing to delete, so the route can answer
  * 404 rather than reporting success for an id that never existed.
- *
- * The history rows go too because "Recent Searches" links straight to a
- * campaign by id: leaving them behind would fill that page with entries
- * that open an error. Saved areas and the "most shortlisted" aggregate need
- * no cleanup — the latter is recomputed from whatever campaigns still
- * exist, so it corrects itself.
  */
 export async function deleteCampaign(id: string): Promise<boolean> {
   const ref = campaignsCol.doc(id);
   if (!(await ref.get()).exists) return false;
   await ref.delete();
-
-  const orphaned = await searchHistoryCol.where("resultType", "==", "campaign").where("targetId", "==", id).get();
-  if (!orphaned.empty) {
-    const batch = db.batch();
-    for (const doc of orphaned.docs) batch.delete(doc.ref);
-    await batch.commit();
-  }
   return true;
-}
-
-export type SearchHistoryEntry = {
-  id: string;
-  query: string;
-  resultType: "campaign" | "property";
-  resultLabel: string;
-  resultSub: string | null;
-  cityId: string | null;
-  targetId: string;
-  createdAt: string;
-};
-
-type SearchHistoryFields = Omit<SearchHistoryEntry, "id">;
-
-// Backs the sidebar's "Recent Searches" — one row per search *result a
-// rep actually clicked* (not every keystroke; that would just be noise),
-// so this is a real, if small, log of what people went looking for and
-// found, not a demo stand-in. No per-user accounts exist in this app
-// (everyone shares one login), so this is shared across whoever's using it.
-export async function recordSearch(input: {
-  query: string;
-  resultType: "campaign" | "property";
-  resultLabel: string;
-  resultSub?: string | null;
-  cityId?: string | null;
-  targetId: string;
-}): Promise<SearchHistoryEntry> {
-  const entry: SearchHistoryEntry = {
-    id: randomUUID(),
-    query: input.query,
-    resultType: input.resultType,
-    resultLabel: input.resultLabel,
-    resultSub: input.resultSub ?? null,
-    cityId: input.cityId ?? null,
-    targetId: input.targetId,
-    createdAt: new Date().toISOString(),
-  };
-  const { id, ...fields } = entry;
-  await searchHistoryCol.doc(id).set(fields satisfies SearchHistoryFields);
-  return entry;
-}
-
-export async function listRecentSearches(limit = 25): Promise<SearchHistoryEntry[]> {
-  const snap = await searchHistoryCol.orderBy("createdAt", "desc").limit(limit).get();
-  return snap.docs.map((doc) => ({ id: doc.id, ...(doc.data() as SearchHistoryFields) }));
-}
-
-export type SavedArea = { id: string; cityId: string; locality: string; createdAt: string };
-
-type SavedAreaFields = Omit<SavedArea, "id">;
-
-// Backs the sidebar's "My Areas" — a rep explicitly starring a locality
-// (from Market Insights) to keep an eye on, not a fabricated list.
-export async function listSavedAreas(): Promise<SavedArea[]> {
-  const snap = await savedAreasCol.orderBy("createdAt", "desc").get();
-  return snap.docs.map((doc) => ({ id: doc.id, ...(doc.data() as SavedAreaFields) }));
-}
-
-// Idempotent — starring an already-saved area just returns it rather
-// than erroring, since the UI treats this as a plain toggle. Firestore
-// has no unique-constraint equivalent to SQL's UNIQUE(city_id, locality),
-// so uniqueness is enforced here: look up by both fields first, only
-// create a new doc if nothing matched.
-export async function saveArea(cityId: string, locality: string): Promise<SavedArea> {
-  const existing = await savedAreasCol.where("cityId", "==", cityId).where("locality", "==", locality).limit(1).get();
-  if (!existing.empty) {
-    const doc = existing.docs[0];
-    return { id: doc.id, ...(doc.data() as SavedAreaFields) };
-  }
-  const record: SavedArea = { id: randomUUID(), cityId, locality, createdAt: new Date().toISOString() };
-  const { id, ...fields } = record;
-  await savedAreasCol.doc(id).set(fields satisfies SavedAreaFields);
-  return record;
-}
-
-export async function unsaveArea(cityId: string, locality: string): Promise<void> {
-  const snap = await savedAreasCol.where("cityId", "==", cityId).where("locality", "==", locality).get();
-  if (snap.empty) return;
-  const batch = db.batch();
-  for (const doc of snap.docs) batch.delete(doc.ref);
-  await batch.commit();
 }

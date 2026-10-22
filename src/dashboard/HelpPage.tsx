@@ -85,12 +85,6 @@ const FAQS: Faq[] = [
     img: "/faq/numbers.jpg",
     alt: "A property's detail panel showing screens, households, impressions and monthly ad budget",
   },
-  {
-    q: "What are My Areas, Shortlists and Recent Searches?",
-    a: "My Areas holds localities you've starred from Market Insights, with their stats recalculated live. Shortlists shows properties that appear in more than one campaign — real repeat demand across clients. Recent Searches logs the search results you've actually opened.",
-    img: "/faq/saved-areas.jpg",
-    alt: "The My Areas page, showing saved localities with their current stats",
-  },
 ];
 
 export default function HelpPage() {

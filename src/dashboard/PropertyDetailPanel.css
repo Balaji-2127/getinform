@@ -6,7 +6,7 @@
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
-  padding: 14px;
+  padding: 16px;
   font-family: var(--font-sans);
   overflow-y: auto;
   box-shadow: var(--sh-sm);
@@ -15,64 +15,103 @@
 .pdp-empty {
   align-items: center;
   justify-content: center;
+  gap: 8px;
   text-align: center;
   color: var(--c-text-4);
-  font-size: 13px;
+  font-size: var(--fs-md);
+  padding: 24px;
+}
+
+.pdp-empty .empty-icon {
+  margin-bottom: 6px;
+}
+
+.pdp-empty p {
+  margin: 0;
+  max-width: 26ch;
+  line-height: 1.5;
+  color: var(--c-text-3);
 }
 
 .pdp-back-all {
-  display: flex;
+  --press: 0.98;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   width: 100%;
+  height: var(--h-control);
   flex-shrink: 0;
+  /* Same solid indigo button as the client map's property panel, so
+     "back" looks and works the same everywhere. */
   border: none;
   background: var(--c-brand);
   color: #ffffff;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 12.5px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-md);
   font-weight: 700;
   cursor: pointer;
-  margin: 0 0 12px;
+  margin: 0 0 14px;
+  box-shadow: var(--sh-xs);
 }
 
 .pdp-back-all:hover {
   background: var(--c-brand-hover);
+  box-shadow: var(--sh-sm);
 }
 
 .pdp-photo {
-  height: 120px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--c-brand-soft), var(--c-brand-soft-border));
+  height: 112px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-brand-soft-border);
+  background:
+    radial-gradient(80% 120% at 100% 0%, rgba(99, 102, 241, 0.16), transparent 60%),
+    var(--c-brand-soft);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .pdp-photo-link {
-  font-size: 12.5px;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--h-control-sm);
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  border: 1px solid var(--c-brand-soft-border);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--c-brand);
+  text-decoration: none;
+  box-shadow: var(--sh-xs);
+}
+
+.pdp-photo-link:hover {
+  border-color: var(--c-brand-disabled);
+  box-shadow: var(--sh-sm);
 }
 
 .pdp-photo-placeholder {
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--c-text-4);
 }
 
 .pdp-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
 }
 
 .pdp-header h2 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 800;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.015em;
+  line-height: 1.3;
   color: var(--c-text);
   flex: 1;
   min-width: 0;
@@ -80,36 +119,92 @@
 
 .pdp-status {
   flex-shrink: 0;
-  padding: 2px 8px;
-  background: #dcfce7;
-  color: #166534;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  margin-top: 1px;
+  background: var(--c-success-soft);
+  border: 1px solid var(--c-success-soft-border);
+  color: var(--c-success-text);
+  border-radius: var(--r-pill);
+  font-size: 10.5px;
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pdp-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-success);
 }
 
 .pdp-address {
-  margin: 2px 0 12px;
-  font-size: 12px;
+  margin: 4px 0 14px;
+  font-size: var(--fs-sm);
   color: var(--c-text-4);
+}
+
+/* Society photos, as a scrolling strip of square thumbnails. Each thumb is
+   a link to the page the image came from, so a rep can verify it's the
+   right building before showing it to a client. */
+.pdp-photo-strip {
+  /* The panel is a fixed-height flex column that scrolls; without this the
+     strip is the first thing squeezed, down to a 4px sliver. */
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin: 0 -16px 14px;
+  padding: 0 16px 4px;
+  scroll-snap-type: x proximity;
+}
+
+.pdp-photo-thumb {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface-2);
+  scroll-snap-align: start;
+  transition:
+    border-color var(--t-hover) ease,
+    box-shadow var(--t-hover) ease;
+}
+
+.pdp-photo-thumb:hover {
+  border-color: var(--c-brand-accent);
+  box-shadow: var(--ring);
+}
+
+.pdp-photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .pdp-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .pdp-stat {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   background: var(--c-surface-2);
-  border: 1px solid var(--c-brand-soft);
-  border-radius: 8px;
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r-sm);
   min-width: 0;
 }
 
@@ -118,43 +213,60 @@
 }
 
 .pdp-stat-value {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--c-brand-hover);
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.01em;
+  color: var(--c-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .pdp-stat-label {
-  font-size: 10px;
+  font-size: 10.5px;
   color: var(--c-text-4);
-  font-weight: 600;
+  font-weight: var(--fw-medium);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
 }
+
+/* ---- Tabs ----------------------------------------------------------------- */
 
 .pdp-tabs {
   display: flex;
+  gap: 2px;
   border-bottom: 1px solid var(--c-border);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .pdp-tabs button {
+  --press: 0.98;
   border: none;
   background: none;
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--c-text-4);
+  height: 36px;
+  padding: 0 10px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-text-3);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
+  transition:
+    color var(--t-hover) ease,
+    border-color var(--t-hover) ease,
+    background-color var(--t-hover) ease,
+    transform var(--t-press) var(--ease-out);
+}
+
+.pdp-tabs button:hover:not(.is-active) {
+  color: var(--c-text);
 }
 
 .pdp-tabs button.is-active {
-  color: #2563eb;
-  border-bottom-color: #2563eb;
+  color: var(--c-brand);
+  font-weight: var(--fw-semibold);
+  border-bottom-color: var(--c-brand);
 }
 
 .pdp-tab-body {
@@ -175,18 +287,20 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
-  background: var(--c-surface-2);
-  border: 1px solid var(--c-border);
-  border-radius: 6px;
-  font-size: 11.5px;
+  height: 34px;
+  padding: 0 10px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r-xs);
+  font-size: var(--fs-sm);
   color: var(--c-text-2);
 }
 
 .pdp-screen-list li span:first-child {
   flex: 1;
-  font-weight: 700;
+  font-weight: var(--fw-semibold);
   color: var(--c-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .pdp-screen-size {
@@ -194,31 +308,41 @@
 }
 
 .pdp-screen-status {
-  color: var(--c-success);
-  font-weight: 700;
+  color: var(--c-success-text);
+  font-weight: var(--fw-semibold);
   font-size: 10px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .pdp-detail-list {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 8px 10px;
+  gap: 0 12px;
   margin: 0;
 }
 
+.pdp-detail-list dt,
+.pdp-detail-list dd {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--c-border-soft);
+}
+
 .pdp-detail-list dt {
-  font-size: 11px;
+  font-size: var(--fs-sm);
   color: var(--c-text-4);
-  font-weight: 600;
+  font-weight: var(--fw-medium);
 }
 
 .pdp-detail-list dd {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-md);
   color: var(--c-text);
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
+
+/* ---- Actions + campaign picker ------------------------------------------ */
 
 /* The action row anchors the campaign picker, which opens upward from it:
    the panel's bottom edge is usually at the bottom of the viewport, so a
@@ -227,13 +351,11 @@
   position: relative;
   display: flex;
   gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
   border-top: 1px solid var(--c-border-soft);
 }
 
-/* Was styled permanently disabled (not-allowed cursor, 60% opacity) because
-   the button did nothing. It's live now. */
 .pdp-add-btn {
   --press: 0.97;
   flex: 1;
@@ -241,24 +363,26 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 9px 10px;
-  border: none;
+  height: var(--h-control);
+  padding: 0 12px;
+  border: 1px solid var(--c-brand);
   border-radius: var(--r-sm);
   background: var(--c-brand);
   color: #ffffff;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
-  box-shadow: var(--sh-sm);
+  box-shadow: var(--sh-btn);
 }
 
 .pdp-add-btn:hover:not(:disabled) {
   background: var(--c-brand-hover);
-  box-shadow: var(--sh-md);
+  border-color: var(--c-brand-hover);
+  box-shadow: var(--sh-btn-hover);
 }
 
 .pdp-add-btn:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -292,12 +416,12 @@
 
 .pdp-picker-title {
   display: block;
-  padding: 4px 8px 6px;
+  padding: 6px 10px 6px;
   font-size: 10.5px;
-  font-weight: 700;
+  font-weight: var(--fw-semibold);
   color: var(--c-text-4);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
 }
 
 .pdp-picker-item {
@@ -307,7 +431,7 @@
   align-items: flex-start;
   gap: 1px;
   width: 100%;
-  padding: 7px 8px;
+  padding: 7px 10px;
   border: none;
   background: none;
   border-radius: var(--r-xs);
@@ -325,26 +449,27 @@
 }
 
 .pdp-picker-name {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   color: var(--c-text);
 }
 
 .pdp-picker-sub,
 .pdp-picker-empty {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--c-text-4);
 }
 
 .pdp-picker-empty {
   margin: 0;
-  padding: 6px 8px;
+  padding: 6px 10px;
 }
 
-/* ---- nearby clients ---- */
+/* ---- Nearby clients ------------------------------------------------------- */
+
 .pdp-nearby-empty {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   line-height: 1.5;
   color: var(--c-text-4);
 }
@@ -355,7 +480,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .pdp-nearby-list button {
@@ -363,9 +488,9 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 3px;
+  gap: 4px;
   width: 100%;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border: 1px solid var(--c-border);
   background: var(--c-surface);
   border-radius: var(--r-sm);
@@ -383,8 +508,8 @@
 }
 
 .pdp-nearby-name {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   color: var(--c-text);
 }
 
@@ -397,37 +522,15 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--c-text-4);
 }
 
 .pdp-nearby-tag {
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: var(--r-pill);
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--c-info-soft);
+  color: var(--c-info-text);
   font-size: 10px;
-  font-weight: 700;
-}
-
-.pdp-back-all,
-.pdp-tabs button {
-  --press: 0.98;
-  transition:
-    color var(--t-hover) ease,
-    border-color var(--t-hover) ease,
-    background-color var(--t-hover) ease,
-    transform var(--t-press) var(--ease-out);
-}
-
-.pdp-stat-value,
-.pdp-screen-list li span:first-child {
-  font-variant-numeric: tabular-nums;
-}
-
-.pdp-back-all,
-.pdp-photo-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  font-weight: var(--fw-semibold);
 }

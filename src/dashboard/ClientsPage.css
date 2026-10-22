@@ -1,127 +1,23 @@
-.clients-search {
+.clients-search-wrap {
   width: 100%;
-  max-width: 320px;
-  padding: 9px 12px;
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  font-size: 13px;
-  color: var(--c-text);
-  font-family: inherit;
-}
-
-.clients-search:focus {
-  outline: none;
-  border-color: var(--c-brand-accent);
+  max-width: 340px;
 }
 
 .clients-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
   padding-bottom: 8px;
 }
 
 .clients-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
-  padding: 16px;
   box-shadow: var(--sh-sm);
-}
-
-.clients-sub {
-  margin: 0;
-  font-size: 12px;
-  color: var(--c-text-4);
-}
-
-.clients-stat-row {
-  display: flex;
-  gap: 10px;
-}
-
-.clients-stat {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px;
-  background: var(--c-surface-2);
-  border: 1px solid var(--c-brand-soft);
-  border-radius: 8px;
-  min-width: 0;
-}
-
-.clients-stat-value {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--c-brand-hover);
-  font-variant-numeric: tabular-nums;
-}
-
-.clients-stat-label {
-  font-size: 10.5px;
-  color: var(--c-text-4);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.clients-campaign-list {
-  list-style: none;
-  margin: 0;
-  padding: 10px 0 0;
-  border-top: 1px solid var(--c-border-soft);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 180px;
-  overflow-y: auto;
-}
-
-.clients-campaign-list li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.clients-campaign-list li > div {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.clients-campaign-name {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--c-text);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.clients-campaign-date {
-  font-size: 10.5px;
-  color: var(--c-text-4);
-}
-
-.clients-campaign-list button {
-  flex-shrink: 0;
-  border: none;
-  background: none;
-  color: var(--c-brand);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.clients-campaign-list button:hover {
-  text-decoration: underline;
 }
 
 /* Gated behind a real pointer: on touch, :hover sticks after a tap and
@@ -130,18 +26,138 @@
   .clients-card {
     transition:
       box-shadow var(--t-hover) ease,
-      border-color var(--t-hover) ease,
-      transform var(--t-hover) var(--ease-out);
+      border-color var(--t-hover) ease;
   }
 
   .clients-card:hover {
     box-shadow: var(--sh-md);
     border-color: var(--c-border-strong);
-    transform: translateY(-2px);
   }
 }
 
+/* Card header: the client's logo pill, then its one-line summary. */
+.clients-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px 16px;
+}
+
+.clients-card-head .cl-badge {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: transparent;
+  gap: 12px;
+}
+
+.clients-card-head .cl-badge img,
+.clients-card-head .cl-initials {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-border);
+  font-size: var(--fs-md);
+}
+
+.clients-card-head .cl-name {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.01em;
+}
+
+.clients-sub {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-4);
+}
+
+/* Two figures side by side, separated by a hairline rather than boxed in
+   tinted tiles — the number is the point, not the container. */
+.clients-stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--c-border-soft);
+  border-bottom: 1px solid var(--c-border-soft);
+  background: var(--c-surface-2);
+}
+
+.clients-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 20px;
+  min-width: 0;
+}
+
+.clients-stat + .clients-stat {
+  border-left: 1px solid var(--c-border-soft);
+}
+
 .clients-stat-value {
+  font-size: 20px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.clients-stat-label {
+  font-size: var(--fs-xs);
+  color: var(--c-text-4);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+.clients-campaign-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.clients-campaign-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  transition: background-color var(--t-hover) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .clients-campaign-list li:hover {
+    background: var(--c-surface-2);
+  }
+}
+
+.clients-campaign-list li > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.clients-campaign-name {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  color: var(--c-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clients-campaign-date {
+  font-size: var(--fs-xs);
+  color: var(--c-text-4);
   font-variant-numeric: tabular-nums;
 }
 
@@ -162,20 +178,30 @@
    attention away from "Open". */
 .clients-delete-btn {
   --press: 0.9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  flex-shrink: 0;
-  border: none;
-  background: none;
-  border-radius: var(--r-xs);
   color: var(--c-text-4);
-  cursor: pointer;
 }
 
-.clients-delete-btn:hover {
-  background: #fef2f2;
+.clients-delete-btn:hover:not(:disabled) {
+  background: var(--c-danger-soft);
   color: var(--c-danger);
+}
+
+/* ---- Skeleton ------------------------------------------------------------ */
+
+.clients-skel-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+  min-height: 220px;
+}
+
+.clients-skel-card .skel {
+  height: 12px;
+}
+
+.clients-skel-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-md);
 }

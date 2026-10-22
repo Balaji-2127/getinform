@@ -27,7 +27,7 @@ export type Insights = {
 // invented market-research numbers. "Insights" here means insights into
 // our own DOOH inventory (where the density/reach/value actually is),
 // which is what a rep can act on, not third-party industry data we don't
-// have. Shared by InsightsPage and the Dashboard home page's stat row —
+// have. Used by the Dashboard home page's stat row —
 // loadCityScreens' dynamic imports are module-cached, so calling this from
 // both places doesn't re-fetch the underlying city data twice.
 export async function computeInsights(): Promise<Insights> {

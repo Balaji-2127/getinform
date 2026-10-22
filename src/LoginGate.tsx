@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AlertIcon, LockIcon } from "./dashboard/icons";
 import "./LoginGate.css";
 
 export default function LoginGate({ onSuccess }: { onSuccess: () => void }) {
@@ -37,15 +38,25 @@ export default function LoginGate({ onSuccess }: { onSuccess: () => void }) {
           <h1>ADONMO</h1>
         </div>
         <p className="login-sub">Sales access — enter the shared password to upload a campaign.</p>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          autoFocus
-        />
-        {error && <p className="login-error">{error}</p>}
-        <button type="submit" disabled={submitting || !password}>
+        <label className="login-field">
+          Password
+          <span className="field-wrap login-field-wrap">
+            <LockIcon size={15} />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              autoFocus
+            />
+          </span>
+        </label>
+        {error && (
+          <p className="login-error" role="alert">
+            <AlertIcon size={15} /> {error}
+          </p>
+        )}
+        <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={submitting || !password}>
           {submitting ? "Checking…" : "Log in"}
         </button>
       </form>

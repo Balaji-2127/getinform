@@ -427,3 +427,80 @@ export function ExitFullscreenIcon({ size = 18 }: IconProps) {
     </svg>
   );
 }
+
+/* ---------------------------------------------------------------------------
+   Glyphs for empty states, alerts and toasts — surfaces that used to be a
+   bare sentence of grey text with nothing for the eye to land on.
+--------------------------------------------------------------------------- */
+
+export function InboxIcon({ size = 20 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M4 13l2-8h12l2 8v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-6Z" />
+      <path d="M4 13h5l1.5 2h3L15 13h5" />
+    </svg>
+  );
+}
+
+export function AlertIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 8v4.5M12 15.5h.01" />
+    </svg>
+  );
+}
+
+export function CheckCircleIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8.5 12.2l2.3 2.3 4.7-4.8" />
+    </svg>
+  );
+}
+
+export function ChevronRightIcon({ size = 14 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+export function MapPinIcon({ size = 20 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </svg>
+  );
+}
+
+export function SheetIcon({ size = 20 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" />
+      <path d="M14 3v5h5" />
+      <path d="M8 13h8M8 17h8M12 13v4" />
+    </svg>
+  );
+}
+
+export function LockIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
+export function LogOutIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4" />
+      <path d="M15 8l5 4-5 4M20 12H9" />
+    </svg>
+  );
+}

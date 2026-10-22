@@ -138,10 +138,10 @@ export default function UpdateSheetModal({
             )}
 
             <div className="usm-actions">
-              <button type="button" className="usm-cancel" onClick={onClose} disabled={busy}>
+              <button type="button" className="usm-cancel btn btn-secondary" onClick={onClose} disabled={busy}>
                 Cancel
               </button>
-              <button type="button" className="usm-submit" onClick={submit} disabled={busy || !file}>
+              <button type="button" className="usm-submit btn btn-primary" onClick={submit} disabled={busy || !file}>
                 {busy ? "Updating…" : (
                   <>
                     <UploadIcon size={14} /> {mode === "replace" ? "Replace shortlist" : "Add to campaign"}
@@ -198,7 +198,7 @@ export default function UpdateSheetModal({
             )}
 
             <div className="usm-actions">
-              <button type="button" className="usm-submit" onClick={onClose}>
+              <button type="button" className="usm-submit btn btn-primary" onClick={onClose}>
                 Done
               </button>
             </div>

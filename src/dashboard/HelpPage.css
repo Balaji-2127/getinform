@@ -33,7 +33,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 12px;
+  padding: 8px;
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
@@ -41,26 +41,27 @@
 }
 
 .help-chapters-title {
-  padding: 2px 8px 8px;
+  padding: 8px 10px 8px;
   font-size: 10.5px;
-  font-weight: 700;
+  font-weight: var(--fw-semibold);
   color: var(--c-text-4);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
 }
 
 .help-chapter {
   --press: 0.985;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   width: 100%;
+  height: 36px;
   border: none;
   background: none;
-  padding: 8px 9px;
-  border-radius: var(--r-xs);
-  font-size: 12.5px;
-  font-weight: 500;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
   color: var(--c-text-2);
   text-align: left;
   cursor: pointer;
@@ -73,12 +74,13 @@
 
 .help-chapter:hover {
   background: var(--c-surface-hover);
+  color: var(--c-text);
 }
 
 .help-chapter.is-active {
   background: var(--c-brand-soft);
   color: var(--c-brand);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .help-chapter.is-active svg {
@@ -95,22 +97,23 @@
 
 .help-chapter-time {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--c-text-4);
   font-variant-numeric: tabular-nums;
 }
+
+/* ---- FAQ ------------------------------------------------------------------ */
 
 .help-faq {
   max-width: 820px;
 }
 
 .help-faq h2 {
-  margin: 0 0 12px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--c-text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  margin: 8px 0 12px;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.015em;
+  color: var(--c-text);
 }
 
 .help-faq-item {
@@ -119,7 +122,10 @@
   border-radius: var(--r-md);
   margin-bottom: 8px;
   overflow: hidden;
-  transition: box-shadow var(--t-hover) ease, border-color var(--t-hover) ease;
+  box-shadow: var(--sh-xs);
+  transition:
+    box-shadow var(--t-hover) ease,
+    border-color var(--t-hover) ease;
 }
 
 .help-faq-item.is-open {
@@ -136,9 +142,9 @@
   width: 100%;
   border: none;
   background: none;
-  padding: 14px 16px;
-  font-size: 13.5px;
-  font-weight: 600;
+  padding: 14px 18px;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
   color: var(--c-text);
   text-align: left;
   cursor: pointer;
@@ -151,23 +157,35 @@
 .help-faq-chevron {
   flex-shrink: 0;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-pill);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border-soft);
   color: var(--c-text-4);
-  transition: transform var(--t-pop) var(--ease-out);
+  transition:
+    transform var(--t-pop) var(--ease-out),
+    color var(--t-hover) ease,
+    background-color var(--t-hover) ease;
 }
 
 .help-faq-item.is-open .help-faq-chevron {
   transform: rotate(180deg);
   color: var(--c-brand);
+  background: var(--c-brand-soft);
+  border-color: var(--c-brand-soft-border);
 }
 
 .help-faq-body {
-  padding: 0 16px 16px;
+  padding: 0 18px 18px;
 }
 
 .help-faq-a {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.62;
+  font-size: var(--fs-md);
+  line-height: 1.65;
   color: var(--c-text-3);
   max-width: 68ch;
 }
@@ -177,7 +195,7 @@
    page — several of these are crops of a single control, and without an edge
    they'd look like stray UI that had leaked into the FAQ. */
 .help-faq-fig {
-  margin: 12px 0 0;
+  margin: 14px 0 0;
   max-width: 700px;
   border: 1px solid var(--c-border);
   border-radius: var(--r-sm);

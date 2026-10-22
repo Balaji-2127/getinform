@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { AlertIcon, CheckCircleIcon } from "./icons";
 import "./Toast.css";
 
 type ToastTone = "success" | "error";
@@ -44,6 +45,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div className="toast-stack" role="status" aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className={`toast toast-${t.tone}` + (t.leaving ? " is-leaving" : "")}>
+            <span className="toast-icon" aria-hidden="true">
+              {t.tone === "error" ? <AlertIcon size={16} /> : <CheckCircleIcon size={16} />}
+            </span>
             {t.message}
           </div>
         ))}

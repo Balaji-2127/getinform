@@ -1,22 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import MapExperience from "../MapExperience";
 import ClientLogo from "./ClientLogo";
-import { CheckIcon, CloseIcon, ExpandIcon, ExportIcon, LinkIcon, PencilIcon, UploadIcon } from "./icons";
+import { AlertIcon, CheckIcon, CloseIcon, ExpandIcon, ExportIcon, InboxIcon, LinkIcon, PencilIcon, UploadIcon } from "./icons";
 import { CITIES, type CityId } from "../data/cities";
 import EditShortlistModal from "./EditShortlistModal";
 import UpdateSheetModal from "./UpdateSheetModal";
 import { copyToClipboard } from "../copyToClipboard";
 import { useToast } from "./Toast";
-import ClientFeedback from "./ClientFeedback";
-import type { CampaignReview, MapReview } from "../review";
 import "./CampaignsPage.css";
 
-type CampaignResponse = {
-  clientName: string;
-  campaignName: string;
-  selections: Record<string, string[]>;
-  review: CampaignReview | null;
-};
+type CampaignResponse = { clientName: string; campaignName: string; selections: Record<string, string[]> };
 
 function firstCityWithSelection(selections: Record<string, string[]>): CityId {
   const match = CITIES.find((c) => (selections[c.id]?.length ?? 0) > 0);
@@ -89,32 +82,13 @@ export default function CampaignsPage({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [fullscreen]);
 
-  // Bumped by the client-feedback panel's Refresh, to pick up anything the
-  // client has done on their link since this page loaded.
-  const [reloadCount, setReloadCount] = useState(0);
-  const loadedIdRef = useRef<string | null>(null);
-
-  // The client may be editing their link right now: re-read the campaign
-  // every half minute while this tab is in view, so their requests show
-  // up here without anyone pressing Refresh. Only changed data re-renders
-  // anything, so the map isn't disturbed.
-  useEffect(() => {
-    if (!activeCampaignId) return;
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === "visible") setReloadCount((n) => n + 1);
-    }, 30_000);
-    return () => window.clearInterval(timer);
-  }, [activeCampaignId]);
-
   useEffect(() => {
     if (!activeCampaignId) {
       setState({ status: "idle" });
       return;
     }
     let cancelled = false;
-    // A refresh keeps the map on screen; only a different campaign shows
-    // the loading state.
-    if (loadedIdRef.current !== activeCampaignId) setState({ status: "loading" });
+    setState({ status: "loading" });
     fetch(`/api/campaigns/${activeCampaignId}`)
       .then(async (res) => {
         if (!res.ok) {
@@ -124,10 +98,7 @@ export default function CampaignsPage({
         return res.json() as Promise<CampaignResponse>;
       })
       .then((data) => {
-        if (cancelled) return;
-        loadedIdRef.current = activeCampaignId;
-        // Same data as before: keep the old object so nothing re-renders.
-        setState((prev) => (prev.status === "ready" && JSON.stringify(prev.data) === JSON.stringify(data) ? prev : { status: "ready", data }));
+        if (!cancelled) setState({ status: "ready", data });
       })
       .catch((e: Error) => {
         if (!cancelled) setState({ status: "error", message: e.message });
@@ -135,19 +106,7 @@ export default function CampaignsPage({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCampaignId, reloadCount]);
-
-  // The client's choices drawn on the team's map too — removed properties
-  // in red, and their comment in the property panel — read-only here.
-  const review = state.status === "ready" ? state.data.review : null;
-  const mapReview: MapReview | undefined = useMemo(
-    () =>
-      review
-        ? { removed: new Set(review.removed), added: new Set(Object.values(review.added ?? {}).flat()), comments: review.comments, audience: "team" }
-        : undefined,
-    [review],
-  );
+  }, [activeCampaignId]);
 
   return (
     <div className="cpg-page">
@@ -239,35 +198,32 @@ export default function CampaignsPage({
         </div>
       )}
 
-      {state.status === "ready" && activeCampaignId && (
-        <ClientFeedback
-          campaignId={activeCampaignId}
-          selections={state.data.selections}
-          review={state.data.review}
-          onApplied={({ selections, review }) => setState({ status: "ready", data: { ...state.data, selections, review } })}
-          onRefresh={() => setReloadCount((n) => n + 1)}
-        />
-      )}
-
       {state.status === "idle" && (
         <div className="cpg-empty">
+          <span className="empty-icon">
+            <InboxIcon size={22} />
+          </span>
           <p>No campaign loaded yet.</p>
-          <button type="button" className="cpg-empty-btn" onClick={onGoUpload}>
-            Upload a campaign sheet
+          <button type="button" className="cpg-empty-btn btn btn-primary" onClick={onGoUpload}>
+            <UploadIcon size={15} /> Upload a campaign sheet
           </button>
         </div>
       )}
 
       {state.status === "loading" && (
-        <div className="cpg-empty">
-          <p>Loading campaign…</p>
+        <div className="cpg-loading" role="status">
+          <span className="spinner" aria-hidden="true" />
+          <span>Loading campaign…</span>
         </div>
       )}
 
       {state.status === "error" && (
         <div className="cpg-empty cpg-empty-error">
+          <span className="empty-icon is-danger">
+            <AlertIcon size={22} />
+          </span>
           <p>{state.message}</p>
-          <button type="button" className="cpg-empty-btn" onClick={onGoUpload}>
+          <button type="button" className="cpg-empty-btn btn btn-primary" onClick={onGoUpload}>
             Try uploading again
           </button>
         </div>
@@ -302,7 +258,6 @@ export default function CampaignsPage({
             hideBrand
             bannerPortalTarget={bannerSlot}
             citySwitcherPortalTarget={citySwitcherSlot}
-            review={mapReview}
           />
         </div>
       )}

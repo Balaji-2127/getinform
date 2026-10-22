@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useToast } from "./Toast";
+import { TrashIcon } from "./icons";
 import "./DeleteCampaignDialog.css";
 
 export type DeletableCampaign = {
@@ -47,7 +48,12 @@ export default function DeleteCampaignDialog({
   return (
     <div className="rdl-overlay" onClick={() => !deleting && onCancel()}>
       <div className="rdl-card" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
-        <h2>Delete this campaign?</h2>
+        <h2>
+          <span className="rdl-icon" aria-hidden="true">
+            <TrashIcon size={16} />
+          </span>
+          Delete this campaign?
+        </h2>
         <p className="rdl-target">
           <strong>{campaign.clientName}</strong> — {campaign.campaignName}
           <span className="rdl-meta">{campaign.properties.toLocaleString()} properties shortlisted</span>
@@ -57,10 +63,10 @@ export default function DeleteCampaignDialog({
           working, and it can't be undone.
         </p>
         <div className="rdl-actions">
-          <button type="button" className="rdl-cancel" onClick={onCancel} disabled={deleting}>
+          <button type="button" className="rdl-cancel btn btn-secondary" onClick={onCancel} disabled={deleting}>
             Cancel
           </button>
-          <button type="button" className="rdl-confirm" onClick={confirm} disabled={deleting}>
+          <button type="button" className="rdl-confirm btn btn-danger" onClick={confirm} disabled={deleting}>
             {deleting ? "Deleting…" : "Delete campaign"}
           </button>
         </div>

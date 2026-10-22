@@ -1,7 +1,7 @@
 .dash-home-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 14px;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 16px;
   align-items: start;
 }
 
@@ -9,46 +9,43 @@
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
-  padding: 18px;
+  padding: 0;
   box-shadow: var(--sh-sm);
+  overflow: hidden;
 }
 
 .dash-home-panel-wide {
   grid-row: span 2;
 }
 
+/* Header strip: sentence-case title at body weight, not a grey uppercase
+   label — a heading should read like one. The hairline below it is what
+   separates it from the list rather than extra padding. */
 .dash-home-panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  gap: 12px;
+  height: 52px;
+  padding: 0 16px 0 20px;
+  border-bottom: 1px solid var(--c-border-soft);
 }
 
 .dash-home-panel-head h2 {
   margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--c-text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.01em;
+  color: var(--c-text);
 }
 
 .dash-home-link {
-  border: none;
-  background: none;
-  color: var(--c-brand);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.dash-home-link:hover {
-  text-decoration: underline;
+  gap: 4px;
 }
 
 .dash-home-empty {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-md);
   color: var(--c-text-4);
 }
 
@@ -57,42 +54,69 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
-  font-size: 13px;
+  padding: 20px;
+  font-size: var(--fs-md);
+  line-height: 1.5;
   color: var(--c-text-3);
 }
+
+.dash-home-cta p {
+  margin: 0;
+}
+
+/* ---- Recent campaigns list ---------------------------------------------- */
 
 .dash-home-campaign-list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 6px 8px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .dash-home-campaign-list li {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 4px;
-  border-bottom: 1px solid var(--c-border-soft);
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  transition: background-color var(--t-hover) ease;
 }
 
-.dash-home-campaign-list li:last-child {
-  border-bottom: none;
+.dash-home-campaign-list li + li {
+  position: relative;
+}
+
+/* Divider drawn as a pseudo-element so the hover tint can cover it; a
+   border would show through as a line cutting across the highlighted row. */
+.dash-home-campaign-list li + li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: var(--c-border-soft);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dash-home-campaign-list li:hover {
+    background: var(--c-surface-2);
+  }
 }
 
 .dash-home-campaign-list li > div {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
 .dash-home-campaign-name {
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
   color: var(--c-text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -100,34 +124,28 @@
 }
 
 .dash-home-campaign-sep {
-  color: var(--c-border-strong);
+  color: var(--c-text-4);
   font-weight: 400;
+  padding: 0 2px;
 }
 
 .dash-home-campaign-meta {
-  font-size: 11.5px;
+  font-size: var(--fs-sm);
   color: var(--c-text-4);
+  font-variant-numeric: tabular-nums;
 }
 
-.dash-home-campaign-list button {
+.dash-home-campaign-list li > button {
   flex-shrink: 0;
-  border: none;
-  background: none;
-  color: var(--c-brand);
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
 }
 
-.dash-home-campaign-list button:hover {
-  text-decoration: underline;
-}
+/* ---- Quick actions ------------------------------------------------------ */
 
 .dash-home-actions {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 12px;
 }
 
 .dash-home-action {
@@ -135,67 +153,99 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   border: 1px solid var(--c-border);
-  background: var(--c-surface-2);
-  border-radius: 10px;
-  padding: 12px;
+  background: var(--c-surface);
+  border-radius: var(--r-md);
+  padding: 12px 12px 12px 12px;
   cursor: pointer;
   text-align: left;
+  transition:
+    background-color var(--t-hover) ease,
+    border-color var(--t-hover) ease,
+    box-shadow var(--t-hover) ease,
+    transform var(--t-press) var(--ease-out);
 }
 
 .dash-home-action:hover {
-  background: var(--c-brand-soft);
   border-color: var(--c-brand-disabled);
+  background: var(--c-brand-soft);
+  box-shadow: var(--sh-xs);
 }
 
 .dash-home-action-icon {
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  border-radius: 8px;
-  font-size: 16px;
+  background: var(--c-brand-soft);
+  border: 1px solid var(--c-brand-soft-border);
+  color: var(--c-brand);
+  border-radius: var(--r-sm);
+  transition:
+    background-color var(--t-hover) ease,
+    border-color var(--t-hover) ease;
 }
 
-.dash-home-action span:last-child {
+.dash-home-action:hover .dash-home-action-icon {
+  background: var(--c-surface);
+}
+
+.dash-home-action > span:nth-child(2) {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   min-width: 0;
 }
 
 .dash-home-action strong {
-  font-size: 13px;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   color: var(--c-text);
 }
 
 .dash-home-action small {
-  font-size: 11px;
+  font-size: var(--fs-sm);
   color: var(--c-text-4);
+  line-height: 1.4;
 }
 
-.dash-home-top-clients {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.dash-home-action-chev {
+  flex-shrink: 0;
+  display: flex;
+  color: var(--c-text-4);
+  transition:
+    color var(--t-hover) ease,
+    transform var(--t-hover) var(--ease-out);
+}
+
+.dash-home-action:hover .dash-home-action-chev {
+  color: var(--c-brand);
+  transform: translateX(2px);
+}
+
+/* ---- Skeleton ------------------------------------------------------------ */
+
+/* Stands in for one campaign row while the list loads, matching its real
+   two-line shape so nothing shifts when the data lands. */
+.dash-home-skel-text {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  width: 100%;
 }
 
-.dash-home-top-clients li {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.dash-home-skel-name {
+  width: 42%;
+  height: 13px;
 }
 
-.dash-home-top-client-stat {
-  font-size: 11.5px;
-  color: var(--c-text-4);
-  padding-left: 2px;
+.dash-home-skel-meta {
+  width: 26%;
+  height: 10px;
 }
 
 @media (max-width: 900px) {
@@ -205,53 +255,4 @@
   .dash-home-panel-wide {
     grid-row: auto;
   }
-}
-
-.dash-home-action-icon {
-  color: var(--c-brand);
-  box-shadow: var(--sh-xs);
-  transition: box-shadow var(--t-hover) ease;
-}
-
-.dash-home-action:hover .dash-home-action-icon {
-  box-shadow: var(--sh-sm);
-}
-
-.dash-home-link,
-.dash-home-campaign-list button {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border-radius: var(--r-xs);
-  padding: 2px 4px;
-  transition:
-    background-color var(--t-hover) ease,
-    color var(--t-hover) ease;
-}
-
-/* Underline on hover moved the text's own baseline box around; a tinted
-   pill gives the same "this is a link" affordance without the reflow. */
-.dash-home-link:hover,
-.dash-home-campaign-list button:hover {
-  text-decoration: none;
-  background: var(--c-brand-soft);
-}
-
-/* Stands in for one campaign row while the list loads, matching its real
-   two-line shape so nothing shifts when the data lands. */
-.dash-home-skel-text {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
-
-.dash-home-skel-name {
-  width: 46%;
-  height: 12px;
-}
-
-.dash-home-skel-meta {
-  width: 28%;
-  height: 10px;
 }

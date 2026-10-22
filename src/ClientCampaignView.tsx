@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import MapExperience from "./MapExperience";
 import { CITIES, type CityId } from "./data/cities";
 import { loadMaps3d } from "./google/loadGoogleMaps";
-import type { CampaignReview, MapReview } from "./review";
-import ReviewBar from "./ReviewBar";
 import AdonmoScreenScene from "./AdonmoScreenScene";
 import "./ClientCampaignView.css";
 
@@ -11,7 +9,6 @@ type CampaignResponse = {
   clientName: string;
   campaignName: string;
   selections: Record<string, string[]>;
-  review: CampaignReview | null;
 };
 
 // A campaign's selections only include cities it actually shortlisted
@@ -21,23 +18,6 @@ function firstCityWithSelection(selections: Record<string, string[]>): CityId {
   const match = CITIES.find((c) => (selections[c.id]?.length ?? 0) > 0);
   return match?.id ?? CITIES[0].id;
 }
-
-const EMPTY_REVIEW: CampaignReview = {
-  removed: [],
-  added: {},
-  comments: {},
-  status: "in_review",
-  approvedAt: null,
-  approvedBy: null,
-  note: null,
-  updatedAt: "",
-};
-
-// Clicks are batched for this long before saving, so flicking between Keep
-// and Remove sends one request rather than one per click.
-const REVIEW_SAVE_DELAY_MS = 400;
-
-export type SaveState = "idle" | "saving" | "saved" | "error";
 
 export default function ClientCampaignView({ campaignId }: { campaignId: string }) {
   const [state, setState] = useState<{ status: "loading" } | { status: "error"; message: string } | { status: "ready"; data: CampaignResponse }>({
@@ -65,9 +45,7 @@ export default function ClientCampaignView({ campaignId }: { campaignId: string 
         return res.json() as Promise<CampaignResponse>;
       })
       .then((data) => {
-        if (cancelled) return;
-        setState({ status: "ready", data });
-        setReview(data.review ?? EMPTY_REVIEW);
+        if (!cancelled) setState({ status: "ready", data });
       })
       .catch((e: Error) => {
         if (!cancelled) setState({ status: "error", message: e.message });
@@ -121,102 +99,21 @@ export default function ClientCampaignView({ campaignId }: { campaignId: string 
     };
   }, [ready, campaignId]);
 
-  // ---- the client's review -------------------------------------------------
-  // Saved as they go rather than behind a "Save" button: a client clicking
-  // through properties on a phone shouldn't lose their picks by closing the
-  // tab before reaching the end. The whole review is sent each time, so the
-  // latest one always wins.
-  const [review, setReview] = useState<CampaignReview>(EMPTY_REVIEW);
-  // The latest review, for callbacks that fire after a delay (the comment
-  // box saves on a timer) — they must build on what is current then, not on
-  // what was current when they were created, or a comment saved just after
-  // a Remove click would quietly undo the removal.
-  const reviewRef = useRef(review);
-  reviewRef.current = review;
-  const [saveState, setSaveState] = useState<SaveState>("idle");
-  const pendingRef = useRef<CampaignReview | null>(null);
-  const timerRef = useRef<number | null>(null);
-
-  const send = async (next: CampaignReview): Promise<CampaignReview | null> => {
-    setSaveState("saving");
-    try {
-      const res = await fetch(`/api/campaigns/${campaignId}/review`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(next),
-        keepalive: true,
-      });
-      if (!res.ok) throw new Error();
-      const body = (await res.json()) as { review: CampaignReview };
-      // Something newer may have been queued while this was in flight.
-      setSaveState(pendingRef.current ? "saving" : "saved");
-      return body.review;
-    } catch {
-      setSaveState("error");
-      return null;
-    }
-  };
-
-  const flushReview = () => {
-    if (timerRef.current != null) window.clearTimeout(timerRef.current);
-    timerRef.current = null;
-    const next = pendingRef.current;
-    pendingRef.current = null;
-    if (next) void send(next);
-  };
-
-  const queueSave = (update: (current: CampaignReview) => CampaignReview) => {
-    const next = update(reviewRef.current);
-    reviewRef.current = next;
-    setReview(next);
-    pendingRef.current = next;
-    setSaveState("saving");
-    if (timerRef.current != null) window.clearTimeout(timerRef.current);
-    timerRef.current = window.setTimeout(flushReview, REVIEW_SAVE_DELAY_MS);
-  };
-
-  // Anything still waiting when the page goes away gets sent immediately
-  // (keepalive lets it outlive the page).
-  useEffect(() => {
-    const onHide = () => {
-      if (document.visibilityState === "hidden") flushReview();
-    };
-    document.addEventListener("visibilitychange", onHide);
-    window.addEventListener("pagehide", flushReview);
-    return () => {
-      document.removeEventListener("visibilitychange", onHide);
-      window.removeEventListener("pagehide", flushReview);
-      flushReview();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [campaignId]);
-
-  // ---- live updates from the sales team ---------------------------------
-  // The same link keeps working after the team accepts or declines a
-  // request or edits the shortlist: this re-reads the campaign every few
-  // seconds while the tab is visible and applies any change in place (the
-  // map restyles its pins rather than reloading). The client's own unsaved
-  // clicks always win — nothing is overwritten while a save is pending.
-  const [liveNote, setLiveNote] = useState<string | null>(null);
+  // The same link keeps showing the current shortlist after the team
+  // edits it: re-read the campaign every 10 seconds while the tab is
+  // visible and, if the shortlist changed, redraw in place (the map
+  // restyles its pins rather than reloading). Not counted as an open.
   const selectionsKey = state.status === "ready" ? JSON.stringify(state.data.selections) : "";
   useEffect(() => {
     if (!ready) return;
     let stopped = false;
     const poll = async () => {
-      if (document.visibilityState !== "visible" || pendingRef.current || timerRef.current != null) return;
+      if (document.visibilityState !== "visible") return;
       try {
         const res = await fetch(`/api/campaigns/${campaignId}?poll=1`);
         if (!res.ok || stopped) return;
         const data = (await res.json()) as CampaignResponse;
-        if (stopped || pendingRef.current) return;
-        const selectionsChanged = JSON.stringify(data.selections) !== selectionsKey;
-        const reviewChanged = JSON.stringify(data.review ?? EMPTY_REVIEW) !== JSON.stringify(reviewRef.current);
-        if (selectionsChanged) {
-          setState({ status: "ready", data });
-          setLiveNote("Adonmo updated your shortlist");
-          window.setTimeout(() => setLiveNote(null), 8000);
-        }
-        if (reviewChanged) setReview(data.review ?? EMPTY_REVIEW);
+        if (!stopped && JSON.stringify(data.selections) !== selectionsKey) setState({ status: "ready", data });
       } catch {
         // Offline for a moment: the next tick tries again.
       }
@@ -226,57 +123,7 @@ export default function ClientCampaignView({ campaignId }: { campaignId: string 
       stopped = true;
       window.clearInterval(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, campaignId, selectionsKey]);
-
-  const approve = async (approvedBy: string, note: string): Promise<boolean> => {
-    if (timerRef.current != null) window.clearTimeout(timerRef.current);
-    pendingRef.current = null;
-    const saved = await send({ ...reviewRef.current, status: "approved", approvedBy, note });
-    if (saved) setReview(saved);
-    return Boolean(saved);
-  };
-
-  const reopen = async () => {
-    const next: CampaignReview = { ...reviewRef.current, status: "in_review", approvedAt: null, approvedBy: null };
-    setReview(next);
-    const saved = await send(next);
-    if (saved) setReview(saved);
-  };
-
-  const removedSet = useMemo(() => new Set(review.removed), [review.removed]);
-  const addedSet = useMemo(() => new Set(Object.values(review.added ?? {}).flat()), [review.added]);
-  const mapReview: MapReview = useMemo(
-    () => ({
-      removed: removedSet,
-      added: addedSet,
-      comments: review.comments,
-      audience: "client",
-      locked: review.status === "approved",
-      onSetRemoved: (id, removed) =>
-        queueSave((current) => ({
-          ...current,
-          removed: removed ? [...new Set([...current.removed, id])] : current.removed.filter((x) => x !== id),
-        })),
-      onSetAdded: (cityId, id, add) =>
-        queueSave((current) => {
-          const added = { ...(current.added ?? {}) };
-          const ids = added[cityId] ?? [];
-          added[cityId] = add ? [...new Set([...ids, id])] : ids.filter((x) => x !== id);
-          if (added[cityId].length === 0) delete added[cityId];
-          return { ...current, added };
-        }),
-      onComment: (id, comment) =>
-        queueSave((current) => {
-          const comments = { ...current.comments };
-          if (comment.trim()) comments[id] = comment.trim();
-          else delete comments[id];
-          return { ...current, comments };
-        }),
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [review, removedSet, addedSet],
-  );
 
   if (state.status === "loading") {
     return <div className="campaign-view-status">Loading campaign…</div>;
@@ -295,19 +142,8 @@ export default function ClientCampaignView({ campaignId }: { campaignId: string 
           clientName: state.data.clientName,
           selections: state.data.selections,
         }}
-        review={mapReview}
       />
-      {/* Client link only — rendered here rather than inside MapExperience so
-          the sales dashboard, which embeds the same map, never shows it. */}
       <AdonmoScreenScene clientName={state.data.clientName} />
-      <ReviewBar
-        selections={state.data.selections}
-        review={review}
-        saveState={saveState}
-        liveNote={liveNote}
-        onApprove={approve}
-        onReopen={reopen}
-      />
     </div>
   );
 }

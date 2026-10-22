@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { cityLabel, fetchCampaigns, formatViewTime, groupByClient, reviewChanges, reviewLabel, type CampaignListItem } from "./campaignHistory";
+import { cityLabel, fetchCampaigns, formatViewTime, groupByClient, type CampaignListItem } from "./campaignHistory";
 import StatCard from "./StatCard";
-import { ArrowRightIcon, BuildingIcon, CampaignsIcon, ClientsIcon, ExportIcon, TrashIcon } from "./icons";
+import { ArrowRightIcon, BuildingIcon, CampaignsIcon, ClientsIcon, ExportIcon, InboxIcon, SearchIcon, TrashIcon } from "./icons";
 import DeleteCampaignDialog, { type DeletableCampaign } from "./DeleteCampaignDialog";
 import "./CampaignsPage.css";
 import "./ReportsPage.css";
@@ -31,13 +31,6 @@ export default function ReportsPage({
 
   useEffect(() => {
     fetchCampaigns().then(setCampaigns);
-    // Clients open, edit and approve their links at any time; checking
-    // again every half minute (only while this tab is in view) shows that
-    // here without anyone having to leave the page and come back.
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === "visible") fetchCampaigns().then(setCampaigns);
-    }, 30_000);
-    return () => window.clearInterval(timer);
   }, []);
 
   const rows = useMemo(() => {
@@ -75,7 +68,7 @@ export default function ReportsPage({
     : 0;
 
   const exportCsv = () => {
-    const header = ["Client", "Campaign", "Date", "Cities", "Properties shortlisted", "Client opens", "Client time on map", "Client review"];
+    const header = ["Client", "Campaign", "Date", "Cities", "Properties shortlisted", "Client opens", "Client time on map"];
     const lines = rows.map((r) =>
       [
         r.clientName,
@@ -85,7 +78,6 @@ export default function ReportsPage({
         String(r.properties),
         String(r.views),
         r.viewSeconds > 0 ? formatViewTime(r.viewSeconds) : "",
-        reviewLabel(r.review),
       ]
         .map((cell) => `"${cell.replace(/"/g, '""')}"`)
         .join(","),
@@ -118,13 +110,36 @@ export default function ReportsPage({
       </div>
 
       {campaigns === null && (
-        <div className="cpg-empty">
-          <p>Loading report…</p>
-        </div>
+        <>
+          {/* The final layout, in skeleton: three stat cards and a table of
+              six rows, rather than a sentence that then gets replaced. */}
+          <div className="cpg-stats-row">
+            <StatCard icon={<CampaignsIcon />} label="Total Campaigns" value={null} tone="indigo" />
+            <StatCard icon={<ClientsIcon />} label="Clients Served" value={null} tone="green" />
+            <StatCard icon={<BuildingIcon />} label="Properties Shortlisted" value={null} tone="orange" />
+          </div>
+          <div className="reports-table-wrap" role="status" aria-label="Loading report">
+            <div className="reports-skel-head" />
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="reports-skel-row">
+                <span className="skel" style={{ width: "70%" }} />
+                <span className="skel" style={{ width: "60%" }} />
+                <span className="skel" style={{ width: "55%" }} />
+                <span className="skel" style={{ width: "65%" }} />
+                <span className="skel" style={{ width: "40%" }} />
+                <span className="skel" style={{ width: "60%" }} />
+                <span className="skel" style={{ width: "50%" }} />
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {campaigns !== null && campaigns.length === 0 && (
         <div className="cpg-empty">
+          <span className="empty-icon">
+            <InboxIcon size={22} />
+          </span>
           <p>No campaigns uploaded yet — your report will fill in once you do.</p>
         </div>
       )}
@@ -138,23 +153,26 @@ export default function ReportsPage({
           </div>
 
           <div className="reports-toolbar">
-            <input
-              type="text"
-              className="reports-search"
-              placeholder="Search by client or campaign…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
+            <div className="field-wrap reports-search-wrap">
+              <SearchIcon size={15} />
+              <input
+                type="text"
+                className="reports-search"
+                placeholder="Search by client or campaign…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
             <div className="reports-toolbar-right">
               <label className="reports-sort-label">
                 Sort by
-                <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)}>
+                <select className="field" value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)}>
                   <option value="date">Newest first</option>
                   <option value="properties">Most properties</option>
                   <option value="client">Client name</option>
                 </select>
               </label>
-              <button type="button" className="reports-export-btn" onClick={exportCsv}>
+              <button type="button" className="reports-export-btn btn btn-primary" onClick={exportCsv}>
                 <ExportIcon size={14} /> Export CSV
               </button>
             </div>
@@ -171,18 +189,12 @@ export default function ReportsPage({
                     <th>Campaign</th>
                     <th className="reports-col-date">Date</th>
                     <th className="reports-col-cities">Cities</th>
-                    <th>
+                    <th className="reports-col-num">
                       <span className="reports-label-full">Properties</span>
                       <span className="reports-label-short">Props</span>
                     </th>
                     <th className="reports-col-views" title="How many times the client opened the share link, and how long it was on their screen in total. Your team's own visits aren't counted.">
                       Client views
-                    </th>
-                    <th
-                      className="reports-col-review"
-                      title="What the client did on their link: approved the shortlist, or removed / commented on properties. Open the campaign to see the details."
-                    >
-                      Client review
                     </th>
                     <th aria-hidden="true" />
                   </tr>
@@ -192,46 +204,38 @@ export default function ReportsPage({
                     <tr key={r.id}>
                       <td className="reports-cell-strong">{r.clientName}</td>
                       <td>{r.campaignName}</td>
-                      <td className="reports-cell-muted reports-col-date">{new Date(r.createdAt).toLocaleDateString()}</td>
-                      <td className="reports-cell-muted reports-col-cities">{r.cities.join(", ") || "—"}</td>
-                      <td className="reports-cell-num">{r.properties.toLocaleString()}</td>
+                      <td className="reports-cell-muted reports-cell-date reports-col-date">{new Date(r.createdAt).toLocaleDateString()}</td>
+                      <td className="reports-cell-muted reports-col-cities">
+                        {r.cities.length > 0 ? (
+                          <span className="reports-cities">
+                            {r.cities.map((city) => (
+                              <span key={city} className="badge">
+                                {city}
+                              </span>
+                            ))}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="reports-cell-num reports-col-num">{r.properties.toLocaleString()}</td>
                       <td className="reports-col-views">
                         {r.views > 0 ? (
                           <>
-                            <span className="reports-views-count">
+                            <span className="badge badge-success badge-dot reports-views-count">
                               {r.views.toLocaleString()} {r.views === 1 ? "open" : "opens"}
                             </span>
-                            <span className="reports-cell-muted"> · {formatViewTime(r.viewSeconds)} on map</span>
+                            <span className="reports-views-time">{formatViewTime(r.viewSeconds)} on map</span>
                           </>
                         ) : (
-                          <span className="reports-cell-muted">Not opened yet</span>
+                          <span className="badge badge-muted">Not opened yet</span>
                         )}
-                      </td>
-                      <td className="reports-col-review">
-                        {/* Approval and the changes behind it, side by side: an
-                            "Approved" on its own hid that the client had also
-                            added or removed properties until someone opened
-                            the campaign. */}
-                        {r.review?.status === "approved" && <span className="reports-review-badge is-approved">Approved</span>}
-                        {reviewChanges(r.review) && (
-                          <button
-                            type="button"
-                            className="reports-review-badge is-changes"
-                            title="See which properties the client wants added or removed, and accept or decline each"
-                            onClick={() => onOpenCampaign(r.id)}
-                          >
-                            {reviewChanges(r.review)} · review
-                          </button>
-                        )}
-                        {!r.review?.status || (r.review.status !== "approved" && !reviewChanges(r.review)) ? (
-                          <span className="reports-cell-muted">—</span>
-                        ) : null}
                       </td>
                       <td>
                         <div className="reports-row-actions">
                           <button
                             type="button"
-                            className="reports-open-btn"
+                            className="reports-open-btn btn btn-secondary btn-sm"
                             onClick={() => onOpenCampaign(r.id)}
                             aria-label={`Open ${r.clientName} — ${r.campaignName}`}
                           >
@@ -239,7 +243,7 @@ export default function ReportsPage({
                           </button>
                           <button
                             type="button"
-                            className="reports-delete-btn"
+                            className="reports-delete-btn btn btn-ghost btn-icon btn-sm"
                             title={`Delete "${r.clientName} — ${r.campaignName}"`}
                             aria-label={`Delete campaign ${r.clientName} — ${r.campaignName}`}
                             onClick={() => setPendingDelete({ id: r.id, clientName: r.clientName, campaignName: r.campaignName, properties: r.properties })}

@@ -15,8 +15,10 @@
   position: fixed;
   inset: 16px;
   z-index: 100;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--sh-xl);
 }
+
+/* ---- Toolbar: every control at the compact 32px height ------------------ */
 
 .dm-toolbar {
   display: flex;
@@ -24,25 +26,40 @@
   gap: 8px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--c-border);
+  background: var(--c-surface);
   font-family: var(--font-sans);
   flex-wrap: wrap;
 }
 
+/* A segmented control: one bordered track with the active segment lifted
+   to white, which reads as "one of these" better than three loose buttons. */
 .dm-mode-toggle {
   display: flex;
+  align-items: center;
+  gap: 2px;
+  height: var(--h-control-sm);
+  padding: 3px;
   border: 1px solid var(--c-border);
-  border-radius: 8px;
-  overflow: hidden;
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+  box-sizing: border-box;
 }
 
 .dm-mode-toggle button {
+  --press: 0.97;
+  height: 100%;
   border: none;
-  background: #ffffff;
+  background: transparent;
   color: var(--c-text-3);
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 0 10px;
+  border-radius: 5px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
   cursor: pointer;
+}
+
+.dm-mode-toggle button:hover:not(.is-active):not(:disabled) {
+  color: var(--c-text);
 }
 
 .dm-mode-toggle button:disabled {
@@ -50,45 +67,115 @@
 }
 
 .dm-mode-toggle button.is-active {
-  background: var(--c-brand-soft);
-  color: var(--c-brand);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-weight: var(--fw-semibold);
+  box-shadow: var(--sh-xs);
 }
 
 .dm-city-select {
+  --press: 0.97;
+  height: var(--h-control-sm);
   border: 1px solid var(--c-border);
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--c-text-2);
-  background: #ffffff;
+  border-radius: var(--r-sm);
+  padding: 0 28px 0 10px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--c-text);
+  background: var(--c-surface);
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
 }
 
+.dm-city-select:hover {
+  border-color: var(--c-border-strong);
+}
+
+.dm-city-select:focus-visible {
+  outline: none;
+  border-color: var(--c-brand-accent);
+  box-shadow: var(--ring);
+}
+
+/* The search box is a real input with its own results list. */
 .dm-search {
+  position: relative;
   flex: 1;
-  min-width: 140px;
+  min-width: 160px;
   display: flex;
   align-items: center;
   gap: 6px;
+  height: var(--h-control-sm);
   border: 1px solid var(--c-border);
-  border-radius: 8px;
-  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  padding: 0 10px;
   color: var(--c-text-4);
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
+  background: var(--c-surface);
+  transition:
+    border-color var(--t-hover) ease,
+    box-shadow var(--t-hover) ease;
+}
+
+.dm-search:hover {
+  border-color: var(--c-border-strong);
+}
+
+.dm-search:focus-within {
+  border-color: var(--c-brand-accent);
+  box-shadow: var(--ring);
+}
+
+.dm-search > svg {
+  flex-shrink: 0;
+}
+
+.dm-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--fs-md);
+  color: var(--c-text);
+}
+
+.dm-search input::placeholder {
+  color: var(--c-text-4);
+}
+
+.dm-search input:focus-visible {
+  outline: none;
 }
 
 .dm-icon-btn {
+  --press: 0.97;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
+  height: var(--h-control-sm);
   border: 1px solid var(--c-border);
-  background: #ffffff;
+  background: var(--c-surface);
   color: var(--c-text-3);
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: var(--r-sm);
+  padding: 0 10px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
+}
+
+.dm-icon-btn:hover:not(:disabled) {
+  background: var(--c-surface-2);
+  border-color: var(--c-border-strong);
+  color: var(--c-text);
 }
 
 .dm-icon-btn:disabled {
@@ -97,8 +184,11 @@
 }
 
 .dm-expand-btn {
-  padding: 6px 8px;
+  width: var(--h-control-sm);
+  padding: 0;
 }
+
+/* ---- Canvas --------------------------------------------------------------- */
 
 .dm-canvas {
   position: relative;
@@ -113,65 +203,46 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  box-shadow: var(--sh-md);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--fs-md);
   color: var(--c-text-3);
 }
 
 .dm-error {
   color: var(--c-danger-text);
-}
-
-.dm-caption {
-  position: absolute;
-  left: 12px;
-  bottom: 10px;
-  padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 999px;
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--c-text-2);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-}
-
-.dm-mode-toggle button,
-.dm-icon-btn,
-.dm-city-select {
-  --press: 0.97;
-}
-
-.dm-city-select:hover {
-  border-color: var(--c-border-strong);
+  border-color: var(--c-danger-border);
 }
 
 /* The caption sits directly on the map tiles, where a plain text colour
    has no guaranteed contrast — the imagery underneath it can be anything. */
 .dm-caption {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--r-pill);
+  font-family: var(--font-sans);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--c-text-2);
+  box-shadow: var(--sh-sm);
   backdrop-filter: blur(4px);
 }
 
-/* The search box was a static div; it is a real input now, so it needs to
-   look and behave like one, and host its own results list. */
-.dm-search {
-  position: relative;
-}
-
-.dm-search input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-family: inherit;
-  font-size: 12.5px;
-  color: var(--c-text);
-}
-
-.dm-search input::placeholder {
-  color: var(--c-text-4);
-}
+/* ---- Search results ------------------------------------------------------- */
 
 .dm-search-results {
   position: absolute;
@@ -212,7 +283,7 @@
   width: 100%;
   border: none;
   background: none;
-  padding: 7px 8px;
+  padding: 7px 10px;
   border-radius: var(--r-xs);
   text-align: left;
   cursor: pointer;
@@ -223,19 +294,19 @@
 }
 
 .dm-search-name {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   color: var(--c-text);
 }
 
 .dm-search-sub {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--c-text-4);
 }
 
 .dm-search-empty {
   margin: 0;
-  padding: 8px;
-  font-size: 12px;
+  padding: 10px;
+  font-size: var(--fs-sm);
   color: var(--c-text-4);
 }

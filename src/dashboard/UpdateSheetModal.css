@@ -6,8 +6,8 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(17, 24, 39, 0.45);
-  backdrop-filter: blur(3px);
+  background: rgba(17, 24, 39, 0.5);
+  backdrop-filter: blur(4px);
   animation: usm-overlay-in var(--t-overlay) var(--ease-out);
 }
 
@@ -21,13 +21,18 @@
 }
 
 .usm-card {
-  width: min(520px, 100%);
+  width: min(540px, 100%);
   max-height: 86vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   background: var(--c-surface);
+  border: 1px solid var(--c-border);
   border-radius: var(--r-xl);
   box-shadow: var(--sh-xl);
-  padding: 22px;
+  padding: 0;
+  /* The form's sections are direct children (no inner scroll box), so the
+     card itself scrolls when a long warning list pushes past 86vh. */
+  overflow-y: auto;
   /* Centre origin: a modal isn't anchored to the control that opened it. */
   animation: usm-card-in var(--t-overlay) var(--ease-out);
 }
@@ -48,13 +53,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 6px;
+  padding: 20px 20px 14px 24px;
+  border-bottom: 1px solid var(--c-border-soft);
 }
 
 .usm-header h2 {
   margin: 0;
-  font-size: 17px;
-  font-weight: 700;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
   letter-spacing: -0.018em;
   color: var(--c-text);
 }
@@ -64,24 +70,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
   border: none;
-  background: var(--c-surface-hover);
-  color: var(--c-text-3);
-  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--c-text-4);
+  border-radius: var(--r-sm);
   cursor: pointer;
 }
 
 .usm-close:hover {
-  background: var(--c-border);
+  background: var(--c-surface-hover);
   color: var(--c-text);
 }
 
+/* Everything between the header and the action bar scrolls as one body. */
+.usm-card > :not(.usm-header) {
+  min-height: 0;
+}
+
 .usm-current {
-  margin: 0 0 16px;
-  font-size: 12.5px;
+  margin: 0;
+  padding: 16px 24px 0;
+  font-size: var(--fs-md);
   line-height: 1.55;
   color: var(--c-text-3);
 }
@@ -90,27 +102,28 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 16px;
+  margin: 16px 24px;
 }
 
 .usm-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--c-text-3);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-text-2);
 }
 
 /* Dashed, like the upload page's own file field — it says "drop a file
    here" in a way a solid border doesn't. */
 .usm-file input[type="file"] {
-  padding: 9px 12px;
+  padding: 14px;
   border: 1px dashed var(--c-border-strong);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   background: var(--c-surface-2);
-  font-size: 12.5px;
+  font-size: var(--fs-md);
   color: var(--c-text-3);
   cursor: pointer;
+  transition:
+    border-color var(--t-hover) ease,
+    background-color var(--t-hover) ease;
 }
 
 .usm-file input[type="file"]:hover {
@@ -118,24 +131,32 @@
   background: var(--c-brand-soft);
 }
 
+.usm-file input[type="file"]:focus-visible {
+  outline: none;
+  border-color: var(--c-brand-accent);
+  box-shadow: var(--ring);
+}
+
 .usm-file input[type="file"]::file-selector-button {
-  margin-right: 10px;
-  padding: 6px 12px;
+  margin-right: 12px;
+  height: var(--h-control-sm);
+  padding: 0 12px;
   border: 1px solid var(--c-border);
   border-radius: var(--r-xs);
   background: var(--c-surface);
   color: var(--c-text-2);
   font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
+  box-shadow: var(--sh-xs);
 }
 
 .usm-modes {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 18px;
+  margin: 0 24px 20px;
 }
 
 /* The whole card is the hit target, not just the radio dot — the difference
@@ -144,14 +165,16 @@
 .usm-mode {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 11px 13px;
+  gap: 12px;
+  padding: 12px 14px;
   border: 1px solid var(--c-border);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
   cursor: pointer;
   transition:
     border-color var(--t-hover) ease,
-    background-color var(--t-hover) ease;
+    background-color var(--t-hover) ease,
+    box-shadow var(--t-hover) ease;
 }
 
 .usm-mode:hover {
@@ -161,10 +184,11 @@
 .usm-mode.is-on {
   border-color: var(--c-brand-accent);
   background: var(--c-brand-soft);
+  box-shadow: 0 0 0 1px var(--c-brand-accent);
 }
 
 .usm-mode input {
-  margin-top: 2px;
+  margin: 2px 0 0;
   accent-color: var(--c-brand);
   flex-shrink: 0;
 }
@@ -177,28 +201,28 @@
 }
 
 .usm-mode strong {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   color: var(--c-text);
 }
 
 .usm-mode small {
-  font-size: 11.5px;
+  font-size: var(--fs-sm);
   line-height: 1.5;
   color: var(--c-text-3);
 }
 
 .usm-error {
-  margin-bottom: 14px;
+  margin: 0 24px 16px;
   padding: 11px 13px;
   border: 1px solid var(--c-danger-border);
   border-radius: var(--r-sm);
-  background: #fef2f2;
+  background: var(--c-danger-soft);
 }
 
 .usm-error p {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   line-height: 1.5;
   color: var(--c-danger-text);
 }
@@ -206,7 +230,7 @@
 .usm-error ul {
   margin: 6px 0 0;
   padding-left: 16px;
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   line-height: 1.5;
   color: var(--c-warn-text);
 }
@@ -215,67 +239,39 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--c-border);
+  background: var(--c-surface-2);
 }
 
-.usm-cancel,
-.usm-submit {
-  --press: 0.96;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 16px;
-  border-radius: var(--r-sm);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+/* ---- Result ---------------------------------------------------------------- */
+
+.usm-result {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
 }
 
-.usm-cancel {
-  border: 1px solid var(--c-border);
-  background: var(--c-surface);
-  color: var(--c-text-2);
-}
-
-.usm-cancel:hover:not(:disabled) {
-  background: var(--c-surface-hover);
-}
-
-.usm-submit {
-  border: none;
-  background: var(--c-brand);
-  color: #ffffff;
-  box-shadow: var(--sh-sm);
-}
-
-.usm-submit:hover:not(:disabled) {
-  background: var(--c-brand-hover);
-  box-shadow: var(--sh-md);
-}
-
-.usm-cancel:disabled,
-.usm-submit:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-/* ---- result ---- */
 .usm-result-headline {
-  margin: 0 0 4px;
-  font-size: 14px;
-  font-weight: 600;
+  margin: 0;
+  padding: 18px 24px 0;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
   color: var(--c-text);
 }
 
 .usm-result-cities {
-  margin: 0 0 14px;
-  font-size: 12.5px;
+  margin: 4px 0 14px;
+  padding: 0 24px;
+  font-size: var(--fs-md);
   color: var(--c-brand);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .usm-breakdown {
   list-style: none;
-  margin: 0 0 14px;
+  margin: 0 24px 16px;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -289,13 +285,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 9px 13px;
-  font-size: 12.5px;
+  height: 40px;
+  padding: 0 14px;
+  font-size: var(--fs-md);
   color: var(--c-text-2);
 }
 
-.usm-breakdown li:nth-child(even) {
-  background: var(--c-surface-2);
+.usm-breakdown li + li {
+  border-top: 1px solid var(--c-border-soft);
 }
 
 .usm-count {
@@ -305,6 +302,7 @@
 
 .usm-count strong {
   color: var(--c-text);
+  font-weight: var(--fw-semibold);
 }
 
 .usm-arrow {
@@ -313,16 +311,19 @@
 }
 
 .usm-note {
-  margin: 0 0 10px;
-  font-size: 11.5px;
+  margin: 0 24px 10px;
+  font-size: var(--fs-sm);
   line-height: 1.5;
   color: var(--c-text-4);
 }
 
 .usm-warnings {
-  margin: 0 0 14px;
-  padding-left: 16px;
-  font-size: 11.5px;
+  margin: 0 24px 16px;
+  padding: 10px 12px 10px 28px;
+  border: 1px solid #fde68a;
+  border-radius: var(--r-sm);
+  background: var(--c-warn-soft);
+  font-size: var(--fs-sm);
   line-height: 1.5;
   color: var(--c-warn-text);
 }

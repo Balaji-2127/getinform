@@ -11,16 +11,22 @@
   pointer-events: none;
 }
 
+/* One dark neutral surface for every tone; the icon carries the colour.
+   A solid green or red block in the middle of a light UI shouted — this
+   reads as a quiet status line that happens to be green or red. */
 .toast {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  border-radius: var(--r-pill);
-  font-size: 13px;
-  font-weight: 500;
+  gap: 10px;
+  height: 40px;
+  padding: 0 16px 0 12px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #111827;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
   font-family: var(--font-sans);
-  color: #ffffff;
+  color: #f9fafb;
   box-shadow: var(--sh-lg);
   white-space: nowrap;
   /* Enters from below and exits downward too — one direction, so the motion
@@ -32,19 +38,24 @@
     transform var(--t-pop) var(--ease-out);
 }
 
+.toast-icon {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.toast-success .toast-icon {
+  color: #4ade80;
+}
+
+.toast-error .toast-icon {
+  color: #f87171;
+}
+
 .toast.is-leaving {
   opacity: 0;
   /* Not scale(0) — nothing in the real world shrinks to literally nothing,
      and a toast that does reads as deleted rather than dismissed. */
   transform: translateY(8px) scale(0.96);
-}
-
-.toast-success {
-  background: var(--c-success);
-}
-
-.toast-error {
-  background: var(--c-danger);
 }
 
 @keyframes toast-in {
@@ -67,8 +78,10 @@
   }
 
   .toast {
+    height: auto;
+    min-height: 40px;
+    padding: 10px 14px 10px 12px;
     white-space: normal;
-    text-align: center;
-    justify-content: center;
+    text-align: left;
   }
 }

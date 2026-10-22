@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import ClientLogo from "./ClientLogo";
-import { ArrowRightIcon, TrashIcon } from "./icons";
+import { ArrowRightIcon, ClientsIcon, SearchIcon, TrashIcon } from "./icons";
 import DeleteCampaignDialog, { type DeletableCampaign } from "./DeleteCampaignDialog";
 import { cityLabel, fetchCampaigns, groupByClient, type CampaignListItem } from "./campaignHistory";
 import "./CampaignsPage.css";
@@ -39,40 +39,58 @@ export default function ClientsPage({
       </div>
 
       {campaigns === null && (
-        <div className="cpg-empty">
-          <p>Loading clients…</p>
+        <div className="clients-grid" role="status" aria-label="Loading clients">
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="clients-card clients-skel-card">
+              <span className="skel clients-skel-logo" />
+              <span className="skel" style={{ width: "40%" }} />
+              <span className="skel" style={{ width: "65%" }} />
+              <span className="skel" style={{ width: "55%" }} />
+            </div>
+          ))}
         </div>
       )}
 
       {campaigns !== null && groups.length === 0 && (
         <div className="cpg-empty">
+          <span className="empty-icon">
+            <ClientsIcon size={22} />
+          </span>
           <p>No campaigns uploaded yet — clients will show up here once you upload one.</p>
         </div>
       )}
 
       {campaigns !== null && groups.length > 0 && (
         <>
-          <input
-            type="text"
-            className="clients-search"
-            placeholder="Search clients…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+          <div className="field-wrap clients-search-wrap">
+            <SearchIcon size={15} />
+            <input
+              type="text"
+              className="clients-search"
+              placeholder="Search clients…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
 
           {filtered.length === 0 ? (
             <div className="cpg-empty">
+              <span className="empty-icon is-muted">
+                <SearchIcon size={22} />
+              </span>
               <p>No clients match "{query}".</p>
             </div>
           ) : (
             <div className="clients-grid stagger">
               {filtered.map((g) => (
                 <div key={g.clientName} className="clients-card">
-                  <ClientLogo clientName={g.clientName} />
-                  <p className="clients-sub">
-                    {g.campaigns.length} {g.campaigns.length === 1 ? "campaign" : "campaigns"}
-                    {g.cities.length > 0 ? ` · ${g.cities.map(cityLabel).join(", ")}` : ""}
-                  </p>
+                  <div className="clients-card-head">
+                    <ClientLogo clientName={g.clientName} />
+                    <p className="clients-sub">
+                      {g.campaigns.length} {g.campaigns.length === 1 ? "campaign" : "campaigns"}
+                      {g.cities.length > 0 ? ` · ${g.cities.map(cityLabel).join(", ")}` : ""}
+                    </p>
+                  </div>
                   <div className="clients-stat-row">
                     <div className="clients-stat">
                       <span className="clients-stat-value">{g.totalProperties.toLocaleString()}</span>
@@ -91,12 +109,12 @@ export default function ClientsPage({
                           <span className="clients-campaign-date">{new Date(c.createdAt).toLocaleDateString()}</span>
                         </div>
                         <div className="clients-campaign-actions">
-                          <button type="button" onClick={() => onOpenCampaign(c.id)}>
+                          <button type="button" className="btn btn-link btn-sm" onClick={() => onOpenCampaign(c.id)}>
                             Open <ArrowRightIcon size={13} />
                           </button>
                           <button
                             type="button"
-                            className="clients-delete-btn"
+                            className="clients-delete-btn btn btn-ghost btn-icon btn-sm"
                             title={`Delete "${g.clientName} — ${c.campaignName}"`}
                             aria-label={`Delete campaign ${g.clientName} — ${c.campaignName}`}
                             onClick={() =>

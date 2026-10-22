@@ -12,9 +12,7 @@ import {
   deleteCampaign,
   recordCampaignView,
   addCampaignViewTime,
-  saveCampaignReview,
   type CampaignSelections,
-  type CampaignReview,
 } from "../db.js";
 import { SUPPORTED_CITIES } from "../inventoryLookup.js";
 
@@ -100,43 +98,6 @@ async function parseWorkbook(
 
 router.get("/", requireAuth, async (_req: Request, res: Response) => {
   res.json(await listCampaigns());
-});
-
-// A request body's { cityId: mediaSiteId[] } reduced to real inventory:
-// unknown cities and ids dropped, duplicates removed, empty cities left out.
-function cleanSelections(body: unknown): CampaignSelections {
-  const cleaned: CampaignSelections = {};
-  if (!body || typeof body !== "object") return cleaned;
-  for (const cityId of SUPPORTED_CITIES) {
-    const ids = (body as Record<string, unknown>)[cityId];
-    if (!Array.isArray(ids)) continue;
-    const known = getKnownMediaSiteIds(cityId);
-    // Deduped as well as filtered — a repeated id would otherwise be stored
-    // twice, inflating this city's count everywhere it's displayed (the
-    // campaign list, Reports, the map banner) and double-counting the same
-    // property in the "most shortlisted" aggregate.
-    const kept = [...new Set(ids.filter((id): id is string => typeof id === "string" && known.has(id)))];
-    if (kept.length > 0) cleaned[cityId] = kept;
-  }
-  return cleaned;
-}
-
-// A campaign from a shortlist that already exists as data rather than a
-// sheet — what the AI Assistant's "Create campaign" button sends.
-router.post("/", requireAuth, async (req: Request, res: Response) => {
-  const clientName = typeof req.body?.clientName === "string" ? req.body.clientName.trim() : "";
-  const campaignName = typeof req.body?.campaignName === "string" ? req.body.campaignName.trim() : "";
-  if (!clientName || !campaignName) {
-    res.status(400).json({ error: "Client name and campaign name are required" });
-    return;
-  }
-  const selections = cleanSelections(req.body?.selections);
-  if (Object.keys(selections).length === 0) {
-    res.status(400).json({ error: "No known properties in this shortlist" });
-    return;
-  }
-  const record = await insertCampaign({ clientName, campaignName, selections });
-  res.json({ campaignId: record.id, shareUrl: `/campaign/${record.id}` });
 });
 
 router.post("/upload", requireAuth, upload.single("file"), async (req: Request, res: Response) => {
@@ -376,123 +337,9 @@ router.get<{ id: string }>("/:id", async (req, res) => {
   // previews (WhatsApp, email) never get here — they fetch the page, not
   // this API, which only runs once the app itself is loaded in a browser.
   // The client's page re-reads the campaign every few seconds to pick up
-  // the team's decisions (?poll=1); those reads aren't fresh opens.
+  // shortlist edits made by the team (?poll=1); those reads aren't opens.
   if (!req.session?.loggedIn && req.query.poll !== "1") await recordCampaignView(record.id);
-  res.json({ clientName: record.clientName, campaignName: record.campaignName, selections: record.selections, review: record.review ?? null });
-});
-
-// The client's review, saved from the share link — public, like the link
-// itself. The page sends the whole review every time (it autosaves as the
-// client clicks), so this replaces rather than merges. Only ids actually on
-// the shortlist are kept, and every text field is length-capped, since
-// anyone holding the link can call this.
-const MAX_COMMENT_CHARS = 1000;
-const MAX_NAME_CHARS = 80;
-
-router.put<{ id: string }>("/:id/review", async (req, res) => {
-  const campaign = await getCampaign(req.params.id);
-  if (!campaign) {
-    res.status(404).json({ error: "Campaign not found" });
-    return;
-  }
-  const onShortlist = new Set(Object.values(campaign.selections ?? {}).flat());
-  const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
-
-  const removedIn: unknown = req.body?.removed;
-  const removed = Array.isArray(removedIn)
-    ? [...new Set(removedIn.filter((id): id is string => typeof id === "string" && onShortlist.has(id)))]
-    : [];
-  // Additions: real inventory in one of the campaign's own cities (the only
-  // cities the client's map shows), and not already on the shortlist.
-  const added: Record<string, string[]> = {};
-  const addedIn: unknown = req.body?.added;
-  if (addedIn && typeof addedIn === "object") {
-    for (const cityId of SUPPORTED_CITIES) {
-      const ids = (addedIn as Record<string, unknown>)[cityId];
-      if (!Array.isArray(ids) || !campaign.selections?.[cityId]?.length) continue;
-      const known = getKnownMediaSiteIds(cityId);
-      const kept = [...new Set(ids.filter((id): id is string => typeof id === "string" && known.has(id) && !onShortlist.has(id)))];
-      if (kept.length > 0) added[cityId] = kept;
-    }
-  }
-  const commentable = new Set([...onShortlist, ...Object.values(added).flat()]);
-  const comments: Record<string, string> = {};
-  const commentsIn: unknown = req.body?.comments;
-  if (commentsIn && typeof commentsIn === "object") {
-    for (const [id, value] of Object.entries(commentsIn as Record<string, unknown>)) {
-      const comment = text(value, MAX_COMMENT_CHARS);
-      if (commentable.has(id) && comment) comments[id] = comment;
-    }
-  }
-
-  const approving = req.body?.status === "approved";
-  const now = new Date().toISOString();
-  const review: CampaignReview = {
-    removed,
-    added,
-    comments,
-    status: approving ? "approved" : "in_review",
-    // Re-sending an already-approved review (the page saving again with
-    // nothing changed) keeps the original sign-off time.
-    approvedAt: approving ? (campaign.review?.status === "approved" ? campaign.review.approvedAt : now) : null,
-    approvedBy: approving ? text(req.body?.approvedBy, MAX_NAME_CHARS) || null : null,
-    note: text(req.body?.note, MAX_COMMENT_CHARS) || null,
-    updatedAt: now,
-  };
-  // The team's earlier answers are theirs, not the client's to resend:
-  // kept for requests the client still makes, dropped for ones withdrawn.
-  const stillAsked = new Set([...removed, ...Object.values(added).flat()]);
-  const resolved = Object.fromEntries(Object.entries(campaign.review?.resolved ?? {}).filter(([id]) => stillAsked.has(id)));
-  if (Object.keys(resolved).length > 0) review.resolved = resolved;
-  await saveCampaignReview(campaign.id, review);
-  res.json({ review });
-});
-
-// The sales team answering the client's requests. Accepted removals leave
-// the shortlist and accepted additions join it; declined ones are only
-// recorded. Either way the request stops counting as pending.
-router.put<{ id: string }>("/:id/review/decisions", requireAuth, async (req, res) => {
-  const campaign = await getCampaign(req.params.id);
-  if (!campaign?.review) {
-    res.status(404).json({ error: "No client review on this campaign" });
-    return;
-  }
-  const ids = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
-  const accept = new Set(ids(req.body?.accept));
-  const decline = new Set(ids(req.body?.decline));
-  const review = { ...campaign.review, resolved: { ...(campaign.review.resolved ?? {}) } };
-  const selections: CampaignSelections = Object.fromEntries(Object.entries(campaign.selections ?? {}).map(([c, v]) => [c, [...v]]));
-  const removedSet = new Set(review.removed);
-  let changed = false;
-
-  for (const id of accept) {
-    if (removedSet.has(id)) {
-      for (const city of Object.keys(selections)) {
-        const kept = selections[city].filter((x) => x !== id);
-        if (kept.length !== selections[city].length) changed = true;
-        if (kept.length > 0) selections[city] = kept;
-        else delete selections[city];
-      }
-      review.resolved[id] = "accepted";
-      continue;
-    }
-    const city = Object.entries(review.added ?? {}).find(([, list]) => list.includes(id))?.[0];
-    if (city && !selections[city]?.includes(id) && getKnownMediaSiteIds(city as CityId).has(id)) {
-      selections[city] = [...(selections[city] ?? []), id];
-      review.resolved[id] = "accepted";
-      changed = true;
-    }
-  }
-  for (const id of decline) {
-    if (removedSet.has(id) || Object.values(review.added ?? {}).flat().includes(id)) review.resolved[id] = "declined";
-  }
-  if (Object.keys(selections).length === 0) {
-    res.status(400).json({ error: "That would leave the shortlist empty — edit it instead" });
-    return;
-  }
-  if (changed) await updateCampaignSelections(campaign.id, selections);
-  await saveCampaignReview(campaign.id, review);
-  res.json({ selections, review });
+  res.json({ clientName: record.clientName, campaignName: record.campaignName, selections: record.selections });
 });
 
 // Time the client link spent on screen, reported by the page in small
@@ -524,7 +371,18 @@ router.put<{ id: string }>("/:id/selections", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Missing selections" });
     return;
   }
-  const cleaned = cleanSelections(body);
+  const cleaned: CampaignSelections = {};
+  for (const cityId of SUPPORTED_CITIES) {
+    const ids = body[cityId];
+    if (!Array.isArray(ids)) continue;
+    const known = getKnownMediaSiteIds(cityId);
+    // Deduped as well as filtered — a repeated id would otherwise be stored
+    // twice, inflating this city's count everywhere it's displayed (the
+    // campaign list, Reports, the map banner) and double-counting the same
+    // property in the "most shortlisted" aggregate.
+    const kept = [...new Set(ids.filter((id): id is string => typeof id === "string" && known.has(id)))];
+    if (kept.length > 0) cleaned[cityId] = kept;
+  }
   const record = await updateCampaignSelections(req.params.id, cleaned);
   if (!record) {
     res.status(404).json({ error: "Campaign not found" });

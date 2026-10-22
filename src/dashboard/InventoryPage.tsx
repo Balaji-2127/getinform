@@ -86,7 +86,7 @@ export default function InventoryPage({
         <StatCard icon={<RupeeIcon />} label="Ad Budget (Mo)" sub="Estimated monthly budget" value={totals && `₹${totals.budget.toLocaleString()}`} tone="blue" />
       </div>
 
-      <div className="cpg-body">
+      <div className="cpg-body inv-body">
         <DashboardMap
           cityId={cityId}
           onCityChange={setCityId}

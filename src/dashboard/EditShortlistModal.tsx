@@ -148,6 +148,7 @@ export default function EditShortlistModal({
         <div className="esm-add">
           <input
             type="text"
+            className="field"
             placeholder="Search properties to add…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -250,10 +251,10 @@ export default function EditShortlistModal({
         {error && <p className="esm-error">{error}</p>}
 
         <div className="esm-actions">
-          <button type="button" className="esm-cancel-btn" onClick={onClose} disabled={saving}>
+          <button type="button" className="esm-cancel-btn btn btn-secondary" onClick={onClose} disabled={saving}>
             Cancel
           </button>
-          <button type="button" className="esm-save-btn" onClick={handleSave} disabled={saving || rows === null || totalCount === 0}>
+          <button type="button" className="esm-save-btn btn btn-primary" onClick={handleSave} disabled={saving || rows === null || totalCount === 0}>
             {saving ? "Saving…" : "Save changes"}
           </button>
         </div>

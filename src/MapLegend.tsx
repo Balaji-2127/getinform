@@ -7,16 +7,10 @@ export default function MapLegend({
   highlightLabel,
   showInventory,
   onToggleInventory,
-  removedLabel,
-  addedLabel,
 }: {
   highlightLabel?: string;
   showInventory: boolean;
   onToggleInventory: () => void;
-  // Shown once the client has removed at least one property in their review.
-  removedLabel?: string;
-  // Shown once the client has added at least one property in their review.
-  addedLabel?: string;
 }) {
   return (
     <div className="map-legend">
@@ -24,18 +18,6 @@ export default function MapLegend({
         <div className="map-legend-row">
           <span className="map-legend-dot map-legend-dot-highlight" />
           <span>{highlightLabel}'s shortlist</span>
-        </div>
-      )}
-      {removedLabel && (
-        <div className="map-legend-row">
-          <span className="map-legend-dot map-legend-dot-removed" />
-          <span>{removedLabel}</span>
-        </div>
-      )}
-      {addedLabel && (
-        <div className="map-legend-row">
-          <span className="map-legend-dot map-legend-dot-added" />
-          <span>{addedLabel}</span>
         </div>
       )}
       <button

@@ -4,7 +4,7 @@ import "./StatCard.css";
 export type StatTone = "indigo" | "green" | "orange" | "blue";
 
 // One shared stat card. This component was copy-pasted into four pages
-// (DashboardHome, InventoryPage, InsightsPage, ReportsPage) with slightly
+// (DashboardHome, InventoryPage, ReportsPage) with slightly
 // different prop shapes, each taking its icon as an emoji string — so the
 // same card rendered four slightly different ways and there was no single
 // place to restyle it.

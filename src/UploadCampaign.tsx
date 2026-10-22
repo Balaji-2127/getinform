@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { CITIES } from "./data/cities";
 import { copyToClipboard } from "./copyToClipboard";
 import { MAX_SHEET_BYTES, SHEET_TOO_LARGE } from "./uploadLimit";
-import { ArrowRightIcon } from "./dashboard/icons";
+import { ArrowRightIcon, CheckCircleIcon } from "./dashboard/icons";
 import { useToast } from "./dashboard/Toast";
 import "./UploadCampaign.css";
 
@@ -157,18 +157,21 @@ export default function UploadCampaign({
               </div>
             )}
 
-            <button type="submit" disabled={submitting || !file}>
+            <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={submitting || !file}>
               {submitting ? "Uploading…" : "Upload & generate link"}
             </button>
           </form>
 
           {result && (
             <div className="upload-result">
-              <p className="upload-result-title">Campaign created</p>
+              <p className="upload-result-title">
+                <CheckCircleIcon size={16} /> Campaign created
+              </p>
               <div className="upload-share-row">
                 <input readOnly value={shareLink ?? ""} onFocus={(e) => e.currentTarget.select()} />
                 <button
                   type="button"
+                  className="btn btn-secondary"
                   onClick={async () => {
                     if (!shareLink) return;
                     if (await copyToClipboard(shareLink)) {
@@ -204,7 +207,7 @@ export default function UploadCampaign({
               )}
               <div className="upload-result-actions">
                 {onCampaignCreated && (
-                  <button type="button" className="upload-open-btn" onClick={() => onCampaignCreated(result.campaignId)}>
+                  <button type="button" className="upload-open-btn btn btn-primary" onClick={() => onCampaignCreated(result.campaignId)}>
                     Open in Campaigns <ArrowRightIcon size={13} />
                   </button>
                 )}
@@ -226,7 +229,7 @@ export default function UploadCampaign({
                     <span className="upload-history-client">{c.clientName}</span>
                     <span className="upload-history-name"> · {c.campaignName}</span>
                   </div>
-                  <button type="button" onClick={() => onCampaignCreated?.(c.id)}>
+                  <button type="button" className="btn btn-link btn-sm" onClick={() => onCampaignCreated?.(c.id)}>
                     Open <ArrowRightIcon size={13} />
                   </button>
                 </li>

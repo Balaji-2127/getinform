@@ -4,12 +4,55 @@ import type { CityId } from "../data/cities";
 import { generateSyntheticScreens } from "../syntheticScreens";
 import { fetchCampaigns, type CampaignListItem } from "./campaignHistory";
 import { useToast } from "./Toast";
-import { ArrowLeftIcon, ArrowRightIcon, PlusIcon } from "./icons";
+import { ArrowLeftIcon, ArrowRightIcon, MapPinIcon, PlusIcon } from "./icons";
 import "./PropertyDetailPanel.css";
 
 type Tab = "screens" | "details" | "nearby";
 
 type NearbyClient = { campaignId: string; clientName: string; campaignName: string; thisProperty: boolean; sameLocality: number };
+
+type PropertyImage = { url: string; thumbnailUrl: string; sourcePage: string };
+
+// The same photo strip the client map's InspectorPanel shows (its
+// PropertyImages): a Google Images search on "<name>, <locality zone>" via
+// /api/property-images, because the sheet's own Drive links need sign-in.
+// Fail-quiet on purpose — renders nothing while loading, when the search
+// API isn't configured, or when there are no hits — a gallery is a nice
+// extra on this panel, not something to show an error for.
+function PropertyPhotos({ name, locality, zone }: { name: string; locality: string | null; zone: string | null }) {
+  const [images, setImages] = useState<PropertyImage[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setImages([]);
+    const location = [locality, zone].filter(Boolean).join(" ");
+    const params = new URLSearchParams({ name });
+    if (location) params.set("location", location);
+    fetch(`/api/property-images?${params.toString()}`)
+      .then((res) => (res.ok ? (res.json() as Promise<{ images?: PropertyImage[] }>) : { images: [] }))
+      .then((data) => {
+        if (!cancelled) setImages(data.images ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setImages([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [name, locality, zone]);
+
+  if (images.length === 0) return null;
+
+  return (
+    <div className="pdp-photo-strip" aria-label="Property photos">
+      {images.map((img) => (
+        <a key={img.url} className="pdp-photo-thumb" href={img.sourcePage} target="_blank" rel="noreferrer">
+          <img src={img.thumbnailUrl} alt="" loading="lazy" />
+        </a>
+      ))}
+    </div>
+  );
+}
 
 export default function PropertyDetailPanel({
   feature,
@@ -112,6 +155,9 @@ export default function PropertyDetailPanel({
   if (!feature) {
     return (
       <div className="pdp-panel pdp-empty">
+        <span className="empty-icon is-muted">
+          <MapPinIcon size={22} />
+        </span>
         <p>Click a property on the map to see its details here.</p>
       </div>
     );
@@ -144,6 +190,8 @@ export default function PropertyDetailPanel({
         {p.locality ?? "—"}
         {p.zone ? ` · ${p.zone}` : ""}
       </p>
+
+      <PropertyPhotos name={p.name ?? "Untitled property"} locality={p.locality ?? null} zone={p.zone ?? null} />
 
       <div className="pdp-stats">
         <Stat label="Screens" value={(p.screens ?? 0).toLocaleString()} />

@@ -4,8 +4,6 @@ import { CITIES, loadCityScreens, type CityId, type ScreenFeatureCollection } fr
 import InspectorPanel, { type ClusterInfo, type ProjectPanelInfo, type ViewLevel } from "./InspectorPanel";
 import CampaignBanner, { type CampaignSummary } from "./CampaignBanner";
 import MapLegend from "./MapLegend";
-import ShortlistList from "./ShortlistList";
-import type { MapReview } from "./review";
 import { generateSyntheticScreens, type SyntheticScreen } from "./syntheticScreens";
 import { loadMaps3d } from "./google/loadGoogleMaps";
 import { type ProjectFeature } from "./google/clustering";
@@ -172,20 +170,6 @@ const CAMPAIGN_DIM_BASE_SCALE = 0.8;
 // and only means "targeted for you", full stop, selected or not.
 const CAMPAIGN_HIGHLIGHT_SELECTED_COLOR = "#1e3a8a";
 const CAMPAIGN_DIM_SELECTED_COLOR = "#6b7a4f";
-// A shortlisted property the client has marked "remove" in their review.
-// Red so it can't be mistaken for either "yours" (blue) or "the rest of the
-// inventory" (green); still drawn larger than the inventory pins and kept
-// clickable, so it's easy to find again and put back. It stops pulsing and
-// loses its ground ring — it's no longer one of the properties being pitched.
-const CAMPAIGN_REMOVED_COLOR = "#e11d48";
-const CAMPAIGN_REMOVED_SELECTED_COLOR = "#9f1239";
-const CAMPAIGN_REMOVED_BASE_SCALE = 1.15;
-// A property from the rest of the inventory the client has added to their
-// shortlist in their review: purple, sized and pulsing like the shortlist
-// itself, but its own colour so it reads as "your addition", not as part of
-// what the sales team picked.
-const CAMPAIGN_ADDED_COLOR = "#7c3aed";
-const CAMPAIGN_ADDED_SELECTED_COLOR = "#5b21b6";
 
 // Google's 3D map tiles are baked into their own basemap and aren't exposed
 // as an editable/selectable layer through any public API — there's no way
@@ -256,38 +240,7 @@ type ProjectMarkerEntry = MarkerPin & {
   // decides which color family selecting it should use (see
   // CAMPAIGN_HIGHLIGHT_SELECTED_COLOR / CAMPAIGN_DIM_SELECTED_COLOR).
   isHighlighted: boolean;
-  // Marked "remove" in the client's review (only ever true when
-  // isHighlighted is).
-  isRemoved: boolean;
-  // Added from the inventory in the client's review (only ever true when
-  // isHighlighted isn't).
-  isAdded: boolean;
-  // Its ground ring, if it has one — kept so it can be taken off and put
-  // back as the client removes and restores the property.
-  overlay?: google.maps.maps3d.Polygon3DElement;
 };
-
-// Resting look of a pin on a campaign map, by where it stands in the
-// client's review.
-function campaignPinStyle(state: { isHighlighted: boolean; isRemoved: boolean; isAdded: boolean }) {
-  if (state.isHighlighted && state.isRemoved) {
-    return { restColor: CAMPAIGN_REMOVED_COLOR, restScale: CAMPAIGN_REMOVED_BASE_SCALE, pulseAmplitude: 0 };
-  }
-  if (state.isHighlighted) {
-    return { restColor: CAMPAIGN_HIGHLIGHT_COLOR, restScale: CAMPAIGN_HIGHLIGHT_BASE_SCALE, pulseAmplitude: PULSE_HIGHLIGHT_AMPLITUDE };
-  }
-  if (state.isAdded) {
-    return { restColor: CAMPAIGN_ADDED_COLOR, restScale: CAMPAIGN_HIGHLIGHT_BASE_SCALE, pulseAmplitude: PULSE_HIGHLIGHT_AMPLITUDE };
-  }
-  return { restColor: CAMPAIGN_DIM_COLOR, restScale: CAMPAIGN_DIM_BASE_SCALE, pulseAmplitude: PULSE_DIM_AMPLITUDE };
-}
-
-// The same pin while it's the selected one — a deeper shade of its own
-// colour, never another group's.
-function campaignSelectedColor(state: { isHighlighted: boolean; isRemoved: boolean; isAdded: boolean }) {
-  if (state.isHighlighted) return state.isRemoved ? CAMPAIGN_REMOVED_SELECTED_COLOR : CAMPAIGN_HIGHLIGHT_SELECTED_COLOR;
-  return state.isAdded ? CAMPAIGN_ADDED_SELECTED_COLOR : CAMPAIGN_DIM_SELECTED_COLOR;
-}
 
 export default function GoogleInventoryMap({
   cityId,
@@ -296,12 +249,8 @@ export default function GoogleInventoryMap({
   highlightLabel,
   clientName,
   bannerPortalTarget,
-  review,
 }: {
   cityId: CityId;
-  // The client's keep/remove choices and comments — see MapReview. Absent
-  // on the plain inventory map.
-  review?: MapReview;
   highlightedMediaSiteIds?: Set<string>;
   campaignLabel?: string;
   // Short brand tag (e.g. "LICIOUS") drawn on properties/clusters that
@@ -337,15 +286,6 @@ export default function GoogleInventoryMap({
   // levelMarkersRef (typed to interactive markers only) but torn down on
   // the same lifecycle, and pulsed by the same rAF loop as the pins.
   const highlightOverlaysRef = useRef<google.maps.maps3d.Polygon3DElement[]>([]);
-
-  // Read by the pin-drawing code, which runs from effects and event
-  // handlers that would otherwise see a stale review.
-  const removedRef = useRef<Set<string>>(review?.removed ?? new Set());
-  removedRef.current = review?.removed ?? new Set();
-  const addedRef = useRef<Set<string>>(review?.added ?? new Set());
-  addedRef.current = review?.added ?? new Set();
-  // The client's shortlist dropdown, opened from the banner's Properties.
-  const [listOpen, setListOpen] = useState(false);
 
   const [mapReady, setMapReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -663,7 +603,11 @@ export default function GoogleInventoryMap({
     // first so its calls don't cancel themselves.
     if (!tourAdvancingRef.current) stopTour();
     clearProjectHighlight();
-    entry.pin.background = highlightedMediaSiteIds ? campaignSelectedColor(entry) : PROJECT_SELECTED_COLOR;
+    entry.pin.background = highlightedMediaSiteIds
+      ? entry.isHighlighted
+        ? CAMPAIGN_HIGHLIGHT_SELECTED_COLOR
+        : CAMPAIGN_DIM_SELECTED_COLOR
+      : PROJECT_SELECTED_COLOR;
     entry.baseScale = PROJECT_SELECTED_BASE_SCALE;
     selectedProjectMarkerRef.current = entry;
 
@@ -696,14 +640,11 @@ export default function GoogleInventoryMap({
     let restScale = PROJECT_BASE_SCALE;
     let pulseAmplitude = PULSE_AMPLITUDE;
     let isHighlighted = false;
-    let isRemoved = false;
-    let isAdded = false;
     if (highlightedMediaSiteIds) {
-      const id = feature.properties.mediaSiteId;
-      isHighlighted = id != null && highlightedMediaSiteIds.has(id);
-      isRemoved = isHighlighted && removedRef.current.has(id!);
-      isAdded = !isHighlighted && id != null && addedRef.current.has(id);
-      ({ restColor, restScale, pulseAmplitude } = campaignPinStyle({ isHighlighted, isRemoved, isAdded }));
+      isHighlighted = feature.properties.mediaSiteId != null && highlightedMediaSiteIds.has(feature.properties.mediaSiteId);
+      restColor = isHighlighted ? CAMPAIGN_HIGHLIGHT_COLOR : CAMPAIGN_DIM_COLOR;
+      restScale = isHighlighted ? CAMPAIGN_HIGHLIGHT_BASE_SCALE : CAMPAIGN_DIM_BASE_SCALE;
+      pulseAmplitude = isHighlighted ? PULSE_HIGHLIGHT_AMPLITUDE : PULSE_DIM_AMPLITUDE;
     }
 
     const pin = makePin({ background: restColor, scale: restScale });
@@ -714,7 +655,7 @@ export default function GoogleInventoryMap({
     // into unreadable clutter; the pin's own color/size is what marks it
     // as "yours" now, not a text tag competing for space on the map.
     marker.title = feature.properties.name ?? "";
-    const entry: ProjectMarkerEntry = { marker, pin, feature, baseScale: restScale, restColor, restScale, pulseAmplitude, isHighlighted, isRemoved, isAdded };
+    const entry: ProjectMarkerEntry = { marker, pin, feature, baseScale: restScale, restColor, restScale, pulseAmplitude, isHighlighted };
     marker.addEventListener("gmp-click", (e: Event) => {
       e.stopPropagation();
       selectProject(entry);
@@ -748,11 +689,8 @@ export default function GoogleInventoryMap({
               strokeColor: CAMPAIGN_HIGHLIGHT_COLOR,
               strokeWidth: 1,
             });
-      entry.overlay = overlay;
-      if (!isRemoved) {
-        map.appendChild(overlay);
-        highlightOverlaysRef.current.push(overlay);
-      }
+      map.appendChild(overlay);
+      highlightOverlaysRef.current.push(overlay);
     }
 
     return entry;
@@ -800,12 +738,9 @@ export default function GoogleInventoryMap({
   // before that state update has actually landed, hence the override
   // param rather than always reading showInventory directly.
   const cityLevelItems = (show: boolean = showInventory): RenderItem[] => {
-    if (!data) return [];
+    if (!show || !data) return [];
     return data.features
       .filter((f) => !(highlightedMediaSiteIds && f.properties.mediaSiteId != null && highlightedMediaSiteIds.has(f.properties.mediaSiteId)))
-      // Properties the client added stay on the map even with the rest of
-      // the inventory hidden — they're part of their shortlist now.
-      .filter((f) => show || (f.properties.mediaSiteId != null && addedRef.current.has(f.properties.mediaSiteId)))
       .map((f) => toPointItem(f));
   };
 
@@ -835,10 +770,11 @@ export default function GoogleInventoryMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady, data]);
 
-  // The shortlist itself changed while this city was on screen (the sales
-  // team edited it, or applied the client's removals): redraw the pins so
-  // they match, without throwing the camera back to the city overview.
-  // Previously the old shortlist stayed highlighted until a reload.
+  // The shortlist itself changed while this city was on screen (edited
+  // from the dashboard, or a client's open link picking up that edit):
+  // redraw the pins so they match, without throwing the camera back to
+  // the city overview. Previously the old shortlist stayed highlighted
+  // until a reload.
   useEffect(() => {
     if (!mapReady || !data || renderedHighlightKeyRef.current === highlightKey) return;
     renderedHighlightKeyRef.current = highlightKey;
@@ -849,69 +785,6 @@ export default function GoogleInventoryMap({
     renderLevel([...highlightedProjectItems(), ...cityLevelItems()]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightKey]);
-
-  // The client removed, restored or added a property: restyle just those
-  // pins in place. Redrawing every pin would drop the selection and re-run
-  // the city's worth of marker creation on every click.
-  const reviewKey = review ? `${[...review.removed].sort().join(",")}|${[...review.added].sort().join(",")}` : "";
-  const addedKey = reviewKey.split("|")[1] ?? "";
-  const renderedAddedKeyRef = useRef(addedKey);
-  useEffect(() => {
-    // With the rest of the inventory hidden, an added property has no pin
-    // to restyle (or one that should go) — redraw instead.
-    if (!showInventory && renderedAddedKeyRef.current !== addedKey && mapReady && data) {
-      renderedAddedKeyRef.current = addedKey;
-      const keepSelected = selectedProjectMarkerRef.current?.feature;
-      renderLevel([...highlightedProjectItems(), ...cityLevelItems()]);
-      const again = keepSelected && projectMarkersRef.current.get(projectKey(keepSelected));
-      if (again) {
-        again.pin.background = campaignSelectedColor(again);
-        again.baseScale = PROJECT_SELECTED_BASE_SCALE;
-        selectedProjectMarkerRef.current = again;
-      }
-      return;
-    }
-    renderedAddedKeyRef.current = addedKey;
-    const map = mapElRef.current;
-    for (const entry of projectMarkersRef.current.values()) {
-      const id = entry.feature.properties.mediaSiteId ?? "";
-      const removed = entry.isHighlighted && removedRef.current.has(id);
-      const added = !entry.isHighlighted && addedRef.current.has(id);
-      if (removed === entry.isRemoved && added === entry.isAdded) continue;
-      entry.isRemoved = removed;
-      entry.isAdded = added;
-      const style = campaignPinStyle(entry);
-      entry.restColor = style.restColor;
-      entry.restScale = style.restScale;
-      entry.pulseAmplitude = style.pulseAmplitude;
-      if (entry === selectedProjectMarkerRef.current) {
-        entry.pin.background = campaignSelectedColor(entry);
-      } else {
-        entry.pin.background = style.restColor;
-        entry.baseScale = style.restScale;
-        entry.pin.scale = style.restScale;
-      }
-      if (entry.overlay && map && entry.isHighlighted) {
-        if (removed) {
-          entry.overlay.remove();
-          highlightOverlaysRef.current = highlightOverlaysRef.current.filter((o) => o !== entry.overlay);
-        } else {
-          map.appendChild(entry.overlay);
-          highlightOverlaysRef.current.push(entry.overlay);
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reviewKey]);
-
-  // Selects a property from the shortlist dropdown, the same as clicking
-  // its pin. On a phone the dropdown covers the map, so it closes first.
-  const focusFeature = (feature: ProjectFeature) => {
-    const entry = projectMarkersRef.current.get(projectKey(feature));
-    if (!entry) return;
-    if (window.innerWidth < 700) setListOpen(false);
-    selectProject(entry);
-  };
 
   const projectPanelInfo = selectedProject ? toProjectPanelInfo(selectedProject.feature, selectedProject.screens, selectedProject.hiddenScreenCount) : null;
 
@@ -925,26 +798,20 @@ export default function GoogleInventoryMap({
   // Citywide campaign totals — stays constant across navigation (unlike
   // the breadcrumb-scoped project stats below) so the headline "what does
   // this campaign cover" number never disappears while exploring.
-  // On the client's own link the totals follow their edits — what they'd
-  // be approving — rather than the shortlist as first sent.
-  const clientEditing = review?.audience === "client";
   const campaignSummary: CampaignSummary | null = useMemo(() => {
     if (!highlightedMediaSiteIds || highlightedMediaSiteIds.size === 0 || !data) return null;
-    const inShortlist = (id: string) =>
-      clientEditing ? (highlightedMediaSiteIds.has(id) && !removedRef.current.has(id)) || addedRef.current.has(id) : highlightedMediaSiteIds.has(id);
     // Once per property: a few properties appear more than once in the
-    // inventory files under the same id, which used to inflate these totals.
+    // inventory files under the same id, which used to inflate the totals.
     const seen = new Set<string>();
     const matched = data.features.filter((f) => {
       const id = f.properties.mediaSiteId;
-      if (id == null || seen.has(id) || !inShortlist(id)) return false;
+      if (id == null || seen.has(id) || !highlightedMediaSiteIds.has(id)) return false;
       seen.add(id);
       return true;
     });
-    if (matched.length === 0 && !clientEditing) return null;
+    if (matched.length === 0) return null;
     return { label: campaignLabel ?? "Campaign", ...summarizeClusterLeaves(matched) };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, highlightedMediaSiteIds, campaignLabel, clientEditing, reviewKey]);
+  }, [data, highlightedMediaSiteIds, campaignLabel]);
 
   const inspectorContent =
     viewLevel === "screen" && selectedScreen && projectPanelInfo
@@ -1004,47 +871,11 @@ export default function GoogleInventoryMap({
           onResumeTour={() => tourPause && startTour(tourPause.index)}
           onStopTour={stopTour}
           clientName={clientName}
-          listOpen={listOpen}
-          onToggleList={review && data ? () => setListOpen((o) => !o) : undefined}
-          list={
-            review && data && highlightedMediaSiteIds ? (
-              <ShortlistList
-                cityId={cityId}
-                cityLabel={cityLabel}
-                features={data.features}
-                shortlisted={highlightedMediaSiteIds}
-                review={review}
-                onFocus={focusFeature}
-                onClose={() => setListOpen(false)}
-              />
-            ) : null
-          }
         />
       )}
-      <MapLegend
-        highlightLabel={highlightLabel}
-        showInventory={showInventory}
-        onToggleInventory={toggleInventory}
-        removedLabel={review && review.removed.size > 0 ? (review.audience === "client" ? "Removed by you" : "Removed by client") : undefined}
-        addedLabel={review && review.added.size > 0 ? (review.audience === "client" ? "Added by you" : "Added by client") : undefined}
-      />
+      <MapLegend highlightLabel={highlightLabel} showInventory={showInventory} onToggleInventory={toggleInventory} />
 
-      <InspectorPanel
-        content={inspectorContent}
-        crumbs={crumbs}
-        onNavigate={goTo}
-        onClose={() => goTo("city")}
-        review={
-          review && highlightedMediaSiteIds && selectedProject?.feature.properties.mediaSiteId
-            ? {
-                ...review,
-                mediaSiteId: selectedProject.feature.properties.mediaSiteId,
-                cityId,
-                inShortlist: highlightedMediaSiteIds.has(selectedProject.feature.properties.mediaSiteId),
-              }
-            : undefined
-        }
-      />
+      <InspectorPanel content={inspectorContent} crumbs={crumbs} onNavigate={goTo} onClose={() => goTo("city")} />
     </div>
   );
 }
