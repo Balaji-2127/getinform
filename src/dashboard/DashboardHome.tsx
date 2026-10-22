@@ -72,7 +72,7 @@ export default function DashboardHome({
             <div className="dash-home-cta">
               <p>No campaigns uploaded yet — upload your first shortlist to see it here.</p>
               <button type="button" className="cpg-empty-btn btn btn-primary" onClick={() => onNavigate("upload")}>
-                <UploadIcon size={15} /> Upload a campaign sheet
+                <UploadIcon size={15} /> Upload a shortlist sheet
               </button>
             </div>
           )}
@@ -111,7 +111,7 @@ export default function DashboardHome({
             <button type="button" className="dash-home-action" onClick={() => onNavigate("upload")}>
               <span className="dash-home-action-icon"><UploadIcon size={17} /></span>
               <span>
-                <strong>Upload a campaign</strong>
+                <strong>Upload a shortlist</strong>
                 <small>Turn a shortlist into a shareable map</small>
               </span>
               <span className="dash-home-action-chev" aria-hidden="true"><ChevronRightIcon size={15} /></span>

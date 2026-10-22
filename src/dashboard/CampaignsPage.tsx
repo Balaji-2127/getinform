@@ -112,7 +112,7 @@ export default function CampaignsPage({
     <div className="cpg-page">
       <div className="cpg-header">
         <div>
-          <span className="cpg-eyebrow">CAMPAIGN PLANNING</span>
+          <span className="cpg-eyebrow">CAMPAIGN MAP</span>
           <h1>Find the Right Screens for Your Campaign</h1>
           <p>
             {state.status === "ready"
@@ -205,7 +205,7 @@ export default function CampaignsPage({
           </span>
           <p>No campaign loaded yet.</p>
           <button type="button" className="cpg-empty-btn btn btn-primary" onClick={onGoUpload}>
-            <UploadIcon size={15} /> Upload a campaign sheet
+            <UploadIcon size={15} /> Upload a shortlist sheet
           </button>
         </div>
       )}

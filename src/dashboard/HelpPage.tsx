@@ -29,7 +29,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "How do I create a campaign?",
-    a: "Click \"Upload campaign sheet\" in the sidebar. Enter the client name and campaign name, pick your .xlsx file, and upload. Every row is matched against live inventory by its Media Site Id, and you land straight on the map with the results highlighted.",
+    a: "Click \"Upload shortlist sheet\" in the sidebar. Enter the client name and campaign name, pick your .xlsx file, and upload. Every row is matched against live inventory by its Media Site Id, and you land straight on the map with the results highlighted.",
     img: "/faq/create-campaign.jpg",
     alt: "The new campaign form with the client name and campaign name filled in",
   },

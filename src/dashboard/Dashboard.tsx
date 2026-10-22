@@ -16,7 +16,9 @@ type Section = "dashboard" | "campaigns" | "inventory" | "clients" | "reports" |
 
 const NAV_ITEMS: { id: Section; label: string; icon: (props: { size?: number }) => React.ReactElement }[] = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
-  { id: "campaigns", label: "Campaigns", icon: CampaignsIcon },
+  // Shows the one campaign you've opened, on the 3D map — "Campaigns" read
+  // as if it were a list of them, which is what All Campaigns is.
+  { id: "campaigns", label: "Campaign Map", icon: CampaignsIcon },
   { id: "inventory", label: "Inventory", icon: InventoryIcon },
   { id: "clients", label: "Clients", icon: ClientsIcon },
   { id: "reports", label: "Reports", icon: ReportsIcon },
@@ -145,10 +147,10 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
             type="button"
             className={"dash-upload-btn btn btn-primary" + (section === "upload" ? " is-active" : "")}
             onClick={() => setSection("upload")}
-            title={collapsed ? "Upload campaign sheet" : undefined}
-            aria-label="Upload campaign sheet"
+            title={collapsed ? "Upload shortlist sheet" : undefined}
+            aria-label="Upload shortlist sheet"
           >
-            <PlusIcon size={15} /> {!collapsed && "Upload campaign sheet"}
+            <PlusIcon size={15} /> {!collapsed && "Upload shortlist sheet"}
           </button>
         </div>
       </aside>
@@ -172,7 +174,11 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
 
         <div className="dash-content">
           {section === "dashboard" && <DashboardHome onNavigate={setSection} onOpenCampaign={handleCampaignCreated} />}
-          {section === "campaigns" && (
+          {/* With no campaign open, Campaign Map asks for one: the upload
+              form (client, campaign name, sheet) right there, rather than an
+              empty page pointing somewhere else. */}
+          {section === "campaigns" && !activeCampaignId && <UploadCampaign onCampaignCreated={handleCampaignCreated} />}
+          {section === "campaigns" && activeCampaignId && (
             <CampaignsPage activeCampaignId={activeCampaignId} onGoUpload={() => setSection("upload")} />
           )}
           {section === "inventory" && (
