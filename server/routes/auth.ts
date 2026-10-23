@@ -1,4 +1,5 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
+import crypto from "node:crypto";
 import { OAuth2Client } from "google-auth-library";
 import { refreshEnvIfChanged } from "../env.js";
 import { getUser, upsertUser, type UserRecord, type UserRole } from "../db.js";
@@ -58,7 +59,8 @@ async function signIn(req: Request, res: Response, who: Identity) {
       requestedAt: existing?.requestedAt ?? now,
     });
   } else if (existing?.status === "approved") {
-    user = await upsertUser(email, { name: who.name, picture: who.picture, lastLoginAt: now });
+    // A password sign-in carries no name or photo; keep the ones Google gave.
+    user = await upsertUser(email, { name: who.name ?? existing.name, picture: who.picture ?? existing.picture, lastLoginAt: now });
   } else if (existing?.status === "rejected") {
     req.session = null;
     res.status(403).json({ status: "rejected", error: "Your access request was declined. Ask your admin if this is a mistake." });
@@ -79,6 +81,70 @@ async function signIn(req: Request, res: Response, who: Identity) {
   }
   res.json({ loggedIn: true, user: { email, name: user.name, picture: user.picture, role: user.role } satisfies SessionUser });
 }
+
+// ---- email + shared password (until Google sign-in is set up) ---------------
+// A stop-gap so per-person access can go live before the Google client id
+// exists: the person gives their email and the team's shared password, and
+// the same approval rules apply — only approved emails get in, a new email
+// becomes a request for an admin. It proves knowledge of the password, not
+// ownership of the email, so it's switched off by removing
+// SALES_LOGIN_PASSWORD once Google sign-in is on.
+
+function passwordMatches(candidate: string, expected: string): boolean {
+  const a = Buffer.from(candidate);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
+// Per-IP attempt cap: the password is shared, so this is what stands
+// between it and a brute-force script. In-memory, so a restart resets it.
+const LOGIN_ATTEMPT_LIMIT = 10;
+const LOGIN_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+const loginAttempts = new Map<string, { count: number; windowStart: number }>();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (!entry || now - entry.windowStart > LOGIN_ATTEMPT_WINDOW_MS) {
+    loginAttempts.set(ip, { count: 1, windowStart: now });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > LOGIN_ATTEMPT_LIMIT;
+}
+
+router.post("/auth/password", async (req: Request, res: Response) => {
+  refreshEnvIfChanged();
+  const expected = process.env.SALES_LOGIN_PASSWORD ?? "";
+  if (!expected) {
+    res.status(404).json({ error: "Password sign-in is turned off — use Sign in with Google." });
+    return;
+  }
+  if (isRateLimited(req.ip ?? "unknown")) {
+    res.status(429).json({ error: "Too many attempts — try again in 15 minutes." });
+    return;
+  }
+  const email = typeof req.body?.email === "string" ? req.body.email.trim() : "";
+  const password = typeof req.body?.password === "string" ? req.body.password : "";
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    res.status(400).json({ error: "Enter your work email address." });
+    return;
+  }
+  if (!passwordMatches(password, expected)) {
+    res.status(401).json({ error: "Incorrect password" });
+    return;
+  }
+  loginAttempts.delete(req.ip ?? "unknown");
+  await signIn(req, res, { email, name: null, picture: null });
+});
+
+// Which sign-in methods this server offers, so the login page shows the
+// right ones without a rebuild when the settings change.
+router.get("/auth/methods", (_req: Request, res: Response) => {
+  refreshEnvIfChanged();
+  res.json({ google: Boolean(process.env.GOOGLE_CLIENT_ID), password: Boolean(process.env.SALES_LOGIN_PASSWORD) });
+});
 
 let googleClient: OAuth2Client | null = null;
 

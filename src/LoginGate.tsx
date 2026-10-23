@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertIcon } from "./dashboard/icons";
+import { AlertIcon, LockIcon } from "./dashboard/icons";
 import type { SessionUser } from "./auth";
 import "./LoginGate.css";
 
@@ -42,6 +42,18 @@ export default function LoginGate({ onSuccess }: { onSuccess: (user: SessionUser
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [busy, setBusy] = useState(false);
   const [devEmail, setDevEmail] = useState("");
+  // Which sign-in methods the server offers right now (see /api/auth/methods).
+  const [methods, setMethods] = useState<{ google: boolean; password: boolean } | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    fetch("/api/auth/methods")
+      .then((r) => (r.ok ? (r.json() as Promise<{ google: boolean; password: boolean }>) : { google: Boolean(CLIENT_ID), password: false }))
+      .then(setMethods)
+      .catch(() => setMethods({ google: Boolean(CLIENT_ID), password: false }));
+  }, []);
+  const showGoogle = Boolean(CLIENT_ID) && methods?.google !== false;
 
   const finish = async (res: Response) => {
     const body = (await res.json().catch(() => null)) as { user?: SessionUser; status?: string; error?: string } | null;
@@ -57,7 +69,7 @@ export default function LoginGate({ onSuccess }: { onSuccess: (user: SessionUser
   };
 
   useEffect(() => {
-    if (!CLIENT_ID || !buttonRef.current) return;
+    if (!showGoogle || !CLIENT_ID || !buttonRef.current) return;
     let cancelled = false;
     loadGsi()
       .then((google) => {
@@ -89,7 +101,26 @@ export default function LoginGate({ onSuccess }: { onSuccess: (user: SessionUser
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [showGoogle]);
+
+  const passwordSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setOutcome(null);
+    try {
+      await finish(
+        await fetch("/api/auth/password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }),
+      );
+    } catch {
+      setOutcome({ kind: "error", message: "Could not reach the server" });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const devSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,16 +148,43 @@ export default function LoginGate({ onSuccess }: { onSuccess: (user: SessionUser
           <img src="/adonmo-logo.jpeg" alt="" className="login-logo" />
           <h1>ADONMO</h1>
         </div>
-        <p className="login-sub">Sign in with your work Google account. New here? Signing in sends your request to an admin.</p>
+        <p className="login-sub">
+          {showGoogle ? "Sign in with your work Google account." : "Sign in with your work email."} New here? Signing in sends your request to an
+          admin.
+        </p>
 
-        {CLIENT_ID ? (
+        {showGoogle && (
           <div className="login-google" aria-busy={busy}>
             <div ref={buttonRef} />
             {busy && <span className="login-checking">Checking…</span>}
           </div>
-        ) : (
+        )}
+
+        {methods?.password && (
+          <form className="login-password" onSubmit={passwordSignIn}>
+            {showGoogle && <span className="login-or">or</span>}
+            <label className="login-field">
+              Work email
+              <span className="field-wrap login-field-wrap">
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" autoFocus />
+              </span>
+            </label>
+            <label className="login-field">
+              Password
+              <span className="field-wrap login-field-wrap">
+                <LockIcon size={15} />
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Team password" autoComplete="current-password" />
+              </span>
+            </label>
+            <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={busy || !email || !password}>
+              {busy ? "Checking…" : "Sign in"}
+            </button>
+          </form>
+        )}
+
+        {methods && !showGoogle && !methods.password && (
           <p className="login-error" role="alert">
-            <AlertIcon size={15} /> Google sign-in isn't set up yet (VITE_GOOGLE_CLIENT_ID is missing).
+            <AlertIcon size={15} /> Sign-in isn't set up on this server yet.
           </p>
         )}
 

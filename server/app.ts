@@ -22,16 +22,20 @@ if (isProduction && !process.env.SESSION_SECRET) {
   throw new Error("SESSION_SECRET must be set in production — refusing to start with the dev-only default.");
 }
 
-// Same reasoning, and a worse failure mode without them. .env.local is not
+// Same reasoning, and a worse failure mode without it. .env.local is not
 // committed, so a deployed instance only has these if they were set in the
-// host's own environment. Without GOOGLE_CLIENT_ID nobody can sign in; with
-// no ADMIN_EMAILS there's nobody to approve anyone — either way the site
-// would just look broken with nothing saying why.
-if (isProduction && (!process.env.GOOGLE_CLIENT_ID || !process.env.ADMIN_EMAILS)) {
+// host's own environment. With neither Google sign-in (GOOGLE_CLIENT_ID)
+// nor the email + password stop-gap (SALES_LOGIN_PASSWORD) nobody could
+// sign in at all, and the site would just look broken with nothing saying
+// why.
+if (isProduction && !process.env.GOOGLE_CLIENT_ID && !process.env.SALES_LOGIN_PASSWORD) {
   throw new Error(
-    "GOOGLE_CLIENT_ID and ADMIN_EMAILS must both be set in production — sign-in is by Google account, and the admins " +
-      "listed in ADMIN_EMAILS approve everyone else. Set them in the host's environment variables.",
+    "Set GOOGLE_CLIENT_ID (Sign in with Google) or SALES_LOGIN_PASSWORD (email + password) in production — " +
+      "otherwise nobody can sign in. Set them in the host's environment variables.",
   );
+}
+if (isProduction && !process.env.ADMIN_EMAILS) {
+  console.warn("[auth] ADMIN_EMAILS is not set — only admins already recorded in the database can approve people.");
 }
 
 const app = express();

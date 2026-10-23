@@ -136,6 +136,18 @@
   text-align: center;
 }
 
+.login-password {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-or {
+  align-self: center;
+  font-size: 12px;
+  color: var(--c-text-4);
+}
+
 /* Google's own button, centred, with a quiet "Checking…" while the server
    decides. Its width is fixed by Google's script (300px). */
 .login-google {
