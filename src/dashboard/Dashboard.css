@@ -411,6 +411,10 @@
   color: var(--c-danger-text);
 }
 
+.dash-account-item.is-plain:hover {
+  color: var(--c-text);
+}
+
 /* Access requests waiting on an admin, on the Team item. */
 .dash-nav-badge {
   margin-left: auto;

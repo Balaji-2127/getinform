@@ -178,6 +178,13 @@ export type UserRecord = {
   decidedAt: string | null;
   decidedBy: string | null;
   lastLoginAt: string | null;
+  // Their own password, once they've set one: "scrypt$<salt>$<hash>", never
+  // the password itself. While null, a password sign-in uses the team
+  // password and then makes them choose their own before anything else.
+  passwordHash?: string | null;
+  // Sessions started before this are no longer valid — set whenever the
+  // password is set, changed or reset, so other devices are signed out.
+  passwordChangedAt?: string | null;
 };
 
 const normEmail = (email: string) => email.trim().toLowerCase();

@@ -7,6 +7,8 @@ export type SessionUser = {
   name: string | null;
   picture: string | null;
   role: "admin" | "sales";
+  // Signed in with the team password and hasn't chosen their own yet.
+  needsPassword?: boolean;
 };
 
 export const UserContext = createContext<SessionUser | null>(null);

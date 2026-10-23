@@ -8,6 +8,7 @@ import ReportsPage from "./ReportsPage";
 import HelpPage from "./HelpPage";
 import TeamPage, { type TeamMember } from "./TeamPage";
 import { initials, useUser } from "../auth";
+import ChangePasswordDialog from "./ChangePasswordDialog";
 import GlobalSearch from "./GlobalSearch";
 import { ToastProvider } from "./Toast";
 import type { CityId } from "../data/cities";
@@ -56,8 +57,9 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
-  // The avatar's menu: who you are, and sign out.
+  // The avatar's menu: who you are, change password, and sign out.
   const [menuOpen, setMenuOpen] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!menuOpen) return;
@@ -234,6 +236,17 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
                     {user.name && <span>{user.email}</span>}
                     <span className="dash-account-role">{isAdmin ? "Admin — sees all campaigns" : "Sales — your campaigns"}</span>
                   </div>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="dash-account-item is-plain"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setChangingPassword(true);
+                    }}
+                  >
+                    Change password
+                  </button>
                   <button type="button" role="menuitem" className="dash-account-item" onClick={handleLogout}>
                     Sign out
                   </button>
@@ -259,6 +272,7 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
           {section === "reports" && <ReportsPage onOpenCampaign={handleCampaignCreated} onCampaignDeleted={handleCampaignDeleted} />}
           {section === "help" && <HelpPage />}
           {section === "team" && isAdmin && <TeamPage onChanged={refreshPending} />}
+          {changingPassword && <ChangePasswordDialog onClose={() => setChangingPassword(false)} />}
           {section === "upload" && <UploadCampaign onCampaignCreated={handleCampaignCreated} />}
         </div>
       </div>

@@ -8,7 +8,40 @@ import { getUser, upsertUser, type UserRecord, type UserRole } from "../db.js";
 // each request from the session cookie and the person's current record, so
 // removing someone or changing their role takes effect on their very next
 // request, not when their 30-day cookie runs out.
-export type SessionUser = { email: string; name: string | null; picture: string | null; role: UserRole };
+export type SessionUser = {
+  email: string;
+  name: string | null;
+  picture: string | null;
+  role: UserRole;
+  // Signed in with the team password and hasn't chosen their own yet: the
+  // only thing they can do is set it (see requireAuth).
+  needsPassword?: boolean;
+};
+
+// How this session was started. Only a team-password sign-in leads to
+// "choose your own password"; Google proves the email by itself.
+type SignInMethod = "google" | "team-password" | "own-password" | "dev";
+
+// ---- personal passwords ----------------------------------------------------
+// Stored as scrypt hashes with a per-person random salt; the password itself
+// is never kept anywhere.
+const SCRYPT_KEYLEN = 32;
+
+function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16);
+  const hash = crypto.scryptSync(password, salt, SCRYPT_KEYLEN);
+  return `scrypt$${salt.toString("hex")}$${hash.toString("hex")}`;
+}
+
+function verifyPassword(password: string, stored: string): boolean {
+  const [scheme, saltHex, hashHex] = stored.split("$");
+  if (scheme !== "scrypt" || !saltHex || !hashHex) return false;
+  const expected = Buffer.from(hashHex, "hex");
+  const actual = crypto.scryptSync(password, Buffer.from(saltHex, "hex"), expected.length);
+  return crypto.timingSafeEqual(actual, expected);
+}
+
+const MIN_PASSWORD_LENGTH = 8;
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -43,7 +76,7 @@ type Identity = { email: string; name: string | null; picture: string | null };
 // The decision for a verified Google identity: settings admins and approved
 // people get a session; anyone else is recorded as a pending request (once)
 // for an admin to approve, or told they were turned down.
-async function signIn(req: Request, res: Response, who: Identity) {
+async function signIn(req: Request, res: Response, who: Identity, method: SignInMethod) {
   const email = who.email.toLowerCase();
   const now = new Date().toISOString();
   const existing = await getUser(email);
@@ -74,12 +107,20 @@ async function signIn(req: Request, res: Response, who: Identity) {
     return;
   }
 
+  const needsPassword = method === "team-password" && !user.passwordHash;
   if (req.session) {
     req.session.email = email;
+    req.session.method = method;
+    // When this session started — compared with passwordChangedAt so a
+    // password change signs out every other session (see loadUser).
+    req.session.iat = Date.now();
     // From the old shared-password login; meaningless now.
     delete req.session.loggedIn;
   }
-  res.json({ loggedIn: true, user: { email, name: user.name, picture: user.picture, role: user.role } satisfies SessionUser });
+  res.json({
+    loggedIn: true,
+    user: { email, name: user.name, picture: user.picture, role: user.role, needsPassword } satisfies SessionUser,
+  });
 }
 
 // ---- email + shared password (until Google sign-in is set up) ---------------
@@ -131,12 +172,61 @@ router.post("/auth/password", async (req: Request, res: Response) => {
     res.status(400).json({ error: "Enter your work email address." });
     return;
   }
+  // Someone who has set their own password signs in with that, and only
+  // that — the team password no longer opens their account, so nobody else
+  // who knows it can sign in as them.
+  const record = await getUser(email);
+  if (record?.passwordHash) {
+    if (!verifyPassword(password, record.passwordHash)) {
+      res.status(401).json({ error: "Incorrect password" });
+      return;
+    }
+    loginAttempts.delete(req.ip ?? "unknown");
+    await signIn(req, res, { email, name: null, picture: null }, "own-password");
+    return;
+  }
   if (!passwordMatches(password, expected)) {
     res.status(401).json({ error: "Incorrect password" });
     return;
   }
   loginAttempts.delete(req.ip ?? "unknown");
-  await signIn(req, res, { email, name: null, picture: null });
+  await signIn(req, res, { email, name: null, picture: null }, "team-password");
+});
+
+// Choosing their own password: right after a team-password sign-in
+// (needsPassword), or any time later from the account menu, where the
+// current password has to be given too.
+router.post("/auth/set-password", async (req: Request, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  const record = await getUser(req.user.email);
+  if (!record) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  const next = typeof req.body?.newPassword === "string" ? req.body.newPassword : "";
+  const current = typeof req.body?.currentPassword === "string" ? req.body.currentPassword : "";
+  if (record.passwordHash && !req.user.needsPassword && !verifyPassword(current, record.passwordHash)) {
+    res.status(401).json({ error: "Your current password is incorrect" });
+    return;
+  }
+  if (next.length < MIN_PASSWORD_LENGTH) {
+    res.status(400).json({ error: `Use at least ${MIN_PASSWORD_LENGTH} characters` });
+    return;
+  }
+  if (process.env.SALES_LOGIN_PASSWORD && next === process.env.SALES_LOGIN_PASSWORD) {
+    res.status(400).json({ error: "Choose something other than the team password" });
+    return;
+  }
+  const now = new Date().toISOString();
+  await upsertUser(req.user.email, { passwordHash: hashPassword(next), passwordChangedAt: now });
+  if (req.session) {
+    req.session.method = "own-password";
+    req.session.iat = Date.parse(now);
+  }
+  res.json({ loggedIn: true, user: { ...req.user, needsPassword: false } satisfies SessionUser });
 });
 
 // Which sign-in methods this server offers, so the login page shows the
@@ -172,7 +262,7 @@ router.post("/auth/google", async (req: Request, res: Response) => {
       res.status(401).json({ error: "Google didn't confirm this email address." });
       return;
     }
-    await signIn(req, res, { email: p.email, name: p.name ?? null, picture: p.picture ?? null });
+    await signIn(req, res, { email: p.email, name: p.name ?? null, picture: p.picture ?? null }, "google");
   } catch {
     res.status(401).json({ error: "That Google sign-in couldn't be verified — please try again." });
   }
@@ -189,7 +279,7 @@ if (process.env.AUTH_DEV_LOGIN === "1" && process.env.NODE_ENV !== "production" 
       res.status(400).json({ error: "Valid email required" });
       return;
     }
-    await signIn(req, res, { email, name: typeof req.body?.name === "string" ? req.body.name : null, picture: null });
+    await signIn(req, res, { email, name: typeof req.body?.name === "string" ? req.body.name : null, picture: null }, "dev");
   });
 }
 
@@ -212,8 +302,17 @@ export async function loadUser(req: Request, _res: Response, next: NextFunction)
   try {
     const record = await getUser(email);
     const admin = isSettingsAdmin(email);
-    if (admin || record?.status === "approved") {
-      req.user = { email, name: record?.name ?? null, picture: record?.picture ?? null, role: admin ? "admin" : (record?.role ?? "sales") };
+    const iat = typeof req.session?.iat === "number" ? req.session.iat : 0;
+    // A password set, changed or reset after this session began ends it.
+    const stale = Boolean(record?.passwordChangedAt) && iat < Date.parse(record!.passwordChangedAt!);
+    if ((admin || record?.status === "approved") && !stale) {
+      req.user = {
+        email,
+        name: record?.name ?? null,
+        picture: record?.picture ?? null,
+        role: admin ? "admin" : (record?.role ?? "sales"),
+        needsPassword: req.session?.method === "team-password" && !record?.passwordHash,
+      };
     } else {
       req.session = null;
     }
@@ -228,12 +327,20 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
+  if (req.user.needsPassword) {
+    res.status(403).json({ error: "Choose your own password first", needsPassword: true });
+    return;
+  }
   next();
 }
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.user) {
     res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  if (req.user.needsPassword) {
+    res.status(403).json({ error: "Choose your own password first", needsPassword: true });
     return;
   }
   if (req.user.role !== "admin") {

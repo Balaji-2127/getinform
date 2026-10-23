@@ -3,6 +3,7 @@ import LoginGate from "./LoginGate";
 import Dashboard from "./dashboard/Dashboard";
 import ClientCampaignView from "./ClientCampaignView";
 import { UserContext, type SessionUser } from "./auth";
+import SetPasswordPage from "./SetPasswordPage";
 
 // No router library — the app only ever has two shapes of URL: a shared
 // campaign link on the Google 3D map (client-facing, no login), or
@@ -30,6 +31,18 @@ function SalesTool() {
 
   if (user === undefined) return null;
   if (!user) return <LoginGate onSuccess={setUser} />;
+  if (user.needsPassword) {
+    return (
+      <SetPasswordPage
+        user={user}
+        onDone={setUser}
+        onSignOut={async () => {
+          await fetch("/api/logout", { method: "POST" }).catch(() => {});
+          setUser(null);
+        }}
+      />
+    );
+  }
   return (
     <UserContext.Provider value={user}>
       <Dashboard onLoggedOut={() => setUser(null)} />

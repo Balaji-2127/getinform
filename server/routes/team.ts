@@ -15,7 +15,10 @@ router.get("/team", requireAdmin, async (_req: Request, res: Response) => {
   const users = await listUsers();
   const rank = { pending: 0, approved: 1, rejected: 2 } as const;
   users.sort((a, b) => rank[a.status] - rank[b.status] || a.email.localeCompare(b.email));
-  res.json(users.map((u) => ({ ...u, fromSettings: isSettingsAdmin(u.email) })));
+  // Never send password hashes to the browser — only whether one is set.
+  res.json(
+    users.map(({ passwordHash, passwordChangedAt: _changed, ...u }) => ({ ...u, hasPassword: Boolean(passwordHash), fromSettings: isSettingsAdmin(u.email) })),
+  );
 });
 
 // Adds someone in advance — approved straight away, so they can sign in the
@@ -29,14 +32,14 @@ router.post("/team", requireAdmin, async (req: Request, res: Response) => {
   }
   const now = new Date().toISOString();
   const existing = await getUser(email);
-  const user = await upsertUser(email, {
+  const { passwordHash, passwordChangedAt: _changed, ...user } = await upsertUser(email, {
     role,
     status: "approved",
     decidedAt: now,
     decidedBy: req.user!.email,
     requestedAt: existing?.requestedAt ?? null,
   });
-  res.json(user);
+  res.json({ ...user, hasPassword: Boolean(passwordHash) });
 });
 
 // Approve or decline a request, or change someone's role.
@@ -51,6 +54,13 @@ router.put<{ email: string }>("/team/:email", requireAdmin, async (req, res) => 
     res.status(400).json({ error: "This admin is set in the app's settings (ADMIN_EMAILS) and can't be changed here." });
     return;
   }
+  // Forgotten password: clear it (and end their sessions). Their next
+  // sign-in with the team password asks them to choose a new one.
+  if (req.body?.resetPassword === true) {
+    await upsertUser(email, { passwordHash: null, passwordChangedAt: new Date().toISOString() });
+    res.json({ email, hasPassword: false });
+    return;
+  }
   const status = ["approved", "rejected"].includes(req.body?.status) ? (req.body.status as "approved" | "rejected") : undefined;
   const role: UserRole | undefined = ROLES.includes(req.body?.role) ? req.body.role : undefined;
   // An admin can't demote or lock out themselves by accident; another admin
@@ -60,11 +70,11 @@ router.put<{ email: string }>("/team/:email", requireAdmin, async (req, res) => 
     return;
   }
   const now = new Date().toISOString();
-  const user = await upsertUser(email, {
+  const { passwordHash, passwordChangedAt: _changed, ...user } = await upsertUser(email, {
     ...(status ? { status, decidedAt: now, decidedBy: req.user!.email } : {}),
     ...(role ? { role } : {}),
   });
-  res.json(user);
+  res.json({ ...user, hasPassword: Boolean(passwordHash) });
 });
 
 // Removes someone entirely. Their next request finds no record and their

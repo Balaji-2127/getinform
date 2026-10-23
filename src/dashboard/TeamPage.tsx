@@ -17,6 +17,8 @@ export type TeamMember = {
   lastLoginAt: string | null;
   // Listed in the ADMIN_EMAILS setting: always an admin, not editable here.
   fromSettings: boolean;
+  // Has chosen their own password (never the password itself).
+  hasPassword: boolean;
 };
 
 const when = (iso: string | null) =>
@@ -167,7 +169,10 @@ export default function TeamPage({ onChanged }: { onChanged?: () => void }) {
             return (
               <li key={m.email} className="team-row">
                 <Person m={m} you={isMe} />
-                <span className="team-meta">Last sign-in {when(m.lastLoginAt)}</span>
+                <span className="team-meta">
+                  Last sign-in {when(m.lastLoginAt)}
+                  <span className={"team-pw" + (m.hasPassword ? " is-set" : "")}>{m.hasPassword ? "Own password set" : "No own password yet"}</span>
+                </span>
                 <span className="team-actions">
                   {m.fromSettings ? (
                     <span className="team-role-fixed" title="Set in the app's settings (ADMIN_EMAILS)">
@@ -183,6 +188,19 @@ export default function TeamPage({ onChanged }: { onChanged?: () => void }) {
                       <option value="sales">Sales</option>
                       <option value="admin">Admin</option>
                     </select>
+                  )}
+                  {m.hasPassword && !isMe && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      disabled={busy !== null}
+                      title="For a forgotten password: they sign in with the team password again and choose a new one"
+                      onClick={() =>
+                        act(m.email, () => put(m.email, { resetPassword: true }), `Password reset — ${label(m)} will choose a new one at next sign-in`)
+                      }
+                    >
+                      Reset password
+                    </button>
                   )}
                   {!m.fromSettings && !isMe && (
                     <button
