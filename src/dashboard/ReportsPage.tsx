@@ -3,6 +3,9 @@ import { cityLabel, fetchCampaigns, formatViewTime, groupByClient, type Campaign
 import StatCard from "./StatCard";
 import { ArrowRightIcon, BuildingIcon, CampaignsIcon, ClientsIcon, ExportIcon, InboxIcon, SearchIcon, TrashIcon } from "./icons";
 import DeleteCampaignDialog, { type DeletableCampaign } from "./DeleteCampaignDialog";
+import { useUser } from "../auth";
+import { useToast } from "./Toast";
+import type { TeamMember } from "./TeamPage";
 import "./CampaignsPage.css";
 import "./ReportsPage.css";
 
@@ -29,6 +32,37 @@ export default function ReportsPage({
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [pendingDelete, setPendingDelete] = useState<DeletableCampaign | null>(null);
 
+  // Admins see everyone's campaigns, so they get an Owner column (to hand a
+  // campaign to a salesperson) and a filter by salesperson. Sales only ever
+  // receive their own campaigns from the server, so neither is shown.
+  const isAdmin = useUser().role === "admin";
+  const showToast = useToast();
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetch("/api/team")
+      .then((r) => (r.ok ? (r.json() as Promise<TeamMember[]>) : []))
+      .then((list) => setTeam(list.filter((m) => m.status === "approved")))
+      .catch(() => {});
+  }, [isAdmin]);
+  const ownerLabel = (email: string | null) => (email ? (team.find((m) => m.email === email)?.name ?? email) : "Unassigned");
+
+  const reassign = async (id: string, ownerEmail: string | null) => {
+    const res = await fetch(`/api/campaigns/${id}/owner`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ownerEmail }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      const body = (await res?.json().catch(() => null)) as { error?: string } | null;
+      showToast(body?.error ?? "Couldn't change the owner — try again", "error");
+      return;
+    }
+    setCampaigns((prev) => prev?.map((c) => (c.id === id ? { ...c, ownerEmail } : c)) ?? null);
+    showToast(ownerEmail ? `Now owned by ${ownerLabel(ownerEmail)}` : "Unassigned — only admins see it now");
+  };
+
   useEffect(() => {
     fetchCampaigns().then(setCampaigns);
   }, []);
@@ -43,20 +77,22 @@ export default function ReportsPage({
       return { ...c, cities, properties };
     });
 
+    const byOwner =
+      ownerFilter === "all" ? withTotals : withTotals.filter((c) => (ownerFilter === "none" ? !c.ownerEmail : c.ownerEmail === ownerFilter));
     const filtered = query.trim()
-      ? withTotals.filter(
+      ? byOwner.filter(
           (c) =>
             c.clientName.toLowerCase().includes(query.trim().toLowerCase()) ||
             c.campaignName.toLowerCase().includes(query.trim().toLowerCase()),
         )
-      : withTotals;
+      : byOwner;
 
     return filtered.sort((a, b) => {
       if (sortKey === "properties") return b.properties - a.properties;
       if (sortKey === "client") return a.clientName.localeCompare(b.clientName);
       return a.createdAt < b.createdAt ? 1 : -1;
     });
-  }, [campaigns, query, sortKey]);
+  }, [campaigns, query, sortKey, ownerFilter]);
 
   const totalClients = campaigns ? groupByClient(campaigns).length : 0;
   // Every campaign's properties, not just the ones surviving the search
@@ -68,7 +104,7 @@ export default function ReportsPage({
     : 0;
 
   const exportCsv = () => {
-    const header = ["Client", "Campaign", "Date", "Cities", "Properties shortlisted", "Client opens", "Client time on map"];
+    const header = ["Client", "Campaign", "Date", "Cities", "Properties shortlisted", "Client opens", "Client time on map", ...(isAdmin ? ["Owner"] : [])];
     const lines = rows.map((r) =>
       [
         r.clientName,
@@ -78,6 +114,7 @@ export default function ReportsPage({
         String(r.properties),
         String(r.views),
         r.viewSeconds > 0 ? formatViewTime(r.viewSeconds) : "",
+        ...(isAdmin ? [r.ownerEmail ?? "Unassigned"] : []),
       ]
         .map((cell) => `"${cell.replace(/"/g, '""')}"`)
         .join(","),
@@ -164,6 +201,20 @@ export default function ReportsPage({
               />
             </div>
             <div className="reports-toolbar-right">
+              {isAdmin && (
+                <label className="reports-sort-label">
+                  Owner
+                  <select className="field" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
+                    <option value="all">Everyone</option>
+                    {team.map((m) => (
+                      <option key={m.email} value={m.email}>
+                        {m.name ?? m.email}
+                      </option>
+                    ))}
+                    <option value="none">Unassigned</option>
+                  </select>
+                </label>
+              )}
               <label className="reports-sort-label">
                 Sort by
                 <select className="field" value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)}>
@@ -196,6 +247,7 @@ export default function ReportsPage({
                     <th className="reports-col-views" title="How many times the client opened the share link, and how long it was on their screen in total. Your team's own visits aren't counted.">
                       Client views
                     </th>
+                    {isAdmin && <th className="reports-col-owner">Owner</th>}
                     <th aria-hidden="true" />
                   </tr>
                 </thead>
@@ -231,6 +283,24 @@ export default function ReportsPage({
                           <span className="badge badge-muted">Not opened yet</span>
                         )}
                       </td>
+                      {isAdmin && (
+                        <td className="reports-col-owner">
+                          <select
+                            className="field reports-owner-select"
+                            value={r.ownerEmail ?? ""}
+                            aria-label={`Owner of ${r.clientName} — ${r.campaignName}`}
+                            onChange={(e) => reassign(r.id, e.target.value || null)}
+                          >
+                            <option value="">Unassigned</option>
+                            {team.map((m) => (
+                              <option key={m.email} value={m.email}>
+                                {m.name ?? m.email}
+                              </option>
+                            ))}
+                            {r.ownerEmail && !team.some((m) => m.email === r.ownerEmail) && <option value={r.ownerEmail}>{r.ownerEmail}</option>}
+                          </select>
+                        </td>
+                      )}
                       <td>
                         <div className="reports-row-actions">
                           <button

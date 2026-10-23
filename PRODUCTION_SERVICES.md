@@ -14,7 +14,8 @@ with this file.
 |---|---|---|---|
 | `VITE_GOOGLE_MAPS_API_KEY` | Google Maps Platform | **Yes** | The map doesn't load at all — this is the core product. |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase (Firestore) | **Yes** (server refuses to start without it) | No database connection at all — every campaign/search-history/saved-area route fails. |
-| `SALES_LOGIN_PASSWORD` | — (app's own login gate) | **Yes** | No one can log in. |
+| `GOOGLE_CLIENT_ID` + `VITE_GOOGLE_CLIENT_ID` | Google Cloud (OAuth client, "Web application") | **Yes** (server refuses to start in production without it) | No one can sign in. |
+| `ADMIN_EMAILS` | — (app's own config) | **Yes** (server refuses to start in production without it) | Nobody can approve access requests. |
 | `SESSION_SECRET` | — (app's own session signing) | **Yes in production** (server refuses to start without it) | Dev falls back to an insecure default; production hard-fails on purpose. |
 | `PORT` | — (app's own config) | No (defaults to 4000) | N/A |
 | `GEMINI_API_KEY` + `GEMINI_FLASH_MODEL` | Google AI Studio (Gemini) | No | Client logos next to a campaign fall back to an initials badge instead of the real logo. |
@@ -169,9 +170,15 @@ These aren't external accounts — they're this app's own config — but
 still belong in `.env.local` / your host's environment settings, never
 committed:
 
-- **`SALES_LOGIN_PASSWORD`** — the single shared password sales reps use
-  to log in (`server/routes/auth.ts`). Change it before going live with
-  something better than a placeholder.
+- **`GOOGLE_CLIENT_ID`** / **`VITE_GOOGLE_CLIENT_ID`** — the same OAuth
+  client id, read by the server (to verify sign-ins) and the browser (to
+  show the Google button). Create it in Google Cloud → APIs & Services →
+  Credentials → OAuth client ID → Web application, with `https://adonmo.live`
+  and `http://localhost:5173` as authorised JavaScript origins.
+- **`ADMIN_EMAILS`** — comma-separated emails that are always admins. Admins
+  see every campaign and approve or remove people on the Team page; everyone
+  else signs in with Google, waits for approval, and then sees only their own
+  campaigns (`server/routes/auth.ts`, `server/routes/team.ts`).
 - **`SESSION_SECRET`** — signs the login session cookie. The server
   **refuses to start in production** if this isn't set (`server/index.ts`)
   — deliberate, so a real deployment can't silently run on the insecure

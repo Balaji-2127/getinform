@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from "./auth.js";
+import { requireAuth, canAccessCampaign } from "./auth.js";
 import { listCampaignsFull } from "../db.js";
 import { getCityFeatures, SUPPORTED_CITIES, type CityId } from "../inventoryLookup.js";
 
@@ -28,7 +28,9 @@ router.get("/properties/nearby-clients", requireAuth, async (req: Request, res: 
   const localityById = new Map(features.map((f) => [f.properties.mediaSiteId, f.properties.locality]));
 
   const results: { campaignId: string; clientName: string; campaignName: string; thisProperty: boolean; sameLocality: number }[] = [];
-  for (const c of await listCampaignsFull()) {
+  // Only campaigns this person may see: a salesperson learns about their
+  // own clients here, never another rep's.
+  for (const c of (await listCampaignsFull()).filter((c) => canAccessCampaign(req.user, c))) {
     const ids = c.selections[cityId] ?? [];
     const thisProperty = ids.includes(mediaSiteId);
     // Without a locality on the target there is nothing to compare against,

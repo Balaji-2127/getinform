@@ -10,6 +10,9 @@ export type CampaignListItem = {
   // their screen. Sales logins don't count toward either.
   views: number;
   viewSeconds: number;
+  // Who created it (their sign-in email). Null on campaigns from before
+  // per-person sign-in, which only admins see until one is assigned.
+  ownerEmail: string | null;
 };
 
 // "45s", "4m 12s", "1h 05m".

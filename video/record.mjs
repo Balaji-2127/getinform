@@ -41,9 +41,14 @@ const CHROME = [
 ].find(existsSync);
 if (!CHROME) throw new Error("Chrome not found");
 
-const env = readFileSync(join(root, ".env.local"), "utf8");
-const PASSWORD = (env.match(/^SALES_LOGIN_PASSWORD=(.*)$/m) || [])[1]?.trim();
-if (!PASSWORD) throw new Error("SALES_LOGIN_PASSWORD missing from .env.local");
+// Sign-in is by Google account, which a scripted browser can't do, so the
+// recording uses the local test sign-in: the dev server must be started
+// with AUTH_DEV_LOGIN=1 (and VITE_AUTH_DEV_LOGIN=1), and RECORD_AS — by
+// default the first of ADMIN_EMAILS — must be an approved person. An admin
+// is best: the dashboard then shows every campaign, as a manager would.
+const RECORD_AS = (process.env.RECORD_AS || (process.env.ADMIN_EMAILS ?? "").split(",")[0] || "").trim();
+if (!RECORD_AS) throw new Error("Set RECORD_AS (or ADMIN_EMAILS) to the email the recording should sign in as");
+const signInBody = JSON.stringify({ email: RECORD_AS });
 
 // Both workbooks the walkthrough uploads, checked before Chrome even starts.
 for (const name of [DEMO.firstSheet, DEMO.updateSheet]) {
@@ -308,7 +313,6 @@ async function dismissGoogleBanner() {
 let campaignId = null;
 
 const ctx = {
-  password: PASSWORD,
   demo: DEMO,
   sheet: (name) => resolve(root, name),
   // Camera: ask post-production to ease in on an element (scale = zoom) and
@@ -523,10 +527,11 @@ try {
   // between runs, so without taking explicit control of the session the
   // recording could open already-logged-in and the walkthrough's sign-in
   // step would have no login screen left to show.
-  await evaluate(`fetch('/api/login', {
+  const signedIn = await evaluate(`fetch('/api/auth/dev-login', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password: ${JSON.stringify(PASSWORD)} })
-  }).then(r => r.json())`);
+    body: ${JSON.stringify(signInBody)}
+  }).then(r => r.status)`);
+  if (signedIn !== 200) throw new Error(`test sign-in as ${RECORD_AS} failed (${signedIn}) — is the dev server running with AUTH_DEV_LOGIN=1, and is that email approved?`);
   await send("Page.navigate", { url: APP });
   await sleep(3000);
   await injectOverlay();
@@ -654,10 +659,10 @@ log(`${events.filter((e) => e.type === "move").length} cursor moves, ${events.fi
 // Remove it again — but only campaigns created during this run under the
 // demo client name, so nothing a person made can be caught by this.
 try {
-  const login = await fetch(`${APP}/api/login`, {
+  const login = await fetch(`${APP}/api/auth/dev-login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password: PASSWORD }),
+    body: signInBody,
   });
   const cookie = login.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
   const list = await (await fetch(`${APP}/api/campaigns`, { headers: { cookie } })).json();

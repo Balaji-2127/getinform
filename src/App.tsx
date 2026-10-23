@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import LoginGate from "./LoginGate";
 import Dashboard from "./dashboard/Dashboard";
 import ClientCampaignView from "./ClientCampaignView";
+import { UserContext, type SessionUser } from "./auth";
 
 // No router library — the app only ever has two shapes of URL: a shared
 // campaign link on the Google 3D map (client-facing, no login), or
@@ -17,18 +18,23 @@ function useRoute() {
 }
 
 function SalesTool() {
-  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  // undefined while checking; null when signed out.
+  const [user, setUser] = useState<SessionUser | null | undefined>(undefined);
 
   useEffect(() => {
     fetch("/api/session")
       .then((r) => r.json())
-      .then((data: { loggedIn: boolean }) => setLoggedIn(data.loggedIn))
-      .catch(() => setLoggedIn(false));
+      .then((data: { loggedIn: boolean; user?: SessionUser }) => setUser(data.loggedIn && data.user ? data.user : null))
+      .catch(() => setUser(null));
   }, []);
 
-  if (loggedIn === null) return null;
-  if (!loggedIn) return <LoginGate onSuccess={() => setLoggedIn(true)} />;
-  return <Dashboard onLoggedOut={() => setLoggedIn(false)} />;
+  if (user === undefined) return null;
+  if (!user) return <LoginGate onSuccess={setUser} />;
+  return (
+    <UserContext.Provider value={user}>
+      <Dashboard onLoggedOut={() => setUser(null)} />
+    </UserContext.Provider>
+  );
 }
 
 function App() {

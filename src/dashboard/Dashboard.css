@@ -334,6 +334,106 @@
     0 0 0 3px var(--c-border);
 }
 
+.dash-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.dash-account {
+  position: relative;
+}
+
+.dash-account-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  min-width: 240px;
+  padding: 6px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-lg);
+  animation: dash-menu-in var(--t-pop) var(--ease-out);
+}
+
+@keyframes dash-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dash-account-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid var(--c-border-soft);
+  margin-bottom: 4px;
+  font-size: 12.5px;
+  color: var(--c-text-3);
+}
+
+.dash-account-who strong {
+  font-size: 13.5px;
+  color: var(--c-text);
+}
+
+.dash-account-role {
+  margin-top: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--c-brand);
+}
+
+.dash-account-item {
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: var(--c-text-2);
+  cursor: pointer;
+}
+
+.dash-account-item:hover {
+  background: var(--c-surface-hover);
+  color: var(--c-danger-text);
+}
+
+/* Access requests waiting on an admin, on the Team item. */
+.dash-nav-badge {
+  margin-left: auto;
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.dash-sidebar.is-collapsed .dash-nav-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  margin: 0;
+  min-width: 14px;
+  padding: 0 4px;
+  font-size: 9.5px;
+}
+
 .dash-avatar:hover {
   box-shadow:
     0 0 0 2px var(--c-surface),

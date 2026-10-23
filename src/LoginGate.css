@@ -135,3 +135,73 @@
   color: var(--c-text-4);
   text-align: center;
 }
+
+/* Google's own button, centred, with a quiet "Checking…" while the server
+   decides. Its width is fixed by Google's script (300px). */
+.login-google {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.login-checking {
+  font-size: var(--fs-sm);
+  color: var(--c-text-3);
+}
+
+/* The answer for someone who isn't (yet) let in: amber while their request
+   waits, red when it was declined or something failed. */
+.login-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+}
+
+.login-notice svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.login-notice.is-pending {
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.login-notice.is-rejected,
+.login-notice.is-error {
+  border: 1px solid var(--c-danger-border);
+  background: var(--c-danger-soft);
+  color: var(--c-danger-text);
+}
+
+.login-dev {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--c-border-strong);
+}
+
+.login-dev-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-warn-text);
+}
+
+.login-dev input {
+  padding: 8px 10px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-size: var(--fs-sm);
+}

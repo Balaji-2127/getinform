@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import UploadCampaign from "../UploadCampaign";
 import DashboardHome from "./DashboardHome";
 import CampaignsPage from "./CampaignsPage";
@@ -6,13 +6,15 @@ import InventoryPage from "./InventoryPage";
 import ClientsPage from "./ClientsPage";
 import ReportsPage from "./ReportsPage";
 import HelpPage from "./HelpPage";
+import TeamPage, { type TeamMember } from "./TeamPage";
+import { initials, useUser } from "../auth";
 import GlobalSearch from "./GlobalSearch";
 import { ToastProvider } from "./Toast";
 import type { CityId } from "../data/cities";
-import { CampaignsIcon, ClientsIcon, DashboardIcon, InventoryIcon, PlusIcon, ReportsIcon, HelpIcon, SidebarCollapseIcon } from "./icons";
+import { CampaignsIcon, ClientsIcon, DashboardIcon, InventoryIcon, PlusIcon, ReportsIcon, HelpIcon, SidebarCollapseIcon, TeamIcon } from "./icons";
 import "./Dashboard.css";
 
-type Section = "dashboard" | "campaigns" | "inventory" | "clients" | "reports" | "help" | "upload";
+type Section = "dashboard" | "campaigns" | "inventory" | "clients" | "reports" | "help" | "upload" | "team";
 
 const NAV_ITEMS: { id: Section; label: string; icon: (props: { size?: number }) => React.ReactElement }[] = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
@@ -25,8 +27,50 @@ const NAV_ITEMS: { id: Section; label: string; icon: (props: { size?: number }) 
   { id: "help", label: "Help & FAQs", icon: HelpIcon },
 ];
 
+// Admins only: who can sign in.
+const TEAM_ITEM = { id: "team" as Section, label: "Team", icon: TeamIcon };
+
+// How often an admin's sidebar re-checks for new access requests.
+const PENDING_POLL_MS = 60_000;
+
 export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
+  const user = useUser();
+  const isAdmin = user.role === "admin";
   const [section, setSection] = useState<Section>("dashboard");
+
+  // Requests waiting on an admin, as a badge on the Team item — so a new
+  // salesperson isn't left waiting just because nobody opened that page.
+  const [pendingCount, setPendingCount] = useState(0);
+  const refreshPending = () => {
+    if (!isAdmin) return;
+    fetch("/api/team")
+      .then((r) => (r.ok ? (r.json() as Promise<TeamMember[]>) : []))
+      .then((list) => setPendingCount(list.filter((m) => m.status === "pending").length))
+      .catch(() => {});
+  };
+  useEffect(() => {
+    if (!isAdmin) return;
+    refreshPending();
+    const timer = window.setInterval(() => document.visibilityState === "visible" && refreshPending(), PENDING_POLL_MS);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
+
+  // The avatar's menu: who you are, and sign out.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [menuOpen]);
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
   // Remembered per-browser so a rep who collapses it once doesn't have to
   // redo it every reload — just a display preference, never read back by
@@ -116,6 +160,7 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
               separating "where I work" from "where I go when stuck". */}
           {[
             { title: "Workspace", items: NAV_ITEMS.filter((i) => i.id !== "help") },
+            ...(isAdmin ? [{ title: "Admin", items: [TEAM_ITEM] }] : []),
             { title: "Support", items: NAV_ITEMS.filter((i) => i.id === "help") },
           ].map((group) => (
             <div key={group.title} className="dash-nav-group">
@@ -136,6 +181,11 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
                     <item.icon size={18} />
                   </span>
                   {!collapsed && <span className="dash-nav-label">{item.label}</span>}
+                  {item.id === "team" && pendingCount > 0 && (
+                    <span className="dash-nav-badge" aria-label={`${pendingCount} waiting`}>
+                      {pendingCount}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -166,9 +216,30 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
             ))}
           </nav>
           <div className="dash-topbar-right">
-            <button type="button" className="dash-avatar" onClick={handleLogout} title="Log out" aria-label="Log out">
-              BD
-            </button>
+            <div className="dash-account" ref={menuRef}>
+              <button
+                type="button"
+                className="dash-avatar"
+                onClick={() => setMenuOpen((o) => !o)}
+                title={user.name ?? user.email}
+                aria-label="Account"
+                aria-expanded={menuOpen}
+              >
+                {user.picture ? <img src={user.picture} alt="" referrerPolicy="no-referrer" /> : initials(user)}
+              </button>
+              {menuOpen && (
+                <div className="dash-account-menu" role="menu">
+                  <div className="dash-account-who">
+                    <strong>{user.name ?? user.email}</strong>
+                    {user.name && <span>{user.email}</span>}
+                    <span className="dash-account-role">{isAdmin ? "Admin — sees all campaigns" : "Sales — your campaigns"}</span>
+                  </div>
+                  <button type="button" role="menuitem" className="dash-account-item" onClick={handleLogout}>
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -187,6 +258,7 @@ export default function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) 
           {section === "clients" && <ClientsPage onOpenCampaign={handleCampaignCreated} onCampaignDeleted={handleCampaignDeleted} />}
           {section === "reports" && <ReportsPage onOpenCampaign={handleCampaignCreated} onCampaignDeleted={handleCampaignDeleted} />}
           {section === "help" && <HelpPage />}
+          {section === "team" && isAdmin && <TeamPage onChanged={refreshPending} />}
           {section === "upload" && <UploadCampaign onCampaignCreated={handleCampaignCreated} />}
         </div>
       </div>

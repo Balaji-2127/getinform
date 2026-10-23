@@ -7,7 +7,8 @@ import express, { type Request, type Response, type NextFunction } from "express
 import cookieSession from "cookie-session";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import authRouter from "./routes/auth.js";
+import authRouter, { loadUser } from "./routes/auth.js";
+import teamRouter from "./routes/team.js";
 import campaignsRouter from "./routes/campaigns.js";
 import brandingRouter from "./routes/branding.js";
 import propertyImagesRouter from "./routes/propertyImages.js";
@@ -21,16 +22,15 @@ if (isProduction && !process.env.SESSION_SECRET) {
   throw new Error("SESSION_SECRET must be set in production — refusing to start with the dev-only default.");
 }
 
-// Same reasoning, and a worse failure mode without it. .env.local is not
-// committed, so a deployed instance only has this if it was set in the
-// host's own environment. When it is missing the login route compares
-// against an empty string and answers "Incorrect password" to every attempt
-// — a misconfigured deploy is then indistinguishable from a typo, and the
-// only symptom is that nobody can get in and nothing says why.
-if (isProduction && !process.env.SALES_LOGIN_PASSWORD) {
+// Same reasoning, and a worse failure mode without them. .env.local is not
+// committed, so a deployed instance only has these if they were set in the
+// host's own environment. Without GOOGLE_CLIENT_ID nobody can sign in; with
+// no ADMIN_EMAILS there's nobody to approve anyone — either way the site
+// would just look broken with nothing saying why.
+if (isProduction && (!process.env.GOOGLE_CLIENT_ID || !process.env.ADMIN_EMAILS)) {
   throw new Error(
-    "SALES_LOGIN_PASSWORD must be set in production — without it every login is rejected as incorrect. " +
-      "Set it in the host's environment variables (it is not read from .env.local, which is never deployed).",
+    "GOOGLE_CLIENT_ID and ADMIN_EMAILS must both be set in production — sign-in is by Google account, and the admins " +
+      "listed in ADMIN_EMAILS approve everyone else. Set them in the host's environment variables.",
   );
 }
 
@@ -48,7 +48,11 @@ app.use(
   }),
 );
 
+// Who's signed in, re-checked against their record on every request.
+app.use("/api", loadUser);
+
 app.use("/api", authRouter);
+app.use("/api", teamRouter);
 app.use("/api/campaigns", campaignsRouter);
 app.use("/api", brandingRouter);
 app.use("/api", propertyImagesRouter);

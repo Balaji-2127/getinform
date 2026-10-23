@@ -57,6 +57,16 @@ export function ClientsIcon({ size = 18 }: IconProps) {
   );
 }
 
+// A shield with a tick: the Team page, where access is granted.
+export function TeamIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  );
+}
+
 export function InsightsIcon({ size = 18 }: IconProps) {
   return (
     <svg {...base(size)}>

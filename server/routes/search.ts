@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from "./auth.js";
+import { requireAuth, canAccessCampaign } from "./auth.js";
 import { listCampaigns } from "../db.js";
 import { SUPPORTED_CITIES, getCityFeatures } from "../inventoryLookup.js";
 
@@ -22,6 +22,7 @@ router.get("/search", requireAuth, async (req: Request, res: Response) => {
   }
 
   const campaigns = (await listCampaigns())
+    .filter((c) => canAccessCampaign(req.user, c))
     .filter((c) => c.clientName.toLowerCase().includes(q) || c.campaignName.toLowerCase().includes(q))
     .slice(0, MAX_CAMPAIGNS)
     .map((c) => ({ id: c.id, clientName: c.clientName, campaignName: c.campaignName, createdAt: c.createdAt }));

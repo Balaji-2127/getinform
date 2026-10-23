@@ -28,6 +28,7 @@ if (getApps().length === 0) {
 
 const db = getFirestore();
 const campaignsCol = db.collection("campaigns");
+const usersCol = db.collection("users");
 
 // { [cityId]: mediaSiteId[] } — only cities that had at least one matched row.
 export type CampaignSelections = Record<string, string[]>;
@@ -44,6 +45,10 @@ export type CampaignRecord = {
   // campaigns nobody has opened yet.
   views?: number;
   viewSeconds?: number;
+  // The salesperson who created it (their sign-in email, lowercase). Only
+  // they and admins can see or change it. Missing on campaigns from before
+  // per-person sign-in, which only admins see until one assigns an owner.
+  ownerEmail?: string;
 };
 
 type CampaignFields = Omit<CampaignRecord, "id">;
@@ -52,6 +57,7 @@ export async function insertCampaign(input: {
   clientName: string;
   campaignName: string;
   selections: CampaignSelections;
+  ownerEmail: string;
 }): Promise<CampaignRecord> {
   const record: CampaignRecord = {
     id: randomUUID(),
@@ -59,6 +65,7 @@ export async function insertCampaign(input: {
     campaignName: input.campaignName,
     selections: input.selections,
     createdAt: new Date().toISOString(),
+    ownerEmail: input.ownerEmail,
   };
   const { id, ...fields } = record;
   await campaignsCol.doc(id).set(fields satisfies CampaignFields);
@@ -93,7 +100,9 @@ export async function addCampaignViewTime(id: string, seconds: number): Promise<
   await campaignsCol.doc(id).update({ viewSeconds: FieldValue.increment(seconds) }).catch(() => {});
 }
 
-export async function listCampaigns(): Promise<(Omit<CampaignRecord, "selections"> & { counts: Record<string, number> })[]> {
+export async function listCampaigns(): Promise<
+  (Omit<CampaignRecord, "selections" | "ownerEmail"> & { counts: Record<string, number>; ownerEmail: string | null })[]
+> {
   const snap = await campaignsCol.orderBy("createdAt", "desc").get();
   return snap.docs.map((doc) => {
     const data = doc.data() as CampaignFields;
@@ -111,8 +120,16 @@ export async function listCampaigns(): Promise<(Omit<CampaignRecord, "selections
       counts,
       views: data.views ?? 0,
       viewSeconds: data.viewSeconds ?? 0,
+      ownerEmail: data.ownerEmail ?? null,
     };
   });
+}
+
+export async function setCampaignOwner(id: string, ownerEmail: string | null): Promise<boolean> {
+  const ref = campaignsCol.doc(id);
+  if (!(await ref.get()).exists) return false;
+  await ref.update({ ownerEmail: ownerEmail ?? FieldValue.delete() });
+  return true;
 }
 
 // Every campaign's full selections — unlike listCampaigns() above (just
@@ -137,6 +154,68 @@ export async function listCampaignsFull(): Promise<CampaignRecord[]> {
  */
 export async function deleteCampaign(id: string): Promise<boolean> {
   const ref = campaignsCol.doc(id);
+  if (!(await ref.get()).exists) return false;
+  await ref.delete();
+  return true;
+}
+
+// ---- people who can sign in --------------------------------------------------
+// One document per Google account, keyed by lowercase email. Someone signing
+// in for the first time is stored as "pending" until an admin approves them;
+// only "approved" people get a session. Admins see every campaign and manage
+// this list; sales see only campaigns they own.
+
+export type UserRole = "admin" | "sales";
+export type UserStatus = "approved" | "pending" | "rejected";
+
+export type UserRecord = {
+  email: string;
+  name: string | null;
+  picture: string | null;
+  role: UserRole;
+  status: UserStatus;
+  requestedAt: string | null;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  lastLoginAt: string | null;
+};
+
+const normEmail = (email: string) => email.trim().toLowerCase();
+
+export async function getUser(email: string): Promise<UserRecord | null> {
+  const snap = await usersCol.doc(normEmail(email)).get();
+  return snap.exists ? (snap.data() as UserRecord) : null;
+}
+
+// Creates the record if it's new; otherwise changes only the given fields.
+export async function upsertUser(email: string, fields: Partial<UserRecord>): Promise<UserRecord> {
+  const ref = usersCol.doc(normEmail(email));
+  const snap = await ref.get();
+  const base: UserRecord = snap.exists
+    ? (snap.data() as UserRecord)
+    : {
+        email: normEmail(email),
+        name: null,
+        picture: null,
+        role: "sales",
+        status: "pending",
+        requestedAt: null,
+        decidedAt: null,
+        decidedBy: null,
+        lastLoginAt: null,
+      };
+  const next: UserRecord = { ...base, ...fields, email: normEmail(email) };
+  await ref.set(next);
+  return next;
+}
+
+export async function listUsers(): Promise<UserRecord[]> {
+  const snap = await usersCol.get();
+  return snap.docs.map((d) => d.data() as UserRecord);
+}
+
+export async function deleteUser(email: string): Promise<boolean> {
+  const ref = usersCol.doc(normEmail(email));
   if (!(await ref.get()).exists) return false;
   await ref.delete();
   return true;

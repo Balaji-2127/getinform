@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import multer from "multer";
 import ExcelJS from "exceljs";
-import { requireAuth } from "./auth.js";
+import { requireAuth, requireAdmin, canAccessCampaign } from "./auth.js";
 import { getKnownMediaSiteIds, getCityFeatures, type CityId } from "../inventoryLookup.js";
 import { SHEET_NAME_TO_CITY } from "../sheetMapping.js";
 import {
@@ -10,6 +10,8 @@ import {
   listCampaigns,
   updateCampaignSelections,
   deleteCampaign,
+  setCampaignOwner,
+  getUser,
   recordCampaignView,
   addCampaignViewTime,
   type CampaignSelections,
@@ -96,8 +98,9 @@ async function parseWorkbook(
   return { selections, skippedSheets, warnings };
 }
 
-router.get("/", requireAuth, async (_req: Request, res: Response) => {
-  res.json(await listCampaigns());
+// Admins see every campaign; a salesperson only the ones they own.
+router.get("/", requireAuth, async (req: Request, res: Response) => {
+  res.json((await listCampaigns()).filter((c) => canAccessCampaign(req.user, c)));
 });
 
 router.post("/upload", requireAuth, upload.single("file"), async (req: Request, res: Response) => {
@@ -131,7 +134,7 @@ router.post("/upload", requireAuth, upload.single("file"), async (req: Request, 
     return;
   }
 
-  const record = await insertCampaign({ clientName, campaignName, selections: parsed.selections });
+  const record = await insertCampaign({ clientName, campaignName, selections: parsed.selections, ownerEmail: req.user!.email });
   res.json({
     campaignId: record.id,
     shareUrl: `/campaign/${record.id}`,
@@ -161,7 +164,7 @@ router.post("/upload", requireAuth, upload.single("file"), async (req: Request, 
 // discards every property the new sheet happens to omit.
 router.post<{ id: string }>("/:id/upload", requireAuth, upload.single("file"), async (req, res) => {
   const existing = await getCampaign(req.params.id);
-  if (!existing) {
+  if (!existing || !canAccessCampaign(req.user, existing)) {
     res.status(404).json({ error: "Campaign not found" });
     return;
   }
@@ -246,7 +249,7 @@ router.post<{ id: string }>("/:id/properties", requireAuth, async (req, res) => 
     return;
   }
   const existing = await getCampaign(req.params.id);
-  if (!existing) {
+  if (!existing || !canAccessCampaign(req.user, existing)) {
     res.status(404).json({ error: "Campaign not found" });
     return;
   }
@@ -275,7 +278,7 @@ router.get<{ id: string }>("/:id/map-snapshot.png", requireAuth, async (req, res
     return;
   }
   const campaign = await getCampaign(req.params.id);
-  if (!campaign) {
+  if (!campaign || !canAccessCampaign(req.user, campaign)) {
     res.status(404).json({ error: "Campaign not found" });
     return;
   }
@@ -338,7 +341,7 @@ router.get<{ id: string }>("/:id", async (req, res) => {
   // this API, which only runs once the app itself is loaded in a browser.
   // The client's page re-reads the campaign every few seconds to pick up
   // shortlist edits made by the team (?poll=1); those reads aren't opens.
-  if (!req.session?.loggedIn && req.query.poll !== "1") await recordCampaignView(record.id);
+  if (!req.user && req.query.poll !== "1") await recordCampaignView(record.id);
   res.json({ clientName: record.clientName, campaignName: record.campaignName, selections: record.selections });
 });
 
@@ -349,7 +352,7 @@ const MAX_VIEW_SLICE_SECONDS = 60;
 
 router.post<{ id: string }>("/:id/view-time", async (req, res) => {
   const seconds = Number(req.body?.seconds);
-  if (!req.session?.loggedIn && Number.isFinite(seconds) && seconds > 0) {
+  if (!req.user && Number.isFinite(seconds) && seconds > 0) {
     await addCampaignViewTime(req.params.id, Math.min(Math.round(seconds), MAX_VIEW_SLICE_SECONDS));
   }
   res.status(204).end();
@@ -362,7 +365,7 @@ router.post<{ id: string }>("/:id/view-time", async (req, res) => {
 // supplied body, not something the server generated itself.
 router.put<{ id: string }>("/:id/selections", requireAuth, async (req, res) => {
   const existing = await getCampaign(req.params.id);
-  if (!existing) {
+  if (!existing || !canAccessCampaign(req.user, existing)) {
     res.status(404).json({ error: "Campaign not found" });
     return;
   }
@@ -395,12 +398,37 @@ router.put<{ id: string }>("/:id/selections", requireAuth, async (req, res) => {
 // GET above deliberately isn't — a shared link must open without a login,
 // but nobody holding that link should be able to delete what it points at.
 router.delete<{ id: string }>("/:id", requireAuth, async (req, res) => {
+  const existing = await getCampaign(req.params.id);
+  if (!existing || !canAccessCampaign(req.user, existing)) {
+    res.status(404).json({ error: "Campaign not found" });
+    return;
+  }
   const deleted = await deleteCampaign(req.params.id);
   if (!deleted) {
     res.status(404).json({ error: "Campaign not found" });
     return;
   }
   res.json({ deleted: true });
+});
+
+
+// Gives a campaign to a salesperson — or takes it back to admins-only with
+// ownerEmail null. Admins only; the new owner must be someone approved.
+router.put<{ id: string }>("/:id/owner", requireAdmin, async (req, res) => {
+  const raw = req.body?.ownerEmail;
+  const ownerEmail = typeof raw === "string" && raw.trim() ? raw.trim().toLowerCase() : null;
+  if (ownerEmail) {
+    const user = await getUser(ownerEmail);
+    if (user?.status !== "approved") {
+      res.status(400).json({ error: "That person isn't an approved member of the team" });
+      return;
+    }
+  }
+  if (!(await setCampaignOwner(req.params.id, ownerEmail))) {
+    res.status(404).json({ error: "Campaign not found" });
+    return;
+  }
+  res.json({ ownerEmail });
 });
 
 export default router;

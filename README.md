@@ -124,8 +124,8 @@ cp .env.example .env.local
 
 Fill in `.env.local` — see `.env.example`'s own comments and `PRODUCTION_SERVICES.md` for what
 each variable does and whether it's required. At minimum you need
-`VITE_GOOGLE_MAPS_API_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON`, `SALES_LOGIN_PASSWORD`, and
-`SESSION_SECRET` — the server won't start without the Firebase one.
+`VITE_GOOGLE_MAPS_API_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON`, `GOOGLE_CLIENT_ID` /
+`VITE_GOOGLE_CLIENT_ID`, `ADMIN_EMAILS`, and `SESSION_SECRET` — the server won't start without the Firebase one.
 
 ### Scripts
 
