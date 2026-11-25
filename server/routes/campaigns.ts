@@ -9,6 +9,7 @@ import {
   getCampaign,
   listCampaigns,
   updateCampaignSelections,
+  transformCampaignSelections,
   deleteCampaign,
   setCampaignOwner,
   getUser,
@@ -193,24 +194,30 @@ router.post<{ id: string }>("/:id/upload", requireAuth, upload.single("file"), a
     return;
   }
 
-  const before = existing.selections ?? {};
-  const merged: CampaignSelections = mode === "replace" ? {} : Object.fromEntries(Object.entries(before).map(([c, ids]) => [c, [...ids]]));
-
-  let added = 0;
-  for (const [cityId, ids] of Object.entries(parsed.selections)) {
-    const set = new Set(merged[cityId] ?? []);
-    for (const id of ids) {
-      if (!set.has(id)) added++;
-      set.add(id);
+  // Merged against what's stored at write time (in a transaction), not the
+  // copy read above, so an edit made meanwhile isn't wiped out.
+  const mergeInto = (current: CampaignSelections): { merged: CampaignSelections; added: number } => {
+    const merged: CampaignSelections = mode === "replace" ? {} : Object.fromEntries(Object.entries(current).map(([c, ids]) => [c, [...ids]]));
+    let added = 0;
+    for (const [cityId, ids] of Object.entries(parsed.selections)) {
+      const set = new Set(merged[cityId] ?? []);
+      for (const id of ids) {
+        if (!set.has(id)) added++;
+        set.add(id);
+      }
+      merged[cityId] = [...set];
     }
-    merged[cityId] = [...set];
-  }
+    return { merged, added };
+  };
 
-  const record = await updateCampaignSelections(req.params.id, merged);
-  if (!record) {
+  const outcome = await transformCampaignSelections(req.params.id, (current) => mergeInto(current).merged);
+  if (!outcome) {
     res.status(404).json({ error: "Campaign not found" });
     return;
   }
+  const before = outcome.before;
+  const merged = outcome.after;
+  const { added } = mergeInto(before);
 
   const countsOf = (sel: CampaignSelections) => Object.fromEntries(Object.entries(sel).map(([c, ids]) => [c, ids.length]));
   const beforeCounts = countsOf(before);
@@ -225,7 +232,7 @@ router.post<{ id: string }>("/:id/upload", requireAuth, upload.single("file"), a
     matched: countsOf(parsed.selections),
     skippedSheets: parsed.skippedSheets,
     warnings: parsed.warnings,
-    selections: record.selections,
+    selections: merged,
   });
 });
 
@@ -253,14 +260,20 @@ router.post<{ id: string }>("/:id/properties", requireAuth, async (req, res) => 
     res.status(404).json({ error: "Campaign not found" });
     return;
   }
-  const selections: CampaignSelections = { ...(existing.selections ?? {}) };
-  const ids = selections[cityId] ?? [];
   // Idempotent: adding something already shortlisted reports that rather
-  // than storing a duplicate.
-  const alreadyIn = ids.includes(mediaSiteId);
-  if (!alreadyIn) selections[cityId] = [...ids, mediaSiteId];
-  const record = alreadyIn ? existing : await updateCampaignSelections(req.params.id, selections);
-  res.json({ added: !alreadyIn, newCity: !alreadyIn && ids.length === 0, selections: record?.selections ?? selections });
+  // than storing a duplicate. Done in a transaction, so the append really
+  // is against what's stored at write time.
+  const outcome = await transformCampaignSelections(req.params.id, (current) => {
+    const ids = current[cityId] ?? [];
+    return ids.includes(mediaSiteId) ? null : { ...current, [cityId]: [...ids, mediaSiteId] };
+  });
+  if (!outcome) {
+    res.status(404).json({ error: "Campaign not found" });
+    return;
+  }
+  const idsBefore = outcome.before[cityId] ?? [];
+  const added = !idsBefore.includes(mediaSiteId);
+  res.json({ added, newCity: added && idsBefore.length === 0, selections: outcome.after });
 });
 
 // A map picture of one city's shortlist for the campaign PDF: Google's

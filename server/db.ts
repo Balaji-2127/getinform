@@ -89,6 +89,28 @@ export async function updateCampaignSelections(id: string, selections: CampaignS
   return { id: ref.id, ...(snap.data() as CampaignFields), selections };
 }
 
+// Read-modify-write of a campaign's selections inside a Firestore
+// transaction, so a change computed from what's stored can't overwrite an
+// edit that landed between the read and the write (two "Add to campaign"
+// clicks, or a sheet merge racing an edit in another tab) — Firestore
+// retries `change` against the newer data instead. `change` may therefore
+// run more than once and must only compute. Returning null leaves the
+// campaign as it is. Null overall when the campaign doesn't exist.
+export async function transformCampaignSelections(
+  id: string,
+  change: (current: CampaignSelections) => CampaignSelections | null,
+): Promise<{ before: CampaignSelections; after: CampaignSelections } | null> {
+  const ref = campaignsCol.doc(id);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return null;
+    const before = (snap.data() as CampaignFields).selections ?? {};
+    const next = change(before);
+    if (next) tx.update(ref, { selections: next });
+    return { before, after: next ?? before };
+  });
+}
+
 // Both bump a counter in place with FieldValue.increment, so two people
 // with the link open at once can't overwrite each other's numbers. A
 // missing campaign (deleted while the link was open) is just ignored.

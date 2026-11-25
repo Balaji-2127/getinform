@@ -25,13 +25,20 @@ router.get("/team", requireAdmin, async (_req: Request, res: Response) => {
 // first time without waiting.
 router.post("/team", requireAdmin, async (req: Request, res: Response) => {
   const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
-  const role: UserRole = ROLES.includes(req.body?.role) ? req.body.role : "sales";
   if (!EMAIL.test(email)) {
     res.status(400).json({ error: "Enter a valid email address" });
     return;
   }
   const now = new Date().toISOString();
   const existing = await getUser(email);
+  // Re-adding someone already on the team keeps their role unless one is
+  // given — otherwise "adding" an existing admin would quietly demote them.
+  const role: UserRole = ROLES.includes(req.body?.role) ? req.body.role : (existing?.role ?? "sales");
+  // Same guard as PUT below: this route must not be a way around it.
+  if (email === req.user!.email && role !== "admin") {
+    res.status(400).json({ error: "You can't remove your own admin access." });
+    return;
+  }
   const { passwordHash, passwordChangedAt: _changed, ...user } = await upsertUser(email, {
     role,
     status: "approved",
@@ -50,15 +57,18 @@ router.put<{ email: string }>("/team/:email", requireAdmin, async (req, res) => 
     res.status(404).json({ error: "No such person" });
     return;
   }
-  if (isSettingsAdmin(email)) {
-    res.status(400).json({ error: "This admin is set in the app's settings (ADMIN_EMAILS) and can't be changed here." });
-    return;
-  }
   // Forgotten password: clear it (and end their sessions). Their next
-  // sign-in with the team password asks them to choose a new one.
+  // sign-in with the team password asks them to choose a new one. Allowed
+  // for ADMIN_EMAILS admins too — their role and access are fixed by the
+  // settings, but they can forget a password like anyone else, and the Team
+  // page offers them the button.
   if (req.body?.resetPassword === true) {
     await upsertUser(email, { passwordHash: null, passwordChangedAt: new Date().toISOString() });
     res.json({ email, hasPassword: false });
+    return;
+  }
+  if (isSettingsAdmin(email)) {
+    res.status(400).json({ error: "This admin is set in the app's settings (ADMIN_EMAILS) and can't be changed here." });
     return;
   }
   const status = ["approved", "rejected"].includes(req.body?.status) ? (req.body.status as "approved" | "rejected") : undefined;

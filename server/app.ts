@@ -39,7 +39,11 @@ if (isProduction && !process.env.ADMIN_EMAILS) {
 }
 
 const app = express();
-app.set("trust proxy", isProduction);
+// One hop: the host's own proxy (Render, Vercel). `true` would trust every
+// X-Forwarded-For entry, so req.ip would be whatever the client put first in
+// that header — and the sign-in rate limit, keyed on req.ip, could be
+// sidestepped by sending a different made-up address with each attempt.
+app.set("trust proxy", isProduction ? 1 : false);
 app.use(express.json());
 app.use(
   cookieSession({

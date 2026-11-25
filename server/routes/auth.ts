@@ -27,17 +27,25 @@ type SignInMethod = "google" | "team-password" | "own-password" | "dev";
 // is never kept anywhere.
 const SCRYPT_KEYLEN = 32;
 
-function hashPassword(password: string): string {
+// The async form: scryptSync would block the whole server (every other
+// request included) for the length of each hash, and the sign-in route
+// runs one for anyone who asks.
+function scrypt(password: string, salt: Buffer, keylen: number): Promise<Buffer> {
+  return new Promise((resolve, reject) => crypto.scrypt(password, salt, keylen, (err, key) => (err ? reject(err) : resolve(key))));
+}
+
+async function hashPassword(password: string): Promise<string> {
   const salt = crypto.randomBytes(16);
-  const hash = crypto.scryptSync(password, salt, SCRYPT_KEYLEN);
+  const hash = await scrypt(password, salt, SCRYPT_KEYLEN);
   return `scrypt$${salt.toString("hex")}$${hash.toString("hex")}`;
 }
 
-function verifyPassword(password: string, stored: string): boolean {
+async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const [scheme, saltHex, hashHex] = stored.split("$");
   if (scheme !== "scrypt" || !saltHex || !hashHex) return false;
   const expected = Buffer.from(hashHex, "hex");
-  const actual = crypto.scryptSync(password, Buffer.from(saltHex, "hex"), expected.length);
+  if (expected.length === 0) return false;
+  const actual = await scrypt(password, Buffer.from(saltHex, "hex"), expected.length);
   return crypto.timingSafeEqual(actual, expected);
 }
 
@@ -83,9 +91,10 @@ async function signIn(req: Request, res: Response, who: Identity, method: SignIn
   let user: UserRecord;
 
   if (isSettingsAdmin(email)) {
+    // A password sign-in carries no name or photo; keep the ones Google gave.
     user = await upsertUser(email, {
-      name: who.name,
-      picture: who.picture,
+      name: who.name ?? existing?.name ?? null,
+      picture: who.picture ?? existing?.picture ?? null,
       role: "admin",
       status: "approved",
       lastLoginAt: now,
@@ -101,22 +110,27 @@ async function signIn(req: Request, res: Response, who: Identity, method: SignIn
   } else {
     // New, or already waiting: (re)record the request, keeping when it was
     // first made so the admin sees the real waiting time.
-    await upsertUser(email, { name: who.name, picture: who.picture, status: "pending", requestedAt: existing?.requestedAt ?? now });
+    await upsertUser(email, {
+      name: who.name ?? existing?.name ?? null,
+      picture: who.picture ?? existing?.picture ?? null,
+      status: "pending",
+      requestedAt: existing?.requestedAt ?? now,
+    });
     req.session = null;
     res.status(403).json({ status: "pending", error: "Your request has been sent. You'll be able to sign in once an admin approves it." });
     return;
   }
 
   const needsPassword = method === "team-password" && !user.passwordHash;
-  if (req.session) {
-    req.session.email = email;
-    req.session.method = method;
-    // When this session started — compared with passwordChangedAt so a
-    // password change signs out every other session (see loadUser).
-    req.session.iat = Date.now();
-    // From the old shared-password login; meaningless now.
-    delete req.session.loggedIn;
-  }
+  // A fresh session object rather than editing req.session in place:
+  // loadUser sets req.session to null for a stale or no-longer-valid cookie
+  // on this same request (e.g. signing in again after a password change on
+  // another device), and cookie-session then reads back null — an in-place
+  // edit would be skipped and the response would claim a sign-in that never
+  // stuck. Replacing it also drops the old shared-password `loggedIn` flag.
+  // iat is when this session started — compared with passwordChangedAt so
+  // a password change signs out every other session (see loadUser).
+  req.session = { email, method, iat: Date.now() };
   res.json({
     loggedIn: true,
     user: { email, name: user.name, picture: user.picture, role: user.role, needsPassword } satisfies SessionUser,
@@ -177,7 +191,7 @@ router.post("/auth/password", async (req: Request, res: Response) => {
   // who knows it can sign in as them.
   const record = await getUser(email);
   if (record?.passwordHash) {
-    if (!verifyPassword(password, record.passwordHash)) {
+    if (!(await verifyPassword(password, record.passwordHash))) {
       res.status(401).json({ error: "Incorrect password" });
       return;
     }
@@ -208,7 +222,7 @@ router.post("/auth/set-password", async (req: Request, res: Response) => {
   }
   const next = typeof req.body?.newPassword === "string" ? req.body.newPassword : "";
   const current = typeof req.body?.currentPassword === "string" ? req.body.currentPassword : "";
-  if (record.passwordHash && !req.user.needsPassword && !verifyPassword(current, record.passwordHash)) {
+  if (record.passwordHash && !req.user.needsPassword && !(await verifyPassword(current, record.passwordHash))) {
     res.status(401).json({ error: "Your current password is incorrect" });
     return;
   }
@@ -221,7 +235,7 @@ router.post("/auth/set-password", async (req: Request, res: Response) => {
     return;
   }
   const now = new Date().toISOString();
-  await upsertUser(req.user.email, { passwordHash: hashPassword(next), passwordChangedAt: now });
+  await upsertUser(req.user.email, { passwordHash: await hashPassword(next), passwordChangedAt: now });
   if (req.session) {
     req.session.method = "own-password";
     req.session.iat = Date.parse(now);
